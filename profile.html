@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>โปรไฟล์ของฉัน — TOKBUD</title>
+
+<meta property="og:title" content="โปรไฟล์ของฉัน — TOKBUD">
+<meta property="og:description" content="จัดการบัญชี TOKBUD ของคุณ">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@100;400;700&family=Lexend:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+
+<style>
+  :root{
+    --primary: #2143C8;      /* น้ำเงินฟ้าสด - ตามโทนที่ Pop กำหนด (sync กับ index.html เป๊ะ) */
+    --primary-dark: #0B1D7F; /* น้ำเงินเข้ม - ใช้ hover/header/ปุ่มเข้ม */
+    --primary-light: #5B7DE8; /* โทนอ่อนกว่า primary ไว้ทำ tint/badge */
+    --accent: #F5D149;       /* เหลืองสด */
+    --bg: #F5F8FF;           /* ขาวอมฟ้าอ่อนมาก ให้ดูสดใสไม่หม่น */
+    --surface: #FFFFFF;
+    --text: #0B1D7F;         /* ใช้โทนน้ำเงินเข้มแทนดำ ให้ฟีลแบรนด์ชัด แต่ยังคมชัดอ่านง่าย */
+    --text-muted: #5C6B9E;
+    --line: #DCE4F7;
+    --side-a: #2143C8;        /* Join because... = น้ำเงินฟ้า */
+    --side-b: #F5D149;        /* Leave because... = เหลืองสด */
+    --danger: #D64545;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(11, 29, 127, 0.12);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter', sans-serif; font-weight:400; font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4, .btn, .creator-name{ font-family:'Lexend', sans-serif; }
+  img{ max-width:100%; display:block; }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; }
+  input, select, textarea{ font-family:inherit; }
+  a{ color:inherit; text-decoration:none; }
+
+  /* ===== Header (เหมือน index.html เพื่อความต่อเนื่อง) ===== */
+  header.site-header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,0.9); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px;
+  }
+  .logo-wrap{ display:flex; align-items:baseline; gap:10px; }
+  .logo-wrap .brand{
+    font-family:'Antonio', sans-serif; font-weight:700; font-size:28px;
+    letter-spacing:1px; color:var(--primary);
+  }
+  .logo-wrap .tagline{
+    font-family:'Antonio', sans-serif; font-weight:100; font-size:14px;
+    color:var(--accent); text-transform:uppercase; letter-spacing:2px;
+    background:var(--primary-dark); padding:2px 8px; border-radius:6px;
+  }
+  .header-actions{ display:flex; align-items:center; gap:10px; }
+  .lang-toggle{ display:flex; align-items:center; background:var(--bg); border:1.5px solid var(--line); border-radius:100px; padding:3px; gap:2px; flex-shrink:0; }
+  .lang-toggle button{ padding:5px 12px; border-radius:100px; font-size:12px; font-weight:700; font-family:'Lexend', sans-serif; color:var(--text-muted); transition:all .15s ease; }
+  .lang-toggle button.active{ background:var(--primary); color:#fff; }
+  .btn{
+    padding:9px 18px; border-radius:100px; font-size:14px; font-weight:500;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform:scale(0.96); }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-primary:hover{ box-shadow:0 6px 16px rgba(91,42,158,0.35); }
+  .btn-ghost{ background:var(--surface); color:var(--primary); border:1.5px solid var(--line); }
+  .btn-accent{ background:var(--accent); color:var(--primary-dark); font-weight:600; }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  .btn-danger:hover{ box-shadow:0 6px 16px rgba(214,69,69,0.35); }
+  .full-btn{ width:100%; padding:13px; border-radius:12px; font-size:15px; font-weight:600; }
+  .btn:disabled{ opacity:.6; cursor:not-allowed; }
+  .btn-spinner{
+    display:inline-block; width:14px; height:14px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.5); border-top-color:#fff;
+    animation:spin .7s linear infinite; margin-right:6px; vertical-align:-2px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  /* spinner กลางพื้นที่ ใช้ตอนกำลังดึงข้อมูล เช่น สลับ tab / เปลี่ยนสถานะหัวข้อ ให้เหมือนกับ index.html */
+  .area-loading{ text-align:center; padding:50px 20px; color:var(--text-muted); font-size:13.5px; }
+  .area-spinner{
+    width:28px; height:28px; margin:0 auto 12px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--primary);
+    animation:spin .7s linear infinite;
+  }
+
+  /* ===== Modal (เหมือน index.html ทุกกระเบียดนิ้ว เพื่อให้ design element ตรงกันทั้งเว็บ) ===== */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(28,19,41,0.55); backdrop-filter:blur(3px);
+    display:none; align-items:flex-end; justify-content:center; z-index:100;
+  }
+  .modal-overlay.open{ display:flex; }
+  @media(min-width:520px){ .modal-overlay{ align-items:center; } }
+  .modal-box{
+    background:var(--surface); width:100%; max-width:420px; border-radius:20px 20px 0 0;
+    padding:24px 22px 28px; max-height:88vh; overflow-y:auto;
+    animation:slideUp .25s ease;
+  }
+  @media(min-width:520px){ .modal-box{ border-radius:20px; } }
+  @keyframes slideUp{ from{ transform:translateY(30px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .modal-head h3{ margin:0; font-size:18px; font-weight:600; }
+  .modal-close{ font-size:20px; color:var(--text-muted); width:30px; height:30px; }
+
+  /* ===== แก้ไขหัวข้อ (ฟอร์มชุดเดียวกับตอนสร้าง ใน index.html) ===== */
+  .type-toggle{ display:flex; gap:8px; }
+  .type-toggle button{
+    flex:1; padding:10px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:13.5px; font-weight:600; color:var(--text-muted); background:var(--bg);
+  }
+  .type-toggle button.selected{ border-color:var(--primary); color:var(--primary); background:#fff; }
+  .cover-upload{
+    width:100%; aspect-ratio:9/16; max-height:520px; border:1.5px dashed var(--line); border-radius:12px;
+    display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:13px;
+    background:var(--bg); overflow:hidden; text-align:center; padding:10px;
+  }
+  .cover-upload img{ width:100%; height:100%; object-fit:contain; }
+  .preview-3col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; align-items:stretch; }
+  .preview-3col .cover-upload{ max-height:none; }
+  .preview-vote-btn{
+    aspect-ratio:9/16; border-radius:12px; background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white);
+    border:2px solid color-mix(in srgb, var(--card-color, var(--primary)) 30%, white);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:12.5px; font-weight:600; color:var(--text-muted); padding:6px 4px; word-break:break-word;
+  }
+  .color-swatches{ display:flex; flex-wrap:wrap; gap:10px; }
+  .color-swatch{
+    width:30px; height:30px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line);
+  }
+  .color-swatch.selected{ box-shadow:0 0 0 2px var(--text); }
+  .tag-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tag-grid input{ padding:9px 12px !important; font-size:13px !important; }
+  .date-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+  .date-row .field{ flex:1 1 140px; min-width:140px; margin-bottom:0; }
+  .date-row.stack-row{ flex-direction:column; gap:14px; }
+  .date-row.stack-row .field{ flex:0 0 auto; min-width:0; }
+
+  /* ===== ปุ่มจัดการสถานะหัวข้อในการ์ด "หัวข้อของฉัน" ===== */
+  .mt-actions{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .mt-action-btn{
+    flex:1 1 auto; min-width:70px; padding:8px 10px; border-radius:9px; font-size:12.5px; font-weight:600;
+    border:1.5px solid var(--line); background:var(--bg); color:var(--text-muted); text-align:center;
+  }
+  .mt-action-btn.publish{ border-color:#2C8A4B; color:#2C8A4B; background:#E4F5E9; }
+  .mt-action-btn.hide{ border-color:#B8790C; color:#B8790C; background:#FFF3DE; }
+  .mt-action-btn.edit{ border-color:var(--primary); color:var(--primary); background:#fff; }
+  .mt-action-btn.export{ border-color:#2C8A4B; color:#2C8A4B; background:#fff; }
+  .mt-action-btn.delete{ border-color:var(--danger); color:var(--danger); background:#fff; }
+
+  /* ===== Layout ===== */
+  .wrap{ max-width:640px; margin:0 auto; padding:24px 16px 70px; }
+
+  .locked-state{ text-align:center; padding:80px 20px; color:var(--text-muted); }
+  .locked-state .emoji{ font-size:42px; margin-bottom:14px; }
+  .locked-state h3{ color:var(--text); margin:0 0 8px; }
+
+  .profile-head{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+  .profile-avatar{
+    width:64px; height:64px; border-radius:50%; overflow:hidden; flex-shrink:0;
+    background:var(--primary-light);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; font-weight:600;
+  }
+  .profile-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .profile-name{ font-size:19px; font-weight:700; }
+  .profile-sub{ font-size:13px; color:var(--text-muted); margin-top:2px; }
+  .mytype-link{ display:inline-block; margin-top:6px; font-size:12.5px; font-weight:600; color:var(--primary); }
+  .mytype-link:hover{ text-decoration:underline; }
+
+  /* ===== Tabs ===== */
+  .tab-row{
+    display:flex; gap:4px; overflow-x:auto; margin-bottom:20px;
+    border-bottom:1.5px solid var(--line); scrollbar-width:none;
+  }
+  .tab-row::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    padding:10px 14px; font-size:13.5px; color:var(--text-muted);
+    border-bottom:2.5px solid transparent; white-space:nowrap; font-weight:500;
+  }
+  .tab-btn.active{ color:var(--primary); border-color:var(--primary); font-weight:700; }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* ===== Dashboard ===== */
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .stat-card{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:18px 10px; text-align:center;
+  }
+  .stat-num{ font-family:'Antonio',sans-serif; font-size:32px; font-weight:700; color:var(--primary); line-height:1; }
+  .stat-label{ font-size:12px; color:var(--text-muted); margin-top:6px; }
+
+  .dash-card{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:18px 16px; margin-bottom:14px;
+  }
+  .dash-card h4{ margin:0 0 14px; font-size:14px; }
+  .dash-group{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .dash-group:last-child{ margin-bottom:0; }
+  .dash-group-title{ font-size:13px; font-weight:700; color:var(--text); }
+  .dash-item-row{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); }
+  .dash-item-label{ width:52px; flex-shrink:0; }
+  .dash-item-bg{ flex:1; height:8px; border-radius:4px; background:var(--bg); overflow:hidden; }
+  .dash-item-fill{ display:block; height:100%; border-radius:4px; transition:width .5s ease; }
+  .dash-item-fill.zero{ background:var(--line) !important; }
+  .dash-item-pct{ width:34px; flex-shrink:0; text-align:right; font-weight:600; color:var(--text); }
+  .dash-empty{ text-align:center; color:var(--text-muted); font-size:13px; padding:16px 0; }
+
+  /* ===== My Topics ===== */
+  .sort-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  .mt-create-btn{ padding:9px 16px; font-size:13px; }
+  /* การ์ดหัวข้อสถานะ "รอตรวจสอบ" กดแล้วไม่ต้องพาไปไหน (ยังไม่มีการ์ดจริงในหน้าแรกให้ไปเจอ) จึงไม่ใช้เคอร์เซอร์แบบลิงก์ */
+  .mt-link-static{ cursor:default; }
+  .view-toggle{ display:flex; background:var(--surface); border:1.5px solid var(--line); border-radius:100px; padding:3px; }
+  .view-toggle button{ padding:6px 14px; border-radius:100px; font-size:12.5px; color:var(--text-muted); }
+  .view-toggle button.active{ background:var(--primary); color:#fff; }
+
+  .my-topic-card{
+    display:block; background:var(--surface); border-radius:14px; box-shadow:var(--shadow);
+    padding:14px; margin-bottom:12px; border-top:4px solid var(--card-color, var(--primary));
+  }
+  .mt-link{ display:block; }
+  .mt-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px; }
+  .mt-title{ font-size:14.5px; font-weight:600; line-height:1.4; }
+  .status-badge{
+    flex-shrink:0; font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:100px;
+    white-space:nowrap;
+  }
+  .status-badge.active{ background:#E4F5E9; color:#2C8A4B; }
+
+  /* ===== My Comment tab — การ์ดคอมเมนต์/โหวตของตัวเอง (ใหม่สำหรับ TOKBUD) ===== */
+  .my-comment-card{
+    display:block; width:100%; text-align:left; background:var(--surface); border-radius:14px; box-shadow:var(--shadow);
+    padding:14px; margin-bottom:12px; border-top:4px solid var(--card-color, var(--primary)); cursor:pointer;
+    font:inherit; color:inherit; border-left:none; border-right:none; border-bottom:none;
+  }
+  .mc-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px; }
+  .mc-company{ font-size:14.5px; font-weight:600; line-height:1.4; }
+  .mc-side-badge{ flex-shrink:0; font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; color:#fff; }
+  .mc-side-badge.a{ background:var(--side-a); }
+  .mc-side-badge.b{ background:var(--side-b); color:var(--primary-dark); }
+  .mc-reason{ font-size:13px; color:var(--text); line-height:1.5; margin-bottom:8px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .mc-date{ font-size:11px; color:var(--text-muted); }
+
+  /* ===== Delete-request reason picker (ขอลบบริษัท) — radio list ใช้ native accent-color แทนการทำ custom checkbox
+     เหมือน target-checklist เดิม เพราะเป็น radio (เลือกได้แค่ 1) ไม่ใช่ checkbox หลายช่อง ไม่จำเป็นต้อง custom style ===== */
+  .reason-radio-list{ display:flex; flex-direction:column; }
+  .reason-radio-list .reason-row{
+    display:flex; align-items:center; gap:12px; padding:11px 4px;
+    font-size:14px; color:var(--text); cursor:pointer; user-select:none;
+    border-bottom:1px solid var(--line); margin-bottom:0;
+  }
+  .reason-radio-list .reason-row:last-child{ border-bottom:none; }
+  .reason-radio-list .reason-row input{ accent-color:var(--primary); width:18px; height:18px; flex-shrink:0; }
+  .status-badge.inactive{ background:#EFECF5; color:var(--text-muted); }
+  .mt-meta{ display:flex; flex-wrap:wrap; gap:6px; font-size:11px; color:var(--text-muted); margin-bottom:10px; }
+  .mt-meta .cat-tag{ background:var(--primary); color:#fff; padding:3px 9px; border-radius:100px; font-size:11px; }
+  .mt-bar{ height:8px; border-radius:4px; background:var(--bg); overflow:hidden; display:flex; margin-bottom:8px; }
+  .mt-bar span{ height:100%; }
+  .mt-bar .a{ background:var(--side-a); }
+  .mt-bar .b{ background:var(--side-b); }
+  .mt-votes{ font-size:11.5px; color:var(--text-muted); display:flex; flex-direction:column; gap:3px; }
+  .mt-votes .mv-total{ font-weight:600; color:var(--text); margin-bottom:1px; }
+  .mt-votes .mv-row{ display:flex; align-items:center; gap:6px; }
+  .mt-votes .mv-dot{ width:8px; height:8px; border-radius:2px; flex-shrink:0; display:inline-block; }
+
+  /* --- comment buttons: อยู่ใต้ mt-votes เสมอ คนละปุ่มคนละฝั่ง (A/B) โชว์ตลอดกดได้เสมอแม้ N=0 --- */
+  .comment-row{ display:flex; gap:8px; margin-top:10px; }
+  .comment-btn{
+    flex:1; text-align:center; font-size:12px; font-weight:600; color:var(--text-muted);
+    background:var(--bg); border:1.5px solid var(--line); border-radius:100px; padding:7px 8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .comment-btn:active{ background:var(--line); }
+
+  /* หน้า My Topics เท่านั้น: ปุ่มฝั่ง B ใช้สีเหลืองอ่อนตาม --side-b เพื่อเชื่อมโยงกับเม็ดสี legend (m่วง=A, เหลือง=B)
+     ให้เจ้าของหัวข้อรู้เร็วๆ ว่าปุ่มซ้าย-ขวา represent คอมเมนต์ของฝั่งไหน ฝั่ง A ใช้สี .comment-btn ปกติตามเดิม */
+  .comment-btn-b{
+    background:color-mix(in srgb, var(--side-b) 20%, white);
+    border-color:color-mix(in srgb, var(--side-b) 45%, white);
+    color:#8A6D10;
+  }
+  .comment-btn-b:active{ background:color-mix(in srgb, var(--side-b) 32%, white); }
+
+  /* --- comment modal: list + infinite scroll ผ่าน IntersectionObserver --- */
+  .comment-list{ display:flex; flex-direction:column; gap:10px; min-height:60px; }
+  .comment-item{
+    background:var(--bg); border-radius:12px; padding:10px 14px; font-size:13.5px;
+    line-height:1.6; color:var(--text); white-space:pre-wrap; word-break:break-word;
+  }
+  .comment-item-time{ display:block; margin-top:6px; font-size:11px; color:var(--text-muted); }
+  .comment-empty, .comment-loading{ text-align:center; font-size:13px; color:var(--text-muted); padding:26px 0; }
+  #commentSentinel{ height:1px; }
+
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--text-muted); }
+  .empty-state .emoji{ font-size:36px; margin-bottom:10px; }
+
+  /* ===== Form (reuse field styling เดียวกับ modal ใน index.html) ===== */
+  .form-card{ background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 16px; margin-bottom:16px; }
+  .form-card h4{ margin:0 0 16px; font-size:14.5px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px; font-weight:500; }
+  .field input, .field select, .field textarea{
+    width:100%; padding:11px 14px; border-radius:10px; border:1.5px solid var(--line);
+    background:var(--bg); font-size:14.5px; outline:none; color:var(--text);
+  }
+  .field input:focus, .field select:focus{ border-color:var(--primary); background:#fff; }
+  .field-error{ color:var(--danger); font-size:12px; margin-top:4px; display:none; }
+  .field-hint{ font-weight:400; color:var(--text-muted); }
+  .req-mark{ color:var(--danger); font-weight:700; }
+  /* ===== ปุ่ม Yes/No/Unsure + คะแนนความมั่นใจ (My Comment edit form) — สไตล์เดียวกับ index.html เป๊ะ ===== */
+  .ynu-btn{ flex:1; padding:8px 4px; border:1.5px solid var(--line); border-radius:8px; font-size:12.5px; background:var(--surface); color:var(--text); }
+  .ynu-btn.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
+  .score-btn{ width:34px; height:34px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
+  .score-btn.selected{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); font-weight:700; }
+  .dob-row{ display:flex; gap:8px; }
+  .dob-row select{ flex:1; }
+  .passcode-wrap{ position:relative; }
+  .passcode-wrap input{ padding-right:42px; }
+  /* ช่อง passcode ใช้ type="text" จริงๆ (ไม่ใช้ type="password") เพราะ browser/OS ผูกพฤติกรรม "เสนอสร้าง Strong Password ให้อัตโนมัติ" ไว้กับ type="password" โดยเฉพาะ
+     ทำให้ user บางคนกดใช้รหัสที่ device สุ่มให้ แล้วจำไม่ได้ ภายหลังแก้ไขข้อมูลตัวเองไม่ได้เพราะต้องใช้ passcode ยืนยัน
+     ใช้ -webkit-text-security แทนเพื่อยังคงพรางตัวอักษรเป็นจุดๆ เหมือน password ปกติ แต่ browser จะไม่มองว่าเป็นช่อง password จึงไม่เสนอ auto-gen ให้
+     (หมายเหตุ: Firefox ไม่รองรับ -webkit-text-security ตัวอักษรจะไม่ถูกพรางบน Firefox — ถือเป็น trade-off ที่ยอมรับได้เพราะกลุ่มผู้ใช้หลักเป็นมือถือ Chrome/Safari) */
+  .passcode-wrap input{ -webkit-text-security:disc; text-security:disc; }
+  .passcode-wrap input.pc-visible{ -webkit-text-security:none; text-security:none; }
+  .passcode-toggle{ position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:16px; }
+  .field-avatar-row{ text-align:center; margin-bottom:18px; }
+  .edit-avatar{
+    width:76px; height:76px; border-radius:50%; overflow:hidden; margin:0 auto;
+    background:var(--primary-light); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px;
+  }
+  .edit-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .upload-spinner{
+    width:22px; height:22px; border-radius:50%; border:2.5px solid rgba(255,255,255,0.5);
+    border-top-color:#fff; animation:spin .7s linear infinite;
+  }
+  /* กล่องอัปโหลดรูปหัวข้อ (.cover-upload) พื้นหลังเป็นสีอ่อนเกือบขาว spinner สีขาวเลยมองแทบไม่เห็นตอนหมุน ใช้สีเข้ม/สีธีมแทน */
+  .cover-upload .upload-spinner{
+    border:2.5px solid color-mix(in srgb, var(--card-color, var(--primary)) 25%, white);
+    border-top-color:var(--card-color, var(--primary));
+  }
+  .section-divider{ border:none; border-top:1.5px dashed var(--line); margin:18px 0; }
+
+  /* ===== Plan & Billing ===== */
+  .charge-failed-banner{
+    background:#FFF6F6; border:1.5px solid var(--danger); border-radius:var(--radius);
+    padding:16px; margin-bottom:16px; display:flex; flex-direction:column; gap:10px; align-items:flex-start;
+  }
+  .charge-failed-banner p{ margin:0; font-size:13px; color:var(--danger); line-height:1.6; }
+  .charge-failed-banner .btn{ font-size:13px; padding:9px 16px; }
+  .plan-status-card{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:20px 16px; margin-bottom:16px;
+  }
+  .plan-badge-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .plan-badge-row-left{ display:flex; flex-direction:column; gap:4px; }
+  .plan-badge-label{ font-size:12px; color:var(--text-muted); font-weight:500; }
+  .plan-badge-current{ display:flex; align-items:center; gap:8px; }
+  .plan-badge{ font-size:12px; font-weight:700; padding:4px 12px; border-radius:100px; letter-spacing:0.5px; }
+  /* ปุ่มยกเลิก — ตาม feedback: ไม่ใช่ปุ่มใหญ่เด่นอีกต่อไป ให้เป็นแค่ text สีเทาเล็กๆ มุมขวาบน แถวเดียวกับ
+     "Your current plan" (ไม่ใช่ full-width button แถวล่างสุดแบบเดิม) */
+  .plan-cancel-link{ font-size:12px; color:var(--text-muted); font-weight:500; text-decoration:underline; flex-shrink:0; margin-top:1px; }
+  .plan-cancel-link:hover{ color:var(--text); }
+  .plan-badge.free{ background:#EFECF5; color:var(--text-muted); }
+  .plan-badge.pro{ background:linear-gradient(135deg,var(--accent),#FFA53C); color:var(--primary-dark); }
+  .plan-until-text{ font-size:12.5px; color:var(--text-muted); margin:0 0 12px; }
+  /* รายการสิทธิ์ PRO — วางใต้บรรทัด Auto-renews เยื้องเข้ามาจากขอบซ้ายให้ต่างชั้นกับข้อความหลัก
+     เป็น list ที่ต่อรายการใหม่ได้เรื่อยๆ ในอนาคตแค่เพิ่ม item เข้า PRO_BENEFITS array (ดู JS) */
+  .plan-benefits-list{ margin:0 0 16px; padding-left:16px; display:flex; flex-direction:column; gap:8px; }
+  .plan-benefit-item{ display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--text-muted); line-height:1.5; }
+  .plan-benefit-check{ color:#2C8A4B; font-weight:700; flex-shrink:0; }
+  .plan-pitch-title{ font-size:15px; font-weight:700; margin:0 0 8px; }
+  .plan-pitch-desc{ font-size:13px; color:var(--text-muted); line-height:1.7; margin:0 0 18px; }
+  .plan-price-tag{ font-family:'Antonio',sans-serif; font-size:26px; font-weight:700; color:var(--primary); margin:0 0 4px; }
+  .plan-price-usd{ font-size:11.5px; color:var(--text-muted); margin:0 0 18px; }
+  .billing-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:12px 0; border-bottom:1px solid var(--line); font-size:12.5px;
+  }
+  .billing-row:last-child{ border-bottom:none; }
+  .billing-row-left{ display:flex; flex-direction:column; gap:3px; }
+  .billing-date{ color:var(--text); font-weight:600; }
+  .billing-reason{ color:var(--danger); font-size:11px; }
+  .billing-row-right{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+  .billing-amount{ font-weight:700; color:var(--text); white-space:nowrap; }
+  .billing-status-pill{ font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; }
+  .billing-status-pill.success{ background:#E4F5E9; color:#2C8A4B; }
+  .billing-status-pill.failed{ background:#FBE7E7; color:var(--danger); }
+
+  /* ===== Danger zone ===== */
+  .danger-box{
+    border:1.5px solid var(--danger); border-radius:var(--radius); background:#FFF6F6;
+    padding:20px 16px;
+  }
+  .danger-box h4{ margin:0 0 8px; font-size:14.5px; color:var(--danger); }
+  .danger-box p{ font-size:13px; color:var(--text-muted); line-height:1.6; margin:0 0 16px; }
+
+  /* ===== Toast ===== */
+  /* Toast แบบสี่เหลี่ยมมุมโค้งเล็ก (border-radius เล็ก ไม่ใช่ pill ยักษ์) ข้อความยาวจะ wrap เป็นพารากราฟสวยๆ
+     แทนที่จะโป่งเป็นวงกลมเบี้ยวๆ เวลาข้อความยาว — เทียบเท่า pattern เดียวกับ index.html */
+  #toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--primary-dark); color:#fff; padding:13px 20px; border-radius:12px;
+    font-size:13.5px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:200;
+    max-width:min(92vw, 380px); width:max-content; text-align:left; line-height:1.5;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="logo-wrap" href="index.html">
+    <span class="brand">TOKBUD</span>
+  </a>
+  <div class="header-actions" id="headerActions">
+    <div class="lang-toggle" id="langToggle">
+      <button type="button" data-lang="th">TH</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+    <a class="btn btn-ghost" href="index.html" data-i18n="backHome">← กลับหน้าแรก</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== แสดงเมื่อยังไม่ login ===== -->
+  <div class="locked-state" id="lockedState" style="display:none;">
+    <div class="emoji">🔒</div>
+    <h3 data-i18n="lockedTitle">กรุณาเข้าสู่ระบบก่อน</h3>
+    <p data-i18n="lockedDesc">เข้าสู่ระบบที่หน้าแรกเพื่อจัดการโปรไฟล์ของคุณ</p>
+    <a class="btn btn-primary" href="index.html" style="margin-top:10px; display:inline-block;" data-i18n="goHomeBtn">ไปหน้าแรก</a>
+  </div>
+
+  <!-- ===== แสดงเมื่อโหลดโปรไฟล์ไม่สำเร็จเพราะเน็ต/เซิร์ฟเวอร์สะดุด (ไม่ใช่ session หมดอายุจริง — ไม่ logout) ===== -->
+  <div class="locked-state" id="loadErrorState" style="display:none;">
+    <div class="emoji">⚠️</div>
+    <h3 data-i18n="loadErrorTitle">โหลดโปรไฟล์ไม่สำเร็จ</h3>
+    <p data-i18n="loadErrorDesc">อาจเป็นเพราะเน็ตหรือเซิร์ฟเวอร์สะดุดชั่วคราว ลองใหม่อีกครั้งได้เลย</p>
+    <button class="btn btn-primary" id="loadErrorRetryBtn" style="margin-top:10px;" data-i18n="dashRetryBtn">Try again</button>
+  </div>
+
+  <!-- ===== เนื้อหาโปรไฟล์ (แสดงเมื่อ login แล้ว) ===== -->
+  <div id="profileContent" style="display:none;">
+
+    <div class="profile-head">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div>
+        <div class="profile-name" id="profileName">—</div>
+        <div class="profile-sub" id="profileSub">—</div>
+        <a class="mytype-link" id="myTypeLink" href="#" data-i18n="myTypeLinkText">✨ My Type — ดูตัวตนของฉัน</a>
+      </div>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" data-tab="dashboard">My Dashboard</button>
+      <button class="tab-btn" data-tab="mytopics">My Company</button>
+      <button class="tab-btn" data-tab="mycomments">My Comment</button>
+      <button class="tab-btn" data-tab="editinfo">My Profile</button>
+      <button class="tab-btn" data-tab="planbilling">Plan & Billing</button>
+      <button class="tab-btn" data-tab="deleteaccount">Account Deletion</button>
+    </div>
+
+    <!-- ===== Tab: My Dashboard ===== -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-num" id="statTopics">0</div>
+          <div class="stat-label" data-i18n="statTopicsLabel">หัวข้อที่สร้างทั้งหมด</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="statVoters">0</div>
+          <div class="stat-label" data-i18n="statVotersLabel">คนร่วมโหวตทั้งหมด</div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h4 data-i18n="dashOverviewTitle">ภาพรวมคนที่มาร่วมโหวตหัวข้อของคุณ</h4>
+        <div id="dashboardBreakdown"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
+      </div>
+    </div>
+
+    <!-- ===== Tab: My Topics ===== -->
+    <div class="tab-panel" id="tab-mytopics">
+      <div class="sort-row">
+        <button class="btn btn-accent mt-create-btn" id="mtCreateBtn" data-i18n="createBtn">＋ สร้างหัวข้อ</button>
+        <div class="view-toggle" id="sortToggle">
+          <button data-sort="latest" class="active" data-i18n="sortLatest">ล่าสุด</button>
+          <button data-sort="popular" data-i18n="sortPopular">ยอดนิยม</button>
+        </div>
+      </div>
+      <div id="myTopicsList"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
+    </div>
+
+    <!-- ===== Tab: My Comment (ใหม่สำหรับ TOKBUD — แก้ไขคำตอบโหวต/คอมเมนต์ของตัวเองย้อนหลังได้ ผ่าน action 'vote'
+         เดิมซ้ำ ตรงกับ actionVote ฝั่ง backend ที่ update-in-place ถ้ามี user+company+side ซ้ำของเดิมอยู่แล้ว) ===== -->
+    <div class="tab-panel" id="tab-mycomments">
+      <div id="myCommentsList"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
+    </div>
+
+    <!-- ===== Tab: Edit info ===== -->
+    <div class="tab-panel" id="tab-editinfo">
+      <div class="form-card">
+        <h4 data-i18n="personalInfoTitle">ข้อมูลส่วนตัว</h4>
+        <div class="field-avatar-row">
+          <div class="edit-avatar" id="editAvatarPreview" onclick="document.getElementById('editAvatarFile').click()">＋</div>
+          <input type="file" accept="image/*" id="editAvatarFile" style="display:none;">
+        </div>
+        <div class="field"><label>Username</label><input type="text" id="editUsername"></div>
+        <div class="field"><label>Email</label><input type="email" id="editEmail"></div>
+        <div class="field">
+          <label><span data-i18n="birthdayLabel">วันเกิด</span> <span class="field-hint">(ค.ศ.)</span></label>
+          <div class="dob-row">
+            <select id="editBirthDay"><option value="" data-i18n="dayOpt">วัน</option></select>
+            <select id="editBirthMonth"><option value="" data-i18n="monthOpt">เดือน</option></select>
+            <select id="editBirthYear"><option value="" data-i18n="yearOpt">ปี</option></select>
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="genderLabel">เพศ</label>
+          <select id="editGender">
+            <option value="" data-i18n="genderChoose">เลือกเพศ</option>
+            <option value="ชาย" data-i18n="genderMale">ชาย</option>
+            <option value="หญิง" data-i18n="genderFemale">หญิง</option>
+            <option value="อื่นๆ" data-i18n="genderOther">อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label data-i18n="countryLabel">ประเทศ</label>
+          <select id="editCountry"></select>
+        </div>
+        <div class="field" id="editProvinceField">
+          <label data-i18n="provinceLabel">จังหวัด</label>
+          <select id="editProvince"><option value="" data-i18n="provinceChoose">เลือกจังหวัด</option></select>
+        </div>
+        <div class="field" id="editCityStateField" style="display:none;">
+          <label>City / State <span style="color:var(--danger);">*</span></label>
+          <input type="text" id="editCityState" maxlength="100" placeholder="e.g. Tokyo, New York, Osaka">
+        </div>
+
+        <hr class="section-divider">
+
+        <h4><span data-i18n="changePhoneTitle">เปลี่ยนหมายเลขโทรศัพท์</span> <span class="field-hint" data-i18n="optionalHint">(เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)</span></h4>
+        <div class="field">
+          <label data-i18n="newPhoneLabel">หมายเลขโทรศัพท์ใหม่</label>
+          <input type="tel" id="editPhone" maxlength="10" placeholder="0812345678">
+        </div>
+        <div class="field">
+          <label>Passcode</label>
+          <div class="passcode-wrap">
+            <input type="text" id="editPhonePasscode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="passcode-toggle" data-target="editPhonePasscode">👁️</button>
+          </div>
+        </div>
+        <p class="field-hint" style="margin:-6px 0 14px;" data-i18n="phonePasscodeNote">ไม่สามารถเปลี่ยนหมายเลขโทรศัพท์พร้อมกับ Passcode ในรอบเดียวกันได้ กรุณาเลือกเปลี่ยนอย่างใดอย่างหนึ่งต่อครั้ง</p>
+
+        <hr class="section-divider">
+
+        <h4><span data-i18n="changePasscodeTitle">เปลี่ยน Passcode</span> <span class="field-hint" data-i18n="optionalHint">(เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)</span></h4>
+        <div class="field">
+          <label data-i18n="oldPasscodeLabel">Passcode เดิม</label>
+          <div class="passcode-wrap">
+            <input type="text" id="editOldPasscode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="passcode-toggle" data-target="editOldPasscode">👁️</button>
+          </div>
+        </div>
+        <div class="field">
+          <label><span data-i18n="newPasscodeLabel">Passcode ใหม่</span> <span class="field-hint" data-i18n="passcodeHint">(อย่างน้อย 6 หลัก)</span></label>
+          <div class="passcode-wrap">
+            <input type="text" id="editNewPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="passcode-toggle" data-target="editNewPasscode">👁️</button>
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="confirmPasscodeLabel">ยืนยัน Passcode ใหม่</label>
+          <div class="passcode-wrap">
+            <input type="text" id="editNewPasscode2" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="passcode-toggle" data-target="editNewPasscode2">👁️</button>
+          </div>
+        </div>
+
+        <div class="field-error" id="editError"></div>
+        <button class="btn btn-primary full-btn" id="editSaveBtn" data-i18n="saveInfoBtn">บันทึกข้อมูล</button>
+      </div>
+    </div>
+
+    <!-- ===== Tab: Plan & Billing ===== -->
+    <div class="tab-panel" id="tab-planbilling">
+      <div id="chargeFailedBanner" class="charge-failed-banner" style="display:none;">
+        <p data-i18n="chargeFailedBannerText">การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีของคุณถูกปรับเป็น FREE plan แล้ว</p>
+        <button class="btn btn-primary" id="chargeFailedRetryBtn" data-i18n="chargeFailedRetryBtn">จ่ายเงินอีกครั้ง</button>
+      </div>
+
+      <div class="plan-status-card" id="planStatusCard">
+        <div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div>
+      </div>
+
+      <div class="dash-card">
+        <h4 data-i18n="billingHistoryTitle">ประวัติการตัดเงิน</h4>
+        <div id="billingHistoryList"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
+      </div>
+    </div>
+
+    <!-- ===== Tab: Delete account ===== -->
+    <div class="tab-panel" id="tab-deleteaccount">
+      <div class="danger-box">
+        <h4 data-i18n="closeAccountTitle">ปิดบัญชีถาวร</h4>
+        <p data-i18n="closeAccountDesc">
+          การลบบัญชีจะทำให้คุณเข้าสู่ระบบด้วยเบอร์นี้ไม่ได้อีก แต่หัวข้อและผลโหวตที่คุณเคยสร้างไว้จะยังคงอยู่ในระบบตามเดิม
+          เพื่อไม่ให้กระทบข้อมูลของคนอื่นที่เกี่ยวข้อง การกระทำนี้ไม่สามารถย้อนกลับได้
+        </p>
+        <div class="field">
+          <label data-i18n="confirmPasscodeToDeleteLabel">กรอก Passcode เพื่อยืนยัน</label>
+          <div class="passcode-wrap">
+            <input type="text" id="deletePasscode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="passcode-toggle" data-target="deletePasscode">👁️</button>
+          </div>
+        </div>
+        <div class="field-error" id="deleteError"></div>
+        <button class="btn btn-danger full-btn" id="deleteAccountBtn" data-i18n="confirmDeleteBtn">ยืนยันปิดบัญชี</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:26px;">
+      <button class="btn btn-ghost" id="logoutBtn" data-i18n="logoutBtn">ออกจากระบบ</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== Comment List Modal (อ่านความคิดเห็นแบบ public/anonymous แยกฝั่ง A/B, infinite scroll ทีละ 20) ===== -->
+<div class="modal-overlay" id="commentModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="commentModalTitle"></h3>
+      <button class="modal-close" data-close="commentModal">✕</button>
+    </div>
+    <div class="comment-list" id="commentList"></div>
+    <div id="commentSentinel"></div>
+  </div>
+</div>
+
+<!-- ===== Edit Comment Modal (My Comment tab — แก้ไขคำตอบโหวต/คอมเมนต์เดิมของตัวเอง ยิง action 'vote' ซ้ำ
+     เดิม (user+company+side ซ้ำ = update-in-place ฝั่ง backend ไม่สร้างแถวใหม่) ฟอร์มชุดคำถามเหมือน index.html
+     ทุกกระเบียดนิ้ว (ynu-row/score-btn) ก็อปมาเพื่อให้ design element ตรงกันทั้งเว็บ ===== -->
+<div class="modal-overlay" id="editCommentModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="ecModalTitle" data-i18n="ecModalTitle">แก้ไขคอมเมนต์</h3>
+      <button class="modal-close" data-close="editCommentModal">✕</button>
+    </div>
+    <div class="field">
+      <label id="ecMainReasonLabel"></label>
+      <textarea id="ecMainReasonInput" rows="3" maxlength="500"></textarea>
+    </div>
+    <div id="ecQuestionsWrap"></div>
+    <div class="field-error" id="ecError"></div>
+    <button class="btn btn-primary full-btn" id="ecSaveBtn" data-i18n="etSaveBtn">บันทึกการแก้ไข</button>
+  </div>
+</div>
+
+<!-- ===== Confirm/Info Popup (ใช้ร่วมกันทุกจุด: ลบบัญชี / เผยแพร่-ซ่อน / ลบหัวข้อ ฯลฯ แทน confirm() ของเบราว์เซอร์และ toast เล็กๆ) ===== -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="confirmModal" style="margin-left:auto;display:block;">✕</button>
+    <h3 id="confirmModalTitle" style="margin:0 0 10px;">ยืนยันการทำรายการ</h3>
+    <p id="confirmModalText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;"></p>
+    <div style="display:flex;gap:10px;" id="confirmModalActions"></div>
+  </div>
+</div>
+
+<!-- ===== Delete Company Request Modal (TOKBUD: ลบบริษัทต้องส่งคำขอ+ระบุเหตุผล ให้ทีมงานตรวจสอบก่อน — ไม่ใช่
+     การลบทันทีแบบ WEZIDE เดิม ตรงกับ actionRequestDeleteCompany ฝั่ง backend ที่บันทึกลง DELETEREQUESTS แทนการลบจริง) ===== -->
+<div class="modal-overlay" id="deleteCompanyModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="dcTitle">ขอลบบริษัท</h3>
+      <button class="modal-close" data-close="deleteCompanyModal">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin:-6px 0 18px;line-height:1.6;" data-i18n="dcDesc">
+      คำขอของคุณจะถูกส่งให้ทีมงานตรวจสอบก่อนดำเนินการลบจริง คอมเมนต์และข้อมูลทั้งหมดจะยังอยู่ครบจนกว่าจะได้รับการอนุมัติ
+    </p>
+
+    <div class="field">
+      <label data-i18n="dcReasonLabel">เหตุผลในการขอลบ</label>
+      <div class="reason-radio-list" id="dcReasonList">
+        <label class="reason-row"><input type="radio" name="dcReason" value="duplicate"><span data-i18n="dcReasonDuplicate">สร้างซ้ำกับบริษัทที่มีอยู่แล้ว</span></label>
+        <label class="reason-row"><input type="radio" name="dcReason" value="no_longer_want_listed"><span data-i18n="dcReasonNoLongerWant">ไม่ต้องการให้แสดงในระบบแล้ว</span></label>
+        <label class="reason-row"><input type="radio" name="dcReason" value="testing_only"><span data-i18n="dcReasonTesting">สร้างไว้ทดสอบระบบเฉยๆ</span></label>
+        <label class="reason-row"><input type="radio" name="dcReason" value="other"><span data-i18n="dcReasonOther">อื่นๆ</span></label>
+      </div>
+    </div>
+
+    <div class="field" id="dcReasonTextField" style="display:none;">
+      <label data-i18n="dcReasonTextLabel">ระบุรายละเอียดเพิ่มเติม</label>
+      <textarea id="dcReasonText" rows="3" maxlength="500"></textarea>
+    </div>
+
+    <div class="field">
+      <label data-i18n="confirmPasscodeToDeleteLabel">กรอก Passcode เพื่อยืนยัน</label>
+      <div class="passcode-wrap">
+        <input type="text" id="dcPasscode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="dcPasscode">👁️</button>
+      </div>
+    </div>
+
+    <div class="field-error" id="dcError"></div>
+    <button class="btn btn-danger full-btn" id="dcSubmitBtn" data-i18n="dcSubmitBtn">ส่งคำขอลบ</button>
+  </div>
+</div>
+
+<!-- ===== Edit Company Modal (TOKBUD: แก้ได้แค่ชื่อ+โลโก้ ตาม actionEditCompany ฝั่ง backend — ต่างจาก
+     WEZIDE เดิมที่แก้ได้ทั้งฟอร์ม เพราะ field อื่นทั้งหมด (category/tags/card_color/description) ล็อกไว้ตั้งแต่ตอนสร้าง) ===== -->
+<div class="modal-overlay" id="editTopicModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="editCompanyTitle">แก้ไขบริษัท</h3>
+      <button class="modal-close" data-close="editTopicModal">✕</button>
+    </div>
+
+    <div class="field">
+      <label data-i18n="etLogoLabel">โลโก้บริษัท (สัดส่วน 9:16)</label>
+      <div class="cover-upload" id="etCoverPreview" onclick="document.getElementById('etCoverFile').click()" data-i18n="etLogoUploadPh">
+        ＋ แตะเพื่อแนบโลโก้บริษัท
+      </div>
+      <input type="file" accept="image/*" id="etCoverFile" style="display:none;">
+    </div>
+
+    <div class="field"><label data-i18n="etNameLabel">ชื่อบริษัท</label><input type="text" id="etTitle" placeholder="เช่น Lineman Company Limited"></div>
+
+    <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 14px;line-height:1.6;" data-i18n="etNote">
+      หมายเหตุ: การแก้ไขแล้วบันทึก บริษัทจะยังคงสถานะเดิม (เผยแพร่/ซ่อน) และคอมเมนต์เดิมทั้งหมดจะยังอยู่ครบ ไม่ถูกล้าง
+    </p>
+
+    <div class="field-error" id="etError"></div>
+    <button class="btn btn-primary full-btn" id="etSaveBtn" data-i18n="etSaveBtn">บันทึกการแก้ไข</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbwH_KorLbUReFtJ0q3uxLBcc802Crm451rlc31PlOeBZCL2oL9bUu-Jlb3bJnMBQnlbgw/exec'
+  // [PRO PLAN] ไม่ต้องมี public key ฝั่ง frontend อีกต่อไป — ใช้ Stripe Checkout (pre-built hosted page)
+  // Session ถูกสร้างจากฝั่ง backend (Apps Script) ล้วนๆ แล้วส่ง URL กลับมาให้ redirect ไปเลย ไม่มีการเรียก
+  // Stripe.js ที่ฝั่งนี้เลย บัตรของ user จึงไม่ผ่านหน้าเว็บของเราแม้แต่วินาทีเดียว (Stripe เก็บให้ทั้งหมด)
+};
+
+/* ================= I18N (TH ⇄ EN toggle สำหรับข้อความระบบ/static UI) =================
+   Object แยกต่างหากจาก index.html/history.html ตาม pattern เดิมของระบบ (CSS/state ไม่ share ข้ามไฟล์)
+   ใช้ localStorage key เดียวกัน ('wz_lang') เพื่อ sync ภาษาข้ามหน้าได้ */
+const LANG_KEY = 'wz_lang';
+const I18N = {
+  th: {
+    backHome: '← กลับหน้าแรก', lockedTitle: 'กรุณาเข้าสู่ระบบก่อน',
+    lockedDesc: 'เข้าสู่ระบบที่หน้าแรกเพื่อจัดการโปรไฟล์ของคุณ', goHomeBtn: 'ไปหน้าแรก',
+    loadErrorTitle: 'โหลดโปรไฟล์ไม่สำเร็จ', loadErrorDesc: 'อาจเป็นเพราะเน็ตหรือเซิร์ฟเวอร์สะดุดชั่วคราว ลองใหม่อีกครั้งได้เลย',
+    statTopicsLabel: 'หัวข้อที่สร้างทั้งหมด', statVotersLabel: 'คนร่วมโหวตทั้งหมด',
+    dashOverviewTitle: 'ภาพรวมคนที่มาร่วมโหวตหัวข้อของคุณ', loadingText: 'กำลังโหลด...',
+    myTypeLinkText: '✨ My Type — ดูตัวตนของฉัน',
+    createBtn: '＋ สร้างบริษัท', sortLatest: 'ล่าสุด', sortPopular: 'ยอดนิยม',
+    personalInfoTitle: 'ข้อมูลส่วนตัว', birthdayLabel: 'วันเกิด',
+    dayOpt: 'วัน', monthOpt: 'เดือน', yearOpt: 'ปี', genderLabel: 'เพศ',
+    genderChoose: 'เลือกเพศ', genderMale: 'ชาย', genderFemale: 'หญิง', genderOther: 'อื่นๆ',
+    provinceLabel: 'จังหวัด', provinceChoose: 'เลือกจังหวัด', countryLabel: 'ประเทศ',
+    changePhoneTitle: 'เปลี่ยนหมายเลขโทรศัพท์', optionalHint: '(เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)',
+    newPhoneLabel: 'หมายเลขโทรศัพท์ใหม่',
+    phonePasscodeNote: 'ไม่สามารถเปลี่ยนหมายเลขโทรศัพท์พร้อมกับ Passcode ในรอบเดียวกันได้ กรุณาเลือกเปลี่ยนอย่างใดอย่างหนึ่งต่อครั้ง',
+    changePasscodeTitle: 'เปลี่ยน Passcode', oldPasscodeLabel: 'Passcode เดิม',
+    newPasscodeLabel: 'Passcode ใหม่', passcodeHint: '(อย่างน้อย 6 หลัก)',
+    confirmPasscodeLabel: 'ยืนยัน Passcode ใหม่', saveInfoBtn: 'บันทึกข้อมูล',
+    closeAccountTitle: 'ปิดบัญชีถาวร',
+    closeAccountDesc: 'การลบบัญชีจะทำให้คุณเข้าสู่ระบบด้วยเบอร์นี้ไม่ได้อีก แต่หัวข้อและผลโหวตที่คุณเคยสร้างไว้จะยังคงอยู่ในระบบตามเดิม เพื่อไม่ให้กระทบข้อมูลของคนอื่นที่เกี่ยวข้อง การกระทำนี้ไม่สามารถย้อนกลับได้',
+    confirmPasscodeToDeleteLabel: 'กรอก Passcode เพื่อยืนยัน', confirmDeleteBtn: 'ยืนยันปิดบัญชี',
+    logoutBtn: 'ออกจากระบบ',
+    deleteAccountConfirmTitle: 'ยืนยันปิดบัญชีถาวร', deleteAccountConfirmLabel: 'ยืนยันปิดบัญชี',
+    deleteAccountLoading: 'กำลังปิดบัญชี...', deleteAccountToast: 'ปิดบัญชีเรียบร้อยแล้ว',
+    logoutToast: 'ออกจากระบบแล้ว',
+    dashGenderTitle: 'เพศ', dashAgeGroupTitle: 'ช่วงอายุ',
+    commentEmptyMsg: 'ยังไม่มีความคิดเห็นในฝั่งนี้',
+    commentLoadingText: 'กำลังโหลดความคิดเห็น...',
+    chargeFailedBannerText: 'การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีของคุณถูกปรับเป็น FREE plan แล้ว',
+    chargeFailedRetryBtn: 'จ่ายเงินอีกครั้ง',
+    chargeFailedToast: 'การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีถูกปรับเป็น FREE แล้ว — ไปที่แท็บ Plan & Billing เพื่อจ่ายเงินอีกครั้ง',
+    billingHistoryTitle: 'ประวัติการตัดเงิน',
+    billingHistoryEmpty: 'ยังไม่มีประวัติการตัดเงิน',
+    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อใช้งานฟีเจอร์ที่มากกว่า ให้คุณสามารถ export data จากลูกค้าที่ร่วมมอบคำตอบให้คุณ',
+    planPitchDesc: 'เพียง 199 บาท/เดือน (นับ 30 วัน) สำหรับข้อมูลอันมีค่าต่อสินค้า, บริการ และเรื่องที่คุณกำลังสนใจ เพื่อช่วยให้เข้าใจตามต้องการลูกค้าของคุณมากยิ่งขึ้น (ยกเลิกได้ตลอดเวลา ถ้าคุณต้องการ)',
+    planPriceUsdHint: '(~$5.5 USD — ป้ายอ้างอิงเท่านั้น ไม่ใช่ค่าที่ตัดจริง)',
+    upgradeToProBtn: 'อัปเกรดเป็น PRO — 199 บาท/เดือน',
+    currentPlanLabel: 'แผนที่คุณใช้งานอยู่ตอนนี้',
+    proActiveLabel: 'PRO', freeLabel: 'FREE',
+    proUntilActiveText: 'ต่ออายุอัตโนมัติรอบถัดไปวันที่ {date}',
+    proUntilCanceledText: 'ยกเลิกแล้ว ใช้สิทธิ์ PRO ต่อได้ถึงวันที่ {date}',
+    cancelProBtn: 'ยกเลิกการสมัครสมาชิก',
+    cancelProConfirmTitle: 'ยืนยันการยกเลิก',
+    cancelProConfirmMsg: 'แน่ใจนะว่าจะยกเลิก? คุณจะยังใช้ PRO ได้ถึงวันที่ {date} หลังจากนั้นจะกลับเป็น FREE plan อัตโนมัติ',
+    cancelProConfirmBtn: 'ยืนยันยกเลิก',
+    cancelProConfirmDismissBtn: 'ใช้ PRO ต่อ',
+    upgradeSuccessToast: 'อัพเกรดเป็น PRO สำเร็จ!',
+    cancelSuccessToast: 'ยกเลิกการสมัครสมาชิกแล้ว',
+    checkoutCanceledToast: 'ยกเลิกการชำระเงินแล้ว ยังไม่มีการตัดเงินใดๆ',
+    pcPayLoading: 'กำลังไปหน้าชำระเงิน...',
+    exportGateMsg: 'ฟีเจอร์นี้ใช้ได้เฉพาะแพลน PRO เท่านั้น อัปเกรดเป็น PRO เพื่อปลดล็อกการใช้งาน',
+    exportGateUpgradeBtn: 'อัปเกรด', exportBtn: 'Export', exportLoading: 'กำลัง export...',
+    exportSuccessToast: 'Export สำเร็จ',
+    billingStatusSuccess: 'สำเร็จ', billingStatusFailed: 'ไม่สำเร็จ',
+    editCompanyTitle: 'แก้ไขบริษัท', etLogoLabel: 'โลโก้บริษัท (สัดส่วน 9:16)',
+    etLogoUploadPh: '＋ แตะเพื่อแนบโลโก้บริษัท', etNameLabel: 'ชื่อบริษัท',
+    etNote: 'หมายเหตุ: การแก้ไขแล้วบันทึก บริษัทจะยังคงสถานะเดิม (เผยแพร่/ซ่อน) และคอมเมนต์เดิมทั้งหมดจะยังอยู่ครบ ไม่ถูกล้าง',
+    etSaveBtn: 'บันทึกการแก้ไข', errCompanyNameRequired: 'กรุณากรอกชื่อบริษัท',
+    uploadFailToast: 'อัพโหลดรูปไม่สำเร็จ', savingText: 'กำลังบันทึก...',
+    dcTitle: 'ขอลบบริษัท', dcDesc: 'คำขอของคุณจะถูกส่งให้ทีมงานตรวจสอบก่อนดำเนินการลบจริง คอมเมนต์และข้อมูลทั้งหมดจะยังอยู่ครบจนกว่าจะได้รับการอนุมัติ',
+    dcReasonLabel: 'เหตุผลในการขอลบ', dcReasonDuplicate: 'สร้างซ้ำกับบริษัทที่มีอยู่แล้ว',
+    dcReasonNoLongerWant: 'ไม่ต้องการให้แสดงในระบบแล้ว', dcReasonTesting: 'สร้างไว้ทดสอบระบบเฉยๆ', dcReasonOther: 'อื่นๆ',
+    dcReasonTextLabel: 'ระบุรายละเอียดเพิ่มเติม', dcSubmitBtn: 'ส่งคำขอลบ',
+    dcErrReasonRequired: 'กรุณาเลือกเหตุผล', dcErrReasonTextRequired: 'กรุณาระบุรายละเอียดเพิ่มเติม',
+    dcErrPasscodeRequired: 'กรุณากรอก Passcode เพื่อยืนยัน',
+    joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
+    ecModalTitle: 'แก้ไขคอมเมนต์',
+    joinMainReasonLabel: 'ปัจจัยที่คุณสมัคร/ร่วมงานกับบริษัทนี้คืออะไร?',
+    leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?',
+    requiredMark: '*', yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
+    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการดี', qBrandReputation: 'ชื่อเสียงบริษัท/แบรนด์',
+    qGrowthOpportunity: 'โอกาสเติบโต/เรียนรู้', qChallengingWork: 'งานท้าทาย/ได้ใช้ทักษะ',
+    qCultureTeam: 'วัฒนธรรมองค์กรดี/ทีมดี', qLocationFlexibility: 'Location/remote flexibility',
+    confidenceScoreLabel: 'ตอนนี้คุณยังคิดว่าตัดสินใจถูกไหม?', confidenceScoreHint: '(1=กำลังหางานใหม่ ... 5=ฉันรักที่นี่มาก)',
+    qSalaryMismatch: 'เงินเดือน/สวัสดิการไม่ตรงคาดหวัง', qNoGrowth: 'ไม่มีโอกาสเติบโต',
+    qCultureMismatch: 'วัฒนธรรมองค์กรไม่เหมาะกับฉัน', qManagerMismatch: 'หัวหน้างานไม่เหมาะกับฉัน',
+    qTeamMismatch: 'ทีมงาน/เพื่อนร่วมงานไม่เหมาะกับฉัน', qWorklifeMismatch: 'Work-life balance ไม่เหมาะกับฉัน',
+    qBetterOffer: 'ได้รับ offer ที่ดีกว่าจากที่อื่น', qNotChallenging: 'งานไม่ท้าทาย/ไม่ตรงสาย',
+    leaveImprovementLabel: 'ถ้าปรับปรุงสิ่งนี้ คุณอาจจะอยู่ต่อ?', leaveImprovementPh: 'พิมพ์คำตอบของคุณ... (ไม่บังคับ)',
+    errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก', understandBtn: 'เข้าใจแล้ว', okBtn: 'ตกลง'
+  },
+  en: {
+    backHome: '← Back to Home', lockedTitle: 'Please log in first',
+    lockedDesc: 'Log in on the home page to manage your profile.', goHomeBtn: 'Go to Home',
+    loadErrorTitle: 'Couldn\'t load profile', loadErrorDesc: 'This may be a temporary network or server hiccup. Please try again.',
+    statTopicsLabel: 'Topics Created', statVotersLabel: 'Total Voters',
+    dashOverviewTitle: 'Overview of people voting on your topics', loadingText: 'Loading...',
+    myTypeLinkText: '✨ My Type — See who I am',
+    createBtn: '＋ Create Company', sortLatest: 'Latest', sortPopular: 'Popular',
+    personalInfoTitle: 'Personal Info', birthdayLabel: 'Birthday',
+    dayOpt: 'Day', monthOpt: 'Month', yearOpt: 'Year', genderLabel: 'Gender',
+    genderChoose: 'Select Gender', genderMale: 'Male', genderFemale: 'Female', genderOther: 'Other',
+    provinceLabel: 'Province', provinceChoose: 'Select Province', countryLabel: 'Country',
+    changePhoneTitle: 'Change Phone Number', optionalHint: '(leave blank if you don\'t want to change it)',
+    newPhoneLabel: 'New Phone Number',
+    phonePasscodeNote: 'You can\'t change your phone number and Passcode at the same time. Please choose one to change per submission.',
+    changePasscodeTitle: 'Change Passcode', oldPasscodeLabel: 'Current Passcode',
+    newPasscodeLabel: 'New Passcode', passcodeHint: '(at least 6 digits)',
+    confirmPasscodeLabel: 'Confirm New Passcode', saveInfoBtn: 'Save Info',
+    closeAccountTitle: 'Permanently Close Account',
+    closeAccountDesc: 'Deleting your account means you won\'t be able to log in with this phone number again. Topics and votes you\'ve created will remain in the system so other users\' data isn\'t affected. This action cannot be undone.',
+    confirmPasscodeToDeleteLabel: 'Enter Passcode to confirm', confirmDeleteBtn: 'Close Account',
+    logoutBtn: 'Log Out',
+    deleteAccountConfirmTitle: 'Confirm permanent account closure', deleteAccountConfirmLabel: 'Close Account',
+    deleteAccountLoading: 'Closing account...', deleteAccountToast: 'Account closed.',
+    logoutToast: 'Logged out.',
+    dashGenderTitle: 'Gender', dashAgeGroupTitle: 'Age',
+    commentEmptyMsg: 'No comments on this side yet',
+    commentLoadingText: 'Loading comments...',
+    chargeFailedBannerText: 'Your last payment failed. Your account has been switched to the FREE plan.',
+    chargeFailedRetryBtn: 'Pay again',
+    chargeFailedToast: 'Your last payment failed and your account is now on the FREE plan — go to Plan & Billing to pay again.',
+    billingHistoryTitle: 'Billing History',
+    billingHistoryEmpty: 'No billing history yet',
+    planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who took part in your topics.',
+    planPitchDesc: 'Just 199 THB/month (30 days) for valuable insight into your products, services, and topics of interest — so you can better understand your audience. Cancel anytime.',
+    planPriceUsdHint: '(~$5.5 USD — reference only, not the actual charged amount)',
+    upgradeToProBtn: 'Upgrade to PRO — 199 THB/month',
+    currentPlanLabel: 'Your current plan',
+    proActiveLabel: 'PRO', freeLabel: 'FREE',
+    proUntilActiveText: 'Auto-renews on {date}',
+    proUntilCanceledText: 'Canceled — you can keep using PRO until {date}',
+    cancelProBtn: 'Cancel Subscription',
+    cancelProConfirmTitle: 'Confirm Cancellation',
+    cancelProConfirmMsg: 'Are you sure you want to cancel? You can keep using PRO until {date}, after which your account will automatically switch to the FREE plan.',
+    cancelProConfirmBtn: 'Confirm Cancel',
+    cancelProConfirmDismissBtn: 'Keep Subscription',
+    upgradeSuccessToast: 'Successfully upgraded to PRO!',
+    cancelSuccessToast: 'Subscription canceled.',
+    checkoutCanceledToast: 'Checkout canceled. You have not been charged.',
+    pcPayLoading: 'Redirecting to checkout...',
+    exportGateMsg: 'This feature is available on PRO. Upgrade to PRO to unlock it.',
+    exportGateUpgradeBtn: 'Upgrade', exportBtn: 'Export', exportLoading: 'Exporting...',
+    exportSuccessToast: 'Export successful',
+    billingStatusSuccess: 'Success', billingStatusFailed: 'Failed',
+    editCompanyTitle: 'Edit Company', etLogoLabel: 'Company logo (9:16 ratio)',
+    etLogoUploadPh: '＋ Tap to attach company logo', etNameLabel: 'Company name',
+    etNote: 'Note: saving your edit keeps the company\'s current status (published/hidden) and all existing comments stay intact.',
+    etSaveBtn: 'Save Changes', errCompanyNameRequired: 'Please enter a company name',
+    uploadFailToast: 'Upload failed', savingText: 'Saving...',
+    dcTitle: 'Request Company Deletion', dcDesc: 'Your request will be sent to our team for review before the company is actually deleted. All comments and data stay intact until the request is approved.',
+    dcReasonLabel: 'Reason for deletion', dcReasonDuplicate: 'Duplicate of an existing company',
+    dcReasonNoLongerWant: 'No longer want it listed', dcReasonTesting: 'Just testing, not a real company', dcReasonOther: 'Other',
+    dcReasonTextLabel: 'Please provide more detail', dcSubmitBtn: 'Submit Delete Request',
+    dcErrReasonRequired: 'Please select a reason', dcErrReasonTextRequired: 'Please provide more detail',
+    dcErrPasscodeRequired: 'Please enter your passcode to confirm',
+    joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
+    ecModalTitle: 'Edit Comment',
+    joinMainReasonLabel: 'What made you apply to / join this company?',
+    leaveMainReasonLabel: 'What was the main reason you decided to leave?',
+    requiredMark: '*', yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
+    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits', qBrandReputation: 'Company/brand reputation',
+    qGrowthOpportunity: 'Growth/learning opportunity', qChallengingWork: 'Challenging work / uses my skills',
+    qCultureTeam: 'Good culture / good team', qLocationFlexibility: 'Location/remote flexibility',
+    confidenceScoreLabel: 'Do you still think it was the right choice?', confidenceScoreHint: '(1=job hunting now ... 5=absolutely yes!)',
+    qSalaryMismatch: 'Salary/benefits didn\'t meet expectations', qNoGrowth: 'No growth opportunity',
+    qCultureMismatch: 'Culture didn\'t fit me', qManagerMismatch: 'Manager didn\'t fit me',
+    qTeamMismatch: 'Team/colleagues didn\'t fit me', qWorklifeMismatch: 'Work-life balance didn\'t fit me',
+    qBetterOffer: 'Got a better offer elsewhere', qNotChallenging: 'Work wasn\'t challenging / not my field',
+    leaveImprovementLabel: 'What could have made you stay?', leaveImprovementPh: 'Type your answer... (optional)',
+    errMainReasonRequired: 'Please fill in this field before saving', understandBtn: 'Got it', okBtn: 'OK'
+  }
+};
+function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
+function t(key){ const lang = getLang(); return (I18N[lang] && I18N[lang][key] !== undefined) ? I18N[lang][key] : (I18N.th[key] || ''); }
+// backend ส่งข้อความบางจุดมาเป็น "ไทย / English" คู่กัน (pattern เดียวกับ index.html) — เลือกฝั่งที่ตรงกับ
+// ภาษาปัจจุบันของ user ให้ ถ้าไม่มี " / " ก็ส่งข้อความเดิมกลับไปเฉยๆ (กันเคส message เก่าที่ยังไม่ bilingual)
+function pickLang(msg){
+  if(!msg || msg.indexOf(' / ') === -1) return msg;
+  const [th, en] = msg.split(' / ');
+  return getLang() === 'en' ? (en || msg) : th;
+}
+// alias ของ t() ไว้ใช้ในจุดที่มีตัวแปร local ชื่อ t ทับอยู่แล้ว (เช่น renderMyTopics: sorted.map(t=>...))
+// กันเรียก t('key') แล้วดันไปชนกับ topic object แทนฟังก์ชันแปลภาษา (pattern เดียวกับ index.html/history.html)
+const t18n = t;
+function applyLang(lang){
+  const dict = I18N[lang] || I18N.th;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(dict[key] !== undefined) el.innerHTML = dict[key];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    const key = el.getAttribute('data-i18n-ph');
+    if(dict[key] !== undefined) el.placeholder = dict[key];
+  });
+  document.querySelectorAll('.lang-toggle button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+  document.documentElement.lang = lang;
+}
+function setLang(lang){
+  localStorage.setItem(LANG_KEY, lang);
+  applyLang(lang);
+  // label ในบล็อก "เพศ/ช่วงอายุ" ของ My Dashboard เป็น dynamic HTML generate ผ่าน t() ตอน render
+  // ไม่ผ่าน [data-i18n] loop ของ applyLang() จึงต้องโหลด dashboard ใหม่ทุกครั้งที่สลับภาษา
+  if(isLoggedIn()) loadDashboard();
+  // เช่นเดียวกัน: การ์ดสถานะแพลนและประวัติการตัดเงินเป็น dynamic HTML ผ่าน t() — re-render จาก cache
+  // (ไม่ยิง API ซ้ำ เพราะข้อมูลไม่ได้เปลี่ยน แค่ภาษาที่แสดงเปลี่ยน)
+  if(isLoggedIn() && STATE.profile){
+    renderPlanStatusCard();
+    renderChargeFailedBanner();
+    renderBillingHistory(STATE.billingHistory || []);
+  }
+}
+document.querySelectorAll('.lang-toggle button').forEach(b=>{
+  b.addEventListener('click', ()=> setLang(b.dataset.lang));
+});
+applyLang(getLang());
+
+const PROVINCES = ['กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
+
+// ประเทศ: โชว์เป็นภาษาอังกฤษล้วนทั้ง UI โหมด TH/EN (ไม่แปล) เรียง A-Z — ตาม decision ของ Pop
+const COUNTRIES = ['Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo (Brazzaville)','Congo (Kinshasa)','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Djibouti','Dominica','Dominican Republic','Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras','Hong Kong','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kosovo','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Macau','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway','Oman','Pakistan','Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu','Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe'];
+
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+let STATE = {
+  session: JSON.parse(localStorage.getItem('wz_session') || 'null'),
+  profile: null,
+  myTopics: [],
+  myComments: [],
+  billingHistory: [],
+  sortMode: 'latest',
+  editAvatarUrl: ''
+};
+
+/* ---------- API helper ---------- 
+ * timeout ลดเหลือ 15 วิ/ครั้ง (รวม retry แล้ว worst-case 30 วิ) + retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง
+ * error จริง — Apps Script cold start ช้าเป็นพักๆ เป็นเรื่องปกติ แต่ปล่อยให้รอนานเกิน 30 วิ/คำขอจะยิ่งแย่กว่าเดิม */
+async function api(action, params = {}, method = 'GET', _isRetry = false){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  try{
+    let res;
+    if(method === 'GET'){
+      const qs = new URLSearchParams({action, ...params}).toString();
+      res = await fetch(`${CONFIG.API_URL}?${qs}`, { signal: controller.signal });
+    } else {
+      res = await fetch(CONFIG.API_URL, {
+        method: 'POST',
+        body: JSON.stringify({action, ...params}),
+        signal: controller.signal
+      });
+    }
+    return await res.json();
+  }catch(err){
+    if(!_isRetry) return api(action, params, method, true); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
+    // _networkError:true แยกไว้ให้ต่างจาก success:false ปกติที่ backend ตอบกลับมาจริงว่า "ไม่ผ่าน"
+    // (เช่น session หมดอายุจริง) เพราะ 2 เคสนี้ต้องจัดการต่างกัน — request ที่ยิงไม่สำเร็จเลย ไม่ควรถูกตีความ
+    // ว่า "session ไม่ถูกต้อง" แล้วบังคับ logout ทั้งที่จริงๆ แค่เน็ต/เซิร์ฟเวอร์สะดุดชั่วคราว
+    return { success:false, message:'Oops! Something went wrong. Please try refreshing and try again.', _networkError:true };
+  }finally{
+    clearTimeout(timeoutId);
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+function setBtnLoading(btn, loading, loadingLabel){
+  if(loading){
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span>${loadingLabel === undefined ? 'กำลังดำเนินการ...' : loadingLabel}`;
+  } else {
+    btn.disabled = false;
+    if(btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+  }
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+function isLoggedIn(){ return !!(STATE.session && STATE.session.session_token); }
+
+function logout(){
+  STATE.session = null;
+  localStorage.removeItem('wz_session');
+}
+
+/* ---------- Modal helpers (เหมือน index.html) ---------- */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
+});
+// modal ที่เป็นฟอร์มยาว กรอกข้อมูลเยอะ ต้องกันพลาด: ปิดได้เฉพาะกดปุ่ม (x) เท่านั้น ห้ามปิดด้วยการแตะนอกกรอบ (เหมือนกับ createModal ใน index.html)
+const STRICT_CLOSE_MODALS = ['editTopicModal'];
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  if(STRICT_CLOSE_MODALS.includes(ov.id)) return;
+  ov.addEventListener('click', (e)=>{ if(e.target === ov) ov.classList.remove('open'); });
+});
+
+/* ---------- Confirm/Info popup (แทน confirm() ของเบราว์เซอร์ + toast เล็กๆ ทุกจุดที่เกี่ยวกับหัวข้อ/บัญชี) ---------- */
+function showInfoPopup(message, btnLabel, title){
+  document.getElementById('confirmModalTitle').textContent = title || 'แจ้งให้ทราบ';
+  document.getElementById('confirmModalText').textContent = message;
+  document.getElementById('confirmModalActions').innerHTML =
+    `<button class="btn btn-primary full-btn" id="confirmModalOkBtn">${btnLabel || 'ตกลง'}</button>`;
+  document.getElementById('confirmModalOkBtn').addEventListener('click', ()=> closeModal('confirmModal'));
+  openModal('confirmModal');
+}
+
+// title/message/onConfirm ต้องระบุ, confirmLabel/cancelLabel/danger ไม่บังคับ
+function showConfirmPopup({ title, message, confirmLabel, cancelLabel, danger, onConfirm }){
+  document.getElementById('confirmModalTitle').textContent = title || 'ยืนยันการทำรายการ';
+  document.getElementById('confirmModalText').textContent = message || '';
+  document.getElementById('confirmModalActions').innerHTML = `
+    <button class="btn btn-ghost full-btn" id="confirmModalCancelBtn">${cancelLabel || 'ยกเลิก'}</button>
+    <button class="btn ${danger ? 'btn-danger' : 'btn-primary'} full-btn" id="confirmModalConfirmBtn">${confirmLabel || 'ยืนยัน'}</button>
+  `;
+  document.getElementById('confirmModalCancelBtn').addEventListener('click', ()=> closeModal('confirmModal'));
+  document.getElementById('confirmModalConfirmBtn').addEventListener('click', onConfirm);
+  openModal('confirmModal');
+}
+
+/* ================= Comment Modal (public, anonymous, อ่านความคิดเห็นแยกฝั่ง A/B) =================
+ * เหมือน index.html/history.html ทุกอย่าง (โหลดทีละ 20 รายการ, IntersectionObserver infinite scroll,
+ * ปุ่มกดได้เสมอแม้ N=0) — ใช้จากแท็บ My Topics เพื่อให้เจ้าของหัวข้อดูคอมเมนต์ที่ได้รับ แยก A/B */
+let CM_STATE = { topicId:null, side:null, page:0, totalPages:1, loading:false, observer:null };
+
+function formatCommentTime(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  if(isNaN(d)) return '';
+  return d.toLocaleString(getLang()==='en' ? 'en-US' : 'th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function openCommentModal(topicId, side, sideLabel){
+  if(CM_STATE.observer) CM_STATE.observer.disconnect();
+  CM_STATE = { topicId, side, page:0, totalPages:1, loading:false, observer:null };
+  document.getElementById('commentModalTitle').textContent = sideLabel;
+  document.getElementById('commentList').innerHTML = `<div class="comment-loading">${t18n('commentLoadingText')}</div>`;
+  openModal('commentModal');
+  loadMoreComments(true);
+}
+
+async function loadMoreComments(isFirst){
+  if(CM_STATE.loading) return;
+  if(!isFirst && CM_STATE.page >= CM_STATE.totalPages) return;
+  CM_STATE.loading = true;
+
+  const res = await api('getComments', {
+    company_id: CM_STATE.topicId, side: CM_STATE.side, page: CM_STATE.page + 1, page_size: 20
+  });
+
+  CM_STATE.loading = false;
+  if(!res.success){
+    if(isFirst) document.getElementById('commentList').innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
+    return;
+  }
+
+  CM_STATE.page = res.page;
+  CM_STATE.totalPages = res.total_pages;
+
+  const listEl = document.getElementById('commentList');
+  if(isFirst) listEl.innerHTML = '';
+
+  if(res.comments.length === 0 && isFirst){
+    listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
+  } else {
+    listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
+      <div class="comment-item">${escapeHtml(c.comment)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
+    `).join(''));
+  }
+
+  setupCommentObserver();
+}
+
+function setupCommentObserver(){
+  if(CM_STATE.observer) CM_STATE.observer.disconnect();
+  if(CM_STATE.page >= CM_STATE.totalPages) return;
+  const sentinel = document.getElementById('commentSentinel');
+  CM_STATE.observer = new IntersectionObserver((entries)=>{
+    if(entries[0].isIntersecting) loadMoreComments(false);
+  }, { root: document.querySelector('#commentModal .modal-box'), threshold: 0.1 });
+  CM_STATE.observer.observe(sentinel);
+}
+
+/* ---------- Passcode show/hide toggle ---------- */
+document.querySelectorAll('.passcode-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.target);
+    const nowVisible = input.classList.toggle('pc-visible');
+    btn.textContent = nowVisible ? '🙈' : '👁️';
+  });
+});
+
+/* ---------- Image upload (เหมือน index.html) ---------- */
+function compressImage(file, maxSize = 1600, quality = 0.8){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > maxSize || height > maxSize){
+          if(width > height){ height = Math.round(height * maxSize / width); width = maxSize; }
+          else { width = Math.round(width * maxSize / height); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImageFile(file){
+  const base64 = await compressImage(file);
+  const res = await api('uploadImage', {
+    file_data: base64,
+    mime_type: 'image/jpeg',
+    file_name: file.name
+  }, 'POST');
+  if(!res.success) throw new Error(res.message);
+  return res.image_url;
+}
+
+// P1-fix (รูปโปรไฟล์ไม่มา ค้างแล้วกลายเป็นตัวอักษร W): เดิมรอ 4 รอบๆ ละ 1.5 วิ (~4.5 วิ) ก่อนค่อยยอมแพ้ ทำให้
+// ทุกจุดที่ใช้ฟังก์ชันนี้ (avatar, preview ตอนอัพโหลดรูป) ค้างนานเกินจำเป็น -> ลดเหลือ 2 รอบๆ ละ 800ms (worst-case
+// ~0.8 วิ ก่อนเรียก onFail แทนที่จะเป็น ~4.5 วิ) ยัง"คง semantics เดิมไว้ทั้งหมด (onFail = ลองครบทุกรอบแล้วจริงๆ
+// ไม่สำเร็จ) เพราะ caller บางจุด (ตอนอัพโหลดรูป) ใช้ onFail เป็นสัญญาณ error จริงที่ต้องฟ้อง toast ให้ user รู้
+// เรียกก่อนเวลาไม่ได้ — จุดที่ใช้แค่แสดงผล avatar เฉยๆ (renderProfileHead) ให้ผู้เรียกโชว์ placeholder ทันทีเอง
+// ก่อนเรียกฟังก์ชันนี้แทน (ดูคอมเมนต์ตรงนั้น) ไม่ใช่พึ่งฟังก์ชันนี้ทำให้
+function loadImageWithRetry(url, onSuccess, onFail, attempt = 0){
+  const MAX_ATTEMPTS = 2;
+  const testImg = new Image();
+  testImg.onload = ()=> onSuccess(url);
+  testImg.onerror = ()=>{
+    if(attempt < MAX_ATTEMPTS - 1){
+      setTimeout(()=> loadImageWithRetry(url, onSuccess, onFail, attempt + 1), 800);
+      return;
+    }
+    onFail();
+  };
+  testImg.src = url;
+}
+
+document.getElementById('editAvatarFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const preview = document.getElementById('editAvatarPreview');
+  preview.innerHTML = '<div class="upload-spinner"></div>';
+  try{
+    const url = await uploadImageFile(file);
+    loadImageWithRetry(url,
+      (u)=>{ STATE.editAvatarUrl = u; preview.innerHTML = `<img src="${u}">`; },
+      ()=>{ showToast('โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง'); renderAvatarPreview(); }
+    );
+  }catch(err){
+    showToast('อัพโหลดรูปไม่สำเร็จ: ' + err.message);
+    renderAvatarPreview();
+  }
+});
+
+function renderAvatarPreview(){
+  const preview = document.getElementById('editAvatarPreview');
+  const url = STATE.editAvatarUrl;
+  preview.innerHTML = url ? `<img src="${url}">` : '＋';
+}
+
+/* ---------- Reference selects ---------- */
+function fillProvinceSelect(){
+  const sel = document.getElementById('editProvince');
+  PROVINCES.forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
+  });
+}
+
+// เลือกไทย -> โชว์ dropdown จังหวัดเดิม, เลือกอื่น -> โชว์ช่อง City/State (บังคับกรอก) — pattern เดียวกับ index.html
+function fillCountrySelect(){
+  const sel = document.getElementById('editCountry');
+  COUNTRIES.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', ()=> toggleCountryFields(sel.value));
+}
+
+function toggleCountryFields(country){
+  const isThailand = country === 'Thailand';
+  document.getElementById('editProvinceField').style.display = isThailand ? 'block' : 'none';
+  document.getElementById('editCityStateField').style.display = isThailand ? 'none' : 'block';
+  if(isThailand) document.getElementById('editCityState').value = '';
+  else document.getElementById('editProvince').value = '';
+}
+
+function fillBirthdaySelects(){
+  const daySel = document.getElementById('editBirthDay');
+  for(let d = 1; d <= 31; d++){
+    const opt = document.createElement('option');
+    opt.value = String(d).padStart(2,'0'); opt.textContent = d;
+    daySel.appendChild(opt);
+  }
+  const monthSel = document.getElementById('editBirthMonth');
+  THAI_MONTHS.forEach((m, i)=>{
+    const opt = document.createElement('option');
+    opt.value = String(i+1).padStart(2,'0'); opt.textContent = m;
+    monthSel.appendChild(opt);
+  });
+  const yearSel = document.getElementById('editBirthYear');
+  const thisYear = new Date().getFullYear();
+  for(let y = thisYear; y >= thisYear - 100; y--){
+    const opt = document.createElement('option');
+    opt.value = String(y); opt.textContent = y;
+    yearSel.appendChild(opt);
+  }
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=> b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=> p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+  });
+});
+
+/* ---------- Profile head ---------- */
+function renderProfileHead(){
+  const u = STATE.profile;
+  const avatarEl = document.getElementById('profileAvatar');
+  if(u.profile_image_url){
+    // โชว์ตัวอักษรไปก่อนเป็น placeholder ทันที (ไม่ต้องรอ loadImageWithRetry ลองจนครบก่อน) แล้วค่อยสลับเป็นรูปจริง
+    // แทนถ้าโหลดสำเร็จ — จุดนี้แค่แสดงผล ไม่ใช่จุดที่ต้องฟ้อง error ให้ user รู้เหมือนตอนอัพโหลดรูปใหม่
+    avatarEl.textContent = (u.username||'?').charAt(0).toUpperCase();
+    loadImageWithRetry(u.profile_image_url,
+      (url)=>{ avatarEl.innerHTML = `<img src="${url}">`; },
+      ()=>{ /* ยังเป็นตัวอักษรอยู่แล้วตั้งแต่ต้น ไม่ต้องทำอะไรเพิ่ม */ }
+    );
+  } else {
+    avatarEl.textContent = (u.username||'?').charAt(0).toUpperCase();
+  }
+  document.getElementById('profileName').textContent = u.username || '—';
+  document.getElementById('profileSub').textContent = u.phone ? `Phone: ${u.phone}` : '';
+  // ลิงก์ไปหน้า My Type สาธารณะของตัวเอง (?id=user_id) — ใช้ user_id เดียวกับที่แชร์ในหน้า mytype.html ได้เลย
+  document.getElementById('myTypeLink').href = `mytype.html?id=${u.user_id}`;
+}
+
+/* ---------- Dashboard tab ---------- */
+async function loadDashboard(){
+  const res = await api('getMyDashboard', { session_token: STATE.session.session_token });
+  if(!res.success){ showToast(res.message); return; }
+  document.getElementById('statTopics').textContent = res.total_topics;
+  document.getElementById('statVoters').textContent = res.total_voters;
+  renderDashboardBreakdown(res);
+}
+
+// สีเพศตายตัวเสมอ เหมือนกับที่ใช้ในการ์ดหัวข้อหน้าแรก (index.html) เพื่อให้ design alignment ตรงกันทั้งระบบ
+const GENDER_BAR_DEFS = [
+  { key:'ชาย', color:'#00A1FF', labelKey:'genderMale' },
+  { key:'หญิง', color:'#FF42A1', labelKey:'genderFemale' },
+  { key:'อื่นๆ', color:'#8E7CC3', labelKey:'genderOther' }
+];
+const AGE_BAR_ORDER = ['18-24','25-34','35-44','45-54','55+'];
+
+function dashBarRowHTML(label, pct, color){
+  const isZero = !pct;
+  const fillWidth = isZero ? 100 : pct;
+  return `<div class="dash-item-row">
+    <span class="dash-item-label">${escapeHtml(label)}</span>
+    <div class="dash-item-bg"><span class="dash-item-fill${isZero ? ' zero' : ''}" style="width:${fillWidth}%;${isZero ? '' : `background:${color}`}"></span></div>
+    <span class="dash-item-pct">${pct || 0}%</span>
+  </div>`;
+}
+
+function renderDashboardBreakdown(dash){
+  const el = document.getElementById('dashboardBreakdown');
+  // ตัดจังหวัดออกจากการแสดงผล (backend ยังคำนวณ/ส่ง province_percent มาเหมือนเดิม เผื่อใช้ในอนาคต)
+  // แสดงครบ 3 แท่งเพศ + 5 แท่งอายุเสมอ แม้ยังไม่มีใครโหวตเลย (แท่งเทา 0%) ให้ตรงกับการ์ดหัวข้อหน้าแรก
+  const genderRows = GENDER_BAR_DEFS.map(g => dashBarRowHTML(t(g.labelKey), (dash.gender_percent || {})[g.key] || 0, g.color)).join('');
+  const ageRows = AGE_BAR_ORDER.map(a => dashBarRowHTML(a, (dash.age_group_percent || {})[a] || 0, 'var(--primary)')).join('');
+
+  el.innerHTML = `
+    <div class="dash-group">
+      <div class="dash-group-title">${t('dashGenderTitle')}</div>
+      ${genderRows}
+    </div>
+    <div class="dash-group">
+      <div class="dash-group-title">${t('dashAgeGroupTitle')}</div>
+      ${ageRows}
+    </div>`;
+}
+
+/* ---------- My Topics tab ---------- */
+async function loadMyTopics(){
+  const res = await api('getMyCompanies', { session_token: STATE.session.session_token });
+  if(!res.success){ showToast(res.message); return; }
+  STATE.myTopics = res.companies || [];
+  renderMyTopics();
+  loadCommentCountsForMyTopics(); // lazy: ไม่บล็อกการโชว์ลิสต์หลัก เหมือน loadDashboards() ใน index.html
+}
+
+// หน้า My Company ไม่มี per-card dashboard fetch อยู่แล้ว (ต่างจาก index.html ที่มี loadDashboardFor ต่อการ์ดอยู่ก่อนแล้ว)
+// จึงต้องยิง getCompanyDetail แยกทีละบริษัทเองที่นี่ เพื่อดึงแค่ comment_count_a/b มาโชว์ที่ปุ่ม "N comment"
+// — ไม่ต้องใช้ gender/age breakdown ส่วนอื่นของ response นี้เลยในหน้านี้
+async function loadCommentCountsForMyTopics(){
+  for(const topic of STATE.myTopics){
+    const res = await api('getCompanyDetail', { company_id: topic.company_id });
+    if(!res.success) continue;
+    topic._commentCountA = res.dashboard.comment_count_a || 0;
+    topic._commentCountB = res.dashboard.comment_count_b || 0;
+    updateCommentBtnLabel(topic.company_id, 'A', topic._commentCountA);
+    updateCommentBtnLabel(topic.company_id, 'B', topic._commentCountB);
+  }
+}
+
+function updateCommentBtnLabel(companyId, side, count){
+  const btn = document.querySelector(`.comment-btn[data-comment-topic="${companyId}"][data-comment-side="${side}"]`);
+  if(btn) btn.textContent = `💬 ${count} comment`;
+}
+
+// อยู่หน้า "บริษัทของฉัน" อยู่แล้ว ให้สร้างบริษัทได้จากตรงนี้เลย ไม่ต้องอ้อมกลับไป home ก่อน
+// (ฟอร์มสร้างบริษัททั้งชุดอยู่ที่ index.html พาไปพร้อม ?create=1 ให้เปิด modal ให้อัตโนมัติ)
+document.getElementById('mtCreateBtn').addEventListener('click', ()=>{
+  location.href = 'index.html?create=1';
+});
+
+document.getElementById('sortToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-sort]');
+  if(!btn) return;
+  document.querySelectorAll('#sortToggle button').forEach(b=> b.classList.remove('active'));
+  btn.classList.add('active');
+  STATE.sortMode = btn.dataset.sort;
+  renderMyTopics();
+});
+
+// TOKBUD: บริษัทมีแค่ 2 สถานะ (active/inactive) ไม่มี pending/scheduled/expired เหมือน WEZIDE เดิม
+// เพราะสร้างบริษัทแล้วเผยแพร่ทันที ไม่มีขั้นตอนตรวจสอบ/กำหนดวันเริ่ม-สิ้นสุดเผยแพร่
+const STATUS_LABEL = { active:'กำลังเผยแพร่', inactive:'ซ่อนอยู่' };
+
+function renderMyTopics(){
+  const el = document.getElementById('myTopicsList');
+  if(STATE.myTopics.length === 0){
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>ยังไม่มีบริษัทที่คุณสร้าง</div>';
+    return;
+  }
+  const sorted = [...STATE.myTopics].sort((a,b)=>{
+    // Popular: โหวตมาก -> น้อย, เท่ากันให้เก่าสุดขึ้นก่อน (sync กับ _popularCompare ฝั่ง appscript.txt —
+    // แพทเทิร์นเดียวกันทั้งระบบ: tie-break ด้วย created_at น้อยสุดเสมอ)
+    if(STATE.sortMode === 'popular'){
+      const voteDiff = b.total_votes - a.total_votes;
+      if(voteDiff !== 0) return voteDiff;
+      return new Date(a.created_at) - new Date(b.created_at);
+    }
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+  el.innerHTML = sorted.map(t=>{
+    const statusClass = STATUS_LABEL[t.status] ? t.status : 'inactive';
+    const statusText = STATUS_LABEL[t.status] || t.status;
+    const toggleBtn = t.status === 'inactive'
+      ? `<button class="mt-action-btn publish" data-action="publish" data-topic="${t.company_id}">Publish</button>`
+      : `<button class="mt-action-btn hide" data-action="hide" data-topic="${t.company_id}">Hide</button>`;
+    const joinPct = t.total_votes > 0 ? Math.round(t.join_count / t.total_votes * 100) : 0;
+    const leavePct = t.total_votes > 0 ? 100 - joinPct : 0;
+    return `
+      <div class="my-topic-card" style="--card-color:${t.card_color || 'var(--primary)'}">
+        <a class="mt-link" href="index.html?topic=${t.company_id}">
+          <div class="mt-top">
+            <div class="mt-title">${escapeHtml(t.company_name)}</div>
+            <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+          </div>
+          <div class="mt-meta">
+            ${t.category ? `<span class="cat-tag">${escapeHtml(t.category)}</span>` : ''}
+          </div>
+          <div class="mt-bar">
+            <span class="a" style="width:${joinPct}%"></span>
+            <span class="b" style="width:${leavePct}%"></span>
+          </div>
+          <div class="mt-votes">
+            <span class="mv-total">${t.total_votes} โหวต (100%)</span>
+            <span class="mv-row"><i class="mv-dot" style="background:var(--side-a)"></i>${escapeHtml(t18n('joinBtnLabel'))} (${joinPct}%)</span>
+            <span class="mv-row"><i class="mv-dot" style="background:var(--side-b)"></i>${escapeHtml(t18n('leaveBtnLabel'))} (${leavePct}%)</span>
+          </div>
+        </a>
+        <div class="comment-row">
+          <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="A" data-comment-label="${escapeHtml(t18n('joinBtnLabel'))}">💬 ${t._commentCountA !== undefined ? `${t._commentCountA} comment` : 'Comment'}</button>
+          <button type="button" class="comment-btn comment-btn-b" data-comment-topic="${t.company_id}" data-comment-side="B" data-comment-label="${escapeHtml(t18n('leaveBtnLabel'))}">💬 ${t._commentCountB !== undefined ? `${t._commentCountB} comment` : 'Comment'}</button>
+        </div>
+        <div class="mt-actions">
+          ${toggleBtn}
+          <button class="mt-action-btn edit" data-action="edit" data-topic="${t.company_id}">Edit</button>
+          <button class="mt-action-btn export" data-action="export" data-topic="${t.company_id}">${t18n('exportBtn')}</button>
+          <button class="mt-action-btn delete" data-action="delete" data-topic="${t.company_id}">Delete</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* event delegation: ปุ่ม action ในการ์ดถูกสร้างใหม่ทุกครั้งที่ re-render จึงผูก listener ที่ container แม่แทน */
+document.getElementById('myTopicsList').addEventListener('click', (e)=>{
+  const commentBtn = e.target.closest('.comment-btn');
+  if(commentBtn){
+    openCommentModal(commentBtn.dataset.commentTopic, commentBtn.dataset.commentSide, commentBtn.dataset.commentLabel);
+    return;
+  }
+  const btn = e.target.closest('button[data-action]');
+  if(!btn) return;
+  const companyId = btn.dataset.topic;
+  const topic = STATE.myTopics.find(t=> t.company_id === companyId);
+  if(!topic) return;
+
+  if(btn.dataset.action === 'publish' || btn.dataset.action === 'hide'){
+    const nextStatus = btn.dataset.action === 'publish' ? 'active' : 'inactive';
+    showConfirmPopup({
+      title: nextStatus === 'active' ? 'ยืนยันเผยแพร่บริษัท' : 'ยืนยันซ่อนบริษัท',
+      message: nextStatus === 'active'
+        ? `บริษัท "${topic.company_name}" จะกลับมาแสดงในหน้าฟีดให้คนทั่วไปเห็นและโหวตได้ทันที`
+        : `บริษัท "${topic.company_name}" จะถูกดึงออกจากหน้าฟีด คนทั่วไปจะมองไม่เห็น (ไม่ใช่การลบ กดเผยแพร่กลับมาได้ภายหลัง)`,
+      confirmLabel: nextStatus === 'active' ? 'ยืนยันเผยแพร่' : 'ยืนยันซ่อน',
+      onConfirm: ()=> doSetTopicStatus(companyId, nextStatus)
+    });
+  } else if(btn.dataset.action === 'edit'){
+    openEditTopicModal(topic);
+  } else if(btn.dataset.action === 'export'){
+    handleExportClick(companyId, btn);
+  } else if(btn.dataset.action === 'delete'){
+    openDeleteCompanyModal(companyId, topic.company_name);
+  }
+});
+
+async function doSetTopicStatus(companyId, status){
+  const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+  const cancelBtn = document.getElementById('confirmModalCancelBtn');
+  if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = 'กำลังบันทึก...'; }
+  if(cancelBtn) cancelBtn.disabled = true;
+
+  const res = await api('setMyCompanyStatus', { session_token: STATE.session.session_token, company_id: companyId, status }, 'POST');
+
+  if(!res.success){
+    showInfoPopup(res.message, pickLang('ปิด / Close'));
+    return;
+  }
+  closeModal('confirmModal');
+  showInfoPopup(res.message, pickLang('ตกลง / OK'));
+  loadMyTopics();
+}
+
+/* ---------- Delete Company Request modal (แทนที่ one-click delete เดิมของ WEZIDE — TOKBUD ต้องส่งคำขอ
+   ให้ทีมงานตรวจสอบก่อน ไม่ลบทันที ตรงกับ actionRequestDeleteCompany ฝั่ง backend) ---------- */
+let dcCurrentCompanyId = '';
+
+function openDeleteCompanyModal(companyId, companyName){
+  dcCurrentCompanyId = companyId;
+  document.getElementById('dcError').style.display = 'none';
+  document.querySelectorAll('input[name="dcReason"]').forEach(r=> r.checked = false);
+  document.getElementById('dcReasonText').value = '';
+  document.getElementById('dcReasonTextField').style.display = 'none';
+  document.getElementById('dcPasscode').value = '';
+  openModal('deleteCompanyModal');
+}
+
+document.getElementById('dcReasonList').addEventListener('change', (e)=>{
+  if(e.target.name !== 'dcReason') return;
+  const needsText = e.target.value === 'no_longer_want_listed' || e.target.value === 'other';
+  document.getElementById('dcReasonTextField').style.display = needsText ? 'block' : 'none';
+});
+
+document.getElementById('dcSubmitBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('dcError');
+  errEl.style.display = 'none';
+
+  const reasonInput = document.querySelector('input[name="dcReason"]:checked');
+  if(!reasonInput){ errEl.textContent = t18n('dcErrReasonRequired'); errEl.style.display = 'block'; return; }
+  const reason = reasonInput.value;
+
+  const reasonText = document.getElementById('dcReasonText').value.trim();
+  if((reason === 'no_longer_want_listed' || reason === 'other') && !reasonText){
+    errEl.textContent = t18n('dcErrReasonTextRequired'); errEl.style.display = 'block'; return;
+  }
+
+  const passcode = document.getElementById('dcPasscode').value.trim();
+  if(!passcode){ errEl.textContent = t18n('dcErrPasscodeRequired'); errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('dcSubmitBtn');
+  setBtnLoading(btn, true, t18n('savingText'));
+  const res = await api('requestDeleteCompany', {
+    session_token: STATE.session.session_token,
+    company_id: dcCurrentCompanyId,
+    reason, reason_text: reasonText, passcode
+  }, 'POST');
+  setBtnLoading(btn, false);
+
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  closeModal('deleteCompanyModal');
+  showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'));
+  // หมายเหตุ: ไม่ลบออกจากลิสต์/re-render ทันที เพราะคำขอลบเป็นแค่คำขอรอตรวจสอบ (status ยังเป็นเดิม) —
+  // ต่างจาก WEZIDE เดิมที่ลบจริงทันทีตอนกดยืนยัน บริษัทจะยังคงอยู่ในลิสต์นี้จนกว่าทีมงานจะอนุมัติคำขอ
+});
+
+/* ================= My Comment tab (ใหม่สำหรับ TOKBUD) =================
+ * แก้ไขคำตอบโหวต/คอมเมนต์เดิมของตัวเองได้ ยิง action 'vote' ซ้ำเดิม (backend update-in-place เมื่อ
+ * user+company+side ซ้ำของเดิม ไม่สร้างแถวใหม่ ดู actionVote) ชุดคำถาม Y/N/U + คะแนนความมั่นใจ/ข้อเสนอแนะ
+ * ก็อปฟังก์ชันชุดเดียวกับ index.html มาทั้งหมด (JOIN/LEAVE_QUESTIONS, ynuRowHTML, buildVoteQuestionsHTML,
+ * bindVoteQuestionToggles, collectVoteQuestionAnswers) เพื่อให้ design element ตรงกันทั้งเว็บ ไม่มี build step
+ * ให้แชร์โมดูลข้ามไฟล์ได้ จึงต้องก็อปแบบนี้ตามแพทเทิร์นเดิมของโปรเจค (เหมือน header/modal CSS ที่ซ้ำกันอยู่แล้ว) */
+const JOIN_QUESTIONS = ['join_salary_good','join_benefits_good','join_brand_reputation','join_growth_opportunity','join_challenging_work','join_culture_team','join_location_flexibility'];
+const JOIN_QUESTION_LABELS = { join_salary_good:'qSalaryGood', join_benefits_good:'qBenefitsGood', join_brand_reputation:'qBrandReputation', join_growth_opportunity:'qGrowthOpportunity', join_challenging_work:'qChallengingWork', join_culture_team:'qCultureTeam', join_location_flexibility:'qLocationFlexibility' };
+const LEAVE_QUESTIONS = ['leave_salary_benefits_mismatch','leave_no_growth','leave_culture_mismatch','leave_manager_mismatch','leave_team_mismatch','leave_worklife_mismatch','leave_better_offer','leave_not_challenging'];
+const LEAVE_QUESTION_LABELS = { leave_salary_benefits_mismatch:'qSalaryMismatch', leave_no_growth:'qNoGrowth', leave_culture_mismatch:'qCultureMismatch', leave_manager_mismatch:'qManagerMismatch', leave_team_mismatch:'qTeamMismatch', leave_worklife_mismatch:'qWorklifeMismatch', leave_better_offer:'qBetterOffer', leave_not_challenging:'qNotChallenging' };
+
+function ynuRowHTML(fieldId, labelKey, prefill){
+  const v = prefill || '';
+  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:10px;">
+    <div style="font-size:13px;margin-bottom:6px;">${t18n(labelKey)}</div>
+    <div class="ynu-btns" style="display:flex;gap:6px;">
+      <button type="button" class="ynu-btn${v==='yes'?' selected':''}" data-ynu-value="yes">${t18n('yesOpt')}</button>
+      <button type="button" class="ynu-btn${v==='no'?' selected':''}" data-ynu-value="no">${t18n('noOpt')}</button>
+      <button type="button" class="ynu-btn${v==='unsure'?' selected':''}" data-ynu-value="unsure">${t18n('unsureOpt')}</button>
+    </div>
+  </div>`;
+}
+
+function buildVoteQuestionsHTML(side, prefillData){
+  prefillData = prefillData || {};
+  if(side === 'A'){
+    const rows = JOIN_QUESTIONS.map(f => ynuRowHTML(f, JOIN_QUESTION_LABELS[f], prefillData[f])).join('');
+    const score = prefillData.join_confidence_score || '';
+    const scoreBtns = [1,2,3,4,5].map(n => `<button type="button" class="score-btn${String(score)===String(n)?' selected':''}" data-score-value="${n}">${n}</button>`).join('');
+    return `${rows}
+      <div class="ynu-row" style="margin-bottom:6px;">
+        <div style="font-size:13px;margin-bottom:6px;">${t18n('confidenceScoreLabel')} <span class="field-hint">${t18n('confidenceScoreHint')}</span></div>
+        <div id="confidenceScoreBtns" style="display:flex;gap:6px;">${scoreBtns}</div>
+      </div>`;
+  }
+  const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
+  return `${rows}
+    <div class="ynu-row" style="margin-bottom:6px;">
+      <label style="display:block;font-size:13px;margin-bottom:6px;">${t18n('leaveImprovementLabel')}</label>
+      <textarea id="leaveImprovementInput" maxlength="300" rows="2" placeholder="${t18n('leaveImprovementPh')}"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
+    </div>`;
+}
+
+function bindVoteQuestionToggles(){
+  document.querySelectorAll('.ynu-row[data-ynu-field] .ynu-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const row = btn.closest('.ynu-row');
+      row.querySelectorAll('.ynu-btn').forEach(b=> b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+  document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(b=> b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+}
+
+function collectVoteQuestionAnswers(side){
+  const answers = {};
+  document.querySelectorAll('.ynu-row[data-ynu-field]').forEach(row=>{
+    const field = row.dataset.ynuField;
+    const selected = row.querySelector('.ynu-btn.selected');
+    answers[field] = selected ? selected.dataset.ynuValue : '';
+  });
+  if(side === 'A'){
+    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-btn.selected');
+    answers.join_confidence_score = scoreBtn ? scoreBtn.dataset.scoreValue : '';
+  } else {
+    const improvementEl = document.getElementById('leaveImprovementInput');
+    answers.leave_improvement_suggestion = improvementEl ? improvementEl.value.trim() : '';
+  }
+  return answers;
+}
+
+async function loadMyComments(){
+  const res = await api('getMyComments', { session_token: STATE.session.session_token });
+  if(!res.success){ showToast(res.message); return; }
+  STATE.myComments = res.comments || [];
+  renderMyComments();
+}
+
+function renderMyComments(){
+  const el = document.getElementById('myCommentsList');
+  if(STATE.myComments.length === 0){
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้</div>';
+    return;
+  }
+  el.innerHTML = STATE.myComments.map(c=>{
+    const sideLabel = c.side === 'A' ? t18n('joinBtnLabel') : t18n('leaveBtnLabel');
+    const dateStr = c.last_changed_at ? new Date(c.last_changed_at).toLocaleDateString(getLang()==='th'?'th-TH':'en-US', {year:'numeric', month:'short', day:'numeric'}) : '';
+    return `
+      <button type="button" class="my-comment-card" data-vote="${c.vote_id}">
+        <div class="mc-top">
+          <div class="mc-company">${escapeHtml(c.company_name)}</div>
+          <span class="mc-side-badge ${c.side === 'A' ? 'a' : 'b'}">${escapeHtml(sideLabel)}</span>
+        </div>
+        <div class="mc-reason">${escapeHtml(c.main_reason || '')}</div>
+        <div class="mc-date">${dateStr}</div>
+      </button>`;
+  }).join('');
+}
+
+document.getElementById('myCommentsList').addEventListener('click', (e)=>{
+  const card = e.target.closest('.my-comment-card');
+  if(!card) return;
+  const comment = STATE.myComments.find(c=> c.vote_id === card.dataset.vote);
+  if(comment) openEditCommentModal(comment);
+});
+
+let ecCurrentComment = null;
+
+function openEditCommentModal(comment){
+  ecCurrentComment = comment;
+  document.getElementById('ecError').style.display = 'none';
+  document.getElementById('ecModalTitle').textContent = `${t18n('ecModalTitle')} — ${comment.company_name}`;
+  document.getElementById('ecMainReasonLabel').innerHTML =
+    `${t18n(comment.side === 'A' ? 'joinMainReasonLabel' : 'leaveMainReasonLabel')} <span class="req-mark">${t18n('requiredMark')}</span>`;
+  document.getElementById('ecMainReasonInput').value = comment.main_reason || '';
+  document.getElementById('ecQuestionsWrap').innerHTML = buildVoteQuestionsHTML(comment.side, comment);
+  bindVoteQuestionToggles();
+  openModal('editCommentModal');
+}
+
+document.getElementById('ecSaveBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('ecError');
+  errEl.style.display = 'none';
+
+  const mainReason = document.getElementById('ecMainReasonInput').value.trim();
+  if(!mainReason){ errEl.textContent = t18n('errMainReasonRequired'); errEl.style.display = 'block'; return; }
+
+  const payload = Object.assign({
+    session_token: STATE.session.session_token,
+    company_id: ecCurrentComment.company_id,
+    side: ecCurrentComment.side,
+    main_reason: mainReason
+  }, collectVoteQuestionAnswers(ecCurrentComment.side));
+
+  const btn = document.getElementById('ecSaveBtn');
+  setBtnLoading(btn, true, t18n('savingText'));
+  const res = await api('vote', payload, 'POST');
+  setBtnLoading(btn, false);
+
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  closeModal('editCommentModal');
+  showInfoPopup(pickLang(res.message), t18n('okBtn'));
+  loadMyComments();
+});
+
+/* ---------- Edit Company modal (TOKBUD: แค่ชื่อ+โลโก้ ตาม actionEditCompany — field อื่นล็อกไว้ตั้งแต่สร้าง) ---------- */
+let etCoverUrl = '';
+let etCurrentCompanyId = '';
+
+document.getElementById('etCoverFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const preview = document.getElementById('etCoverPreview');
+  preview.innerHTML = '<div class="upload-spinner"></div>';
+  try{
+    const url = await uploadImageFile(file);
+    loadImageWithRetry(url,
+      (u)=>{ etCoverUrl = u; preview.innerHTML = `<img src="${u}">`; },
+      ()=>{ etCoverUrl = ''; preview.innerHTML = t18n('etLogoUploadPh'); showToast(t18n('uploadFailToast')); }
+    );
+  }catch(err){
+    showToast(t18n('uploadFailToast') + ': ' + err.message);
+    preview.innerHTML = t18n('etLogoUploadPh');
+  }
+});
+
+function openEditTopicModal(t){
+  etCurrentCompanyId = t.company_id;
+  document.getElementById('etError').style.display = 'none';
+
+  document.getElementById('etTitle').value = t.company_name || '';
+
+  etCoverUrl = t.image_url || '';
+  const coverPreview = document.getElementById('etCoverPreview');
+  coverPreview.innerHTML = etCoverUrl ? `<img src="${etCoverUrl}">` : t18n('etLogoUploadPh');
+
+  openModal('editTopicModal');
+}
+
+document.getElementById('etSaveBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('etError');
+  errEl.style.display = 'none';
+
+  const companyName = document.getElementById('etTitle').value.trim();
+  if(!companyName){ errEl.textContent = t18n('errCompanyNameRequired'); errEl.style.display = 'block'; return; }
+
+  const payload = {
+    session_token: STATE.session.session_token,
+    company_id: etCurrentCompanyId,
+    company_name: companyName,
+    image_url_raw: etCoverUrl
+  };
+
+  const btn = document.getElementById('etSaveBtn');
+  setBtnLoading(btn, true, t18n('savingText'));
+  const res = await api('editCompany', payload, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  closeModal('editTopicModal');
+  // แก้ตาม feedback ของ Pop: หัวข้อ popup เดิม default เป็น "แจ้งให้ทราบ" ทุกจุด กว้างไป ไม่สื่อว่าคือผลของ
+  // การกดบันทึกแก้ไขหัวข้อ -> ใส่หัวข้อเฉพาะเจาะจงตรงนี้แทน (bilingual ตาม pickLang เหมือน res.message)
+  showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'), pickLang('แก้ไขสำเร็จ / Edit Successful'));
+  loadMyTopics();
+});
+
+/* ---------- Edit info tab ---------- */
+function populateEditForm(){
+  const u = STATE.profile;
+  document.getElementById('editUsername').value = u.username || '';
+  document.getElementById('editEmail').value = u.email || '';
+  document.getElementById('editGender').value = u.gender || '';
+  // user เก่าที่คอลัมน์ country ยังว่างอยู่ (สมัครก่อนมีฟีเจอร์นี้) ส่วนใหญ่คือคนไทยอยู่แล้ว จึง default เป็น
+  // Thailand ให้เลย ลด friction ไม่ต้องบังคับเลือกใหม่ทุกคน — ยังแก้ไขเป็นประเทศอื่นได้ปกติถ้าไม่ตรง
+  const country = u.country || 'Thailand';
+  document.getElementById('editCountry').value = country;
+  document.getElementById('editProvince').value = u.province || '';
+  document.getElementById('editCityState').value = u.city_state || '';
+  toggleCountryFields(country);
+  document.getElementById('editPhone').value = '';
+  document.getElementById('editPhonePasscode').value = '';
+  STATE.editAvatarUrl = u.profile_image_url || '';
+  renderAvatarPreview();
+
+  if(u.birthday){
+    const d = new Date(u.birthday);
+    if(!isNaN(d)){
+      document.getElementById('editBirthDay').value = String(d.getDate()).padStart(2,'0');
+      document.getElementById('editBirthMonth').value = String(d.getMonth()+1).padStart(2,'0');
+      document.getElementById('editBirthYear').value = String(d.getFullYear());
+    }
+  }
+}
+
+document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('editError');
+  errEl.style.display = 'none';
+
+  const username = document.getElementById('editUsername').value.trim();
+  const email = document.getElementById('editEmail').value.trim();
+  const bDay = document.getElementById('editBirthDay').value;
+  const bMonth = document.getElementById('editBirthMonth').value;
+  const bYear = document.getElementById('editBirthYear').value;
+  const gender = document.getElementById('editGender').value;
+  const country = document.getElementById('editCountry').value;
+  const province = document.getElementById('editProvince').value;
+  const cityState = document.getElementById('editCityState').value.trim();
+
+  const phone = document.getElementById('editPhone').value.trim();
+  const phonePasscode = document.getElementById('editPhonePasscode').value.trim();
+  const oldPasscode = document.getElementById('editOldPasscode').value.trim();
+  const newPasscode = document.getElementById('editNewPasscode').value.trim();
+  const newPasscode2 = document.getElementById('editNewPasscode2').value.trim();
+
+  // เช็คทีละช่องเรียงตามลำดับที่ฟิลด์ปรากฏบนหน้าฟอร์มจริง (บนลงล่าง) เหมือนที่แก้ในหน้าสมัครสมาชิก
+  // เพื่อความสม่ำเสมอ — แม้ฟอร์มนี้ prefill ค่าเดิมมาให้อยู่แล้วโอกาสเจอน้อยกว่า แต่หลักการเดียวกัน
+  if(!username){
+    errEl.textContent = 'กรุณากรอก Username';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!email){
+    errEl.textContent = 'กรุณากรอกอีเมล';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(email.indexOf('@') === -1){
+    errEl.textContent = 'อีเมลไม่ถูกต้อง กรุณาใส่ @ ด้วย';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!bDay || !bMonth || !bYear){
+    errEl.textContent = 'กรุณาเลือกวันเกิดให้ครบ วัน/เดือน/ปี';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!gender){
+    errEl.textContent = 'กรุณาเลือกเพศ';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!country){
+    errEl.textContent = 'กรุณาเลือกประเทศ';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(country === 'Thailand' && !province){
+    errEl.textContent = 'กรุณาเลือกจังหวัด';
+    errEl.style.display = 'block';
+    return;
+  }
+  // ข้อความนี้ EN อย่างเดียว (ไม่ bilingual) เพราะจะเจอ error นี้ได้เฉพาะคนที่เลือกประเทศไม่ใช่ Thailand เท่านั้น
+  if(country !== 'Thailand' && !cityState){
+    errEl.textContent = 'Please enter your city/state';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const wantsPhoneChange = !!phone;
+  const wantsPasscodeChange = !!(newPasscode || newPasscode2);
+
+  // เปลี่ยนเบอร์กับเปลี่ยน Passcode ห้ามทำพร้อมกัน (นโยบายความปลอดภัย: บังคับเลือกทีละอย่างต่อรอบ)
+  if(wantsPhoneChange && wantsPasscodeChange){
+    errEl.textContent = 'ไม่สามารถเปลี่ยนหมายเลขโทรศัพท์และ Passcode พร้อมกันได้ กรุณาเลือกเปลี่ยนอย่างใดอย่างหนึ่งต่อครั้ง';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if(wantsPhoneChange){
+    if(!/^0[0-9]{9}$/.test(phone)){
+      errEl.textContent = 'หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณากรอกให้ครบ 10 หลัก ขึ้นต้นด้วย 0';
+      errEl.style.display = 'block';
+      return;
+    }
+    if(!phonePasscode){
+      errEl.textContent = 'กรุณากรอก Passcode เพื่อยืนยันก่อนเปลี่ยนหมายเลขโทรศัพท์';
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+
+  if(wantsPasscodeChange){
+    if(!oldPasscode){
+      errEl.textContent = 'กรุณากรอก Passcode เดิมเพื่อยืนยันก่อนเปลี่ยน';
+      errEl.style.display = 'block';
+      return;
+    }
+    if(newPasscode.length < 6){
+      errEl.textContent = 'Passcode ใหม่ต้องมีอย่างน้อย 6 หลัก';
+      errEl.style.display = 'block';
+      return;
+    }
+    if(newPasscode !== newPasscode2){
+      errEl.textContent = 'ยืนยัน Passcode ใหม่ไม่ตรงกัน';
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+
+  const params = {
+    session_token: STATE.session.session_token,
+    username, email, gender, country, province, city_state: cityState,
+    birthday: `${bYear}-${bMonth}-${bDay}`,
+    profile_image_url: STATE.editAvatarUrl || ''
+  };
+  if(wantsPhoneChange){
+    params.phone = phone;
+    params.old_passcode = phonePasscode;
+  }
+  if(wantsPasscodeChange){
+    params.old_passcode = oldPasscode;
+    params.new_passcode = newPasscode;
+  }
+
+  const btn = document.getElementById('editSaveBtn');
+  setBtnLoading(btn, true, 'กำลังบันทึก...');
+  const res = await api('updateProfile', params, 'POST');
+  setBtnLoading(btn, false);
+
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('editPhone').value = '';
+  document.getElementById('editPhonePasscode').value = '';
+  document.getElementById('editOldPasscode').value = '';
+  document.getElementById('editNewPasscode').value = '';
+  document.getElementById('editNewPasscode2').value = '';
+
+  // เปลี่ยนเบอร์สำเร็จ: backend revoke session เดิมทิ้งแล้ว ต้องบังคับ logout ให้ user login ใหม่ด้วยเบอร์ใหม่
+  if(res.force_logout){
+    document.getElementById('confirmModalTitle').textContent = 'แจ้งให้ทราบ';
+    document.getElementById('confirmModalText').textContent = res.message;
+    document.getElementById('confirmModalActions').innerHTML =
+      `<button class="btn btn-primary full-btn" id="confirmModalOkBtn">เข้าสู่ระบบใหม่</button>`;
+    document.getElementById('confirmModalOkBtn').addEventListener('click', ()=>{
+      logout();
+      location.href = 'index.html';
+    });
+    openModal('confirmModal');
+    return;
+  }
+
+  STATE.profile = Object.assign(STATE.profile, res.user);
+  renderProfileHead();
+  showToast('บันทึกข้อมูลสำเร็จ');
+});
+
+/* ---------- Delete account tab ---------- */
+document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('deleteError');
+  errEl.style.display = 'none';
+  const passcode = document.getElementById('deletePasscode').value.trim();
+  if(!passcode){
+    errEl.textContent = 'กรุณากรอก Passcode เพื่อยืนยัน';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  showConfirmPopup({
+    title: t('deleteAccountConfirmTitle'),
+    message: 'คุณจะเข้าสู่ระบบด้วยเบอร์นี้ไม่ได้อีก การกระทำนี้ไม่สามารถย้อนกลับได้',
+    confirmLabel: t('deleteAccountConfirmLabel'),
+    danger: true,
+    onConfirm: doDeleteAccount
+  });
+});
+
+async function doDeleteAccount(){
+  closeModal('confirmModal');
+  const errEl = document.getElementById('deleteError');
+  const passcode = document.getElementById('deletePasscode').value.trim();
+  const btn = document.getElementById('deleteAccountBtn');
+  setBtnLoading(btn, true, t('deleteAccountLoading'));
+  const res = await api('deleteAccount', { session_token: STATE.session.session_token, passcode }, 'POST');
+  setBtnLoading(btn, false);
+
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  logout();
+  showToast(t('deleteAccountToast'));
+  setTimeout(()=>{ location.href = 'index.html'; }, 1200);
+}
+
+/* ================= Plan & Billing (spec: wezide_pro_plan_handoff.md + wezide_stripe_migration_handoff.md) =================
+ * Stripe Checkout integration — ไม่มีฟอร์มบัตรของเราเองอีกต่อไป กดอัพเกรดแล้ว redirect ทั้งหน้าไปจ่ายเงินที่
+ * หน้า Checkout ที่ Stripe โฮสต์เอง บัตรของ user ไม่ผ่าน server ของเราแม้แต่วินาทีเดียว จ่ายเสร็จ Stripe จะ
+ * redirect กลับมาที่หน้านี้พร้อม ?checkout=success&stripe_session_id=... ให้เอง (ดู confirmCheckoutIfNeeded) */
+
+// รายการสิทธิ์ PRO — โชว์ใต้บรรทัด "Auto-renews on {date}" ในกรอบ PRO เท่านั้น (ตาม spec: เขียนเป็น EN เสมอ
+// ไม่มี TH เลยไม่ว่า user จะสลับภาษาเว็บเป็นอะไร เพื่อให้ global user อ่านเข้าใจทันที) เพิ่มสิทธิ์ใหม่ในอนาคต
+// แค่เติม string เข้า array นี้ แถวถัดไปจะต่อให้อัตโนมัติ ไม่ต้องแก้ renderPlanStatusCard() เลย
+const PRO_BENEFITS = [
+  'Export poll results & comments to CSV — unlimited topics, unlimited exports'
+];
+
+function formatDateShort(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  if(isNaN(d)) return '';
+  return d.toLocaleDateString(getLang()==='en' ? 'en-US' : 'th-TH', { year:'numeric', month:'short', day:'numeric' });
+}
+
+async function loadPlanBilling(){
+  renderPlanStatusCard();
+  renderChargeFailedBanner();
+  const res = await api('getBillingHistory', { session_token: STATE.session.session_token });
+  if(!res.success){ showToast(res.message); return; }
+  STATE.billingHistory = res.history || [];
+  renderBillingHistory(STATE.billingHistory);
+}
+
+function renderPlanStatusCard(){
+  const el = document.getElementById('planStatusCard');
+  const pf = STATE.profile;
+  const isPro = pf.plan === 'pro';
+  const showCancelLink = isPro && pf.subscription_status === 'active';
+  const badgeHtml = `<div class="plan-badge-row-left">
+      <span class="plan-badge-label">${t('currentPlanLabel')}</span>
+      <div class="plan-badge-current"><span class="plan-badge ${isPro ? 'pro' : 'free'}">${isPro ? t('proActiveLabel') : t('freeLabel')}</span></div>
+    </div>
+    ${showCancelLink ? `<button class="plan-cancel-link" id="cancelProBtn">${t('cancelProBtn')}</button>` : ''}`;
+
+  let untilHtml = '';
+  if(isPro && pf.pro_until){
+    const dateStr = formatDateShort(pf.pro_until);
+    const key = pf.subscription_status === 'canceled' ? 'proUntilCanceledText' : 'proUntilActiveText';
+    const benefitsHtml = `<div class="plan-benefits-list">${PRO_BENEFITS.map(b =>
+      `<div class="plan-benefit-item"><span class="plan-benefit-check">✓</span><span>${escapeHtml(b)}</span></div>`
+    ).join('')}</div>`;
+    untilHtml = `<p class="plan-until-text">${t(key).replace('{date}', dateStr)}</p>${benefitsHtml}`;
+  }
+
+  let actionHtml = '';
+  if(!isPro){
+    actionHtml = `
+      <p class="plan-pitch-title">${t('planPitchTitle')}</p>
+      <p class="plan-pitch-desc">${t('planPitchDesc')}</p>
+      <p class="plan-price-tag">199 THB / month</p>
+      <p class="plan-price-usd">${t('planPriceUsdHint')}</p>
+      <button class="btn btn-primary full-btn" id="upgradeProBtn">${t('upgradeToProBtn')}</button>`;
+  }
+
+  el.innerHTML = `<div class="plan-badge-row">${badgeHtml}</div>${untilHtml}${actionHtml}`;
+
+  const upgradeBtn = document.getElementById('upgradeProBtn');
+  if(upgradeBtn) upgradeBtn.addEventListener('click', handleUpgradeClick);
+  const cancelBtn = document.getElementById('cancelProBtn');
+  if(cancelBtn) cancelBtn.addEventListener('click', handleCancelClick);
+}
+
+// แจ้งเตือนแบบถาวรในแท็บ (ไม่ใช่ toast ที่หายไปเอง) พร้อม CTA พาไปจ่ายเงินใหม่ทันที — โชว์เฉพาะตอนตัดเงิน
+// ล้มเหลวครั้งล่าสุดจริงๆ (last_charge_status=failed) และตอนนี้ยังเป็น free อยู่ (ยังไม่ได้แก้ไขสำเร็จ)
+function renderChargeFailedBanner(){
+  const banner = document.getElementById('chargeFailedBanner');
+  banner.style.display = (STATE.profile.last_charge_status === 'failed' && STATE.profile.plan !== 'pro') ? 'flex' : 'none';
+}
+
+function renderBillingHistory(list){
+  const el = document.getElementById('billingHistoryList');
+  if(!list.length){
+    el.innerHTML = `<div class="dash-empty">${t('billingHistoryEmpty')}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(b=>{
+    const isFailed = b.status === 'failed';
+    return `<div class="billing-row">
+      <div class="billing-row-left">
+        <span class="billing-date">${formatDateShort(b.charged_at)}</span>
+        ${isFailed && b.failure_reason ? `<span class="billing-reason">${escapeHtml(b.failure_reason)}</span>` : ''}
+      </div>
+      <div class="billing-row-right">
+        <span class="billing-status-pill ${isFailed ? 'failed' : 'success'}">${isFailed ? t('billingStatusFailed') : t('billingStatusSuccess')}</span>
+        <span class="billing-amount">${b.amount} ${String(b.currency||'thb').toUpperCase()}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function goToPlanBillingTab(){
+  document.querySelector('.tab-btn[data-tab="planbilling"]').click();
+}
+
+// FREE user กด Export ที่การ์ดหัวข้อ -> popup นี้แทนการ export ทันที (ปุ่ม Export โชว์เสมอไม่ว่า plan ไหน
+// ตาม spec ข้อ 6) กด [อัปเกรด] พาไปแท็บ Plan & Billing ทันที ไม่กด ก็ปิดด้วย ✕ มุมขวาบนของ modal ปกติ
+function showExportGatePopup(){
+  document.getElementById('confirmModalTitle').textContent = 'Export your results';
+  document.getElementById('confirmModalText').textContent = t('exportGateMsg');
+  document.getElementById('confirmModalActions').innerHTML =
+    `<button class="btn btn-primary full-btn" id="confirmModalUpgradeBtn">${t('exportGateUpgradeBtn')}</button>`;
+  document.getElementById('confirmModalUpgradeBtn').addEventListener('click', ()=>{
+    closeModal('confirmModal');
+    goToPlanBillingTab();
+  });
+  openModal('confirmModal');
+}
+
+async function handleExportClick(topicId, btn){
+  if(!STATE.profile || STATE.profile.plan !== 'pro'){
+    showExportGatePopup();
+    return;
+  }
+  setBtnLoading(btn, true, t('exportLoading'));
+  const res = await api('exportCompanyVotes', { session_token: STATE.session.session_token, company_id: topicId }, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){ showToast(res.message); return; }
+  await downloadCsv(res.csv, res.filename);
+  showToast(t('exportSuccessToast'));
+}
+
+// P0-fix (blob: text ติดไปกับไฟล์ตอนแชร์บนมือถือ): ต้นตอเดียวกับที่เจอใน My Type PDF export — เดิม <a download>
+// ชี้ไป blob: ตรงๆ, iOS Safari บางเวอร์ชันไม่ respect download attribute กับ blob: เลยเปิดเป็นแท็บ preview แทน
+// (address bar กลายเป็น blob:...) พอ user กดปุ่ม share ของตัว browser เอง (ไม่ใช่ปุ่มในแอป) จากแท็บนั้น มันเลย
+// แชร์ URL ของแท็บ (ข้อความ blob:...) ติดไปพร้อมไฟล์ด้วย -> ทางแก้: ถ้าเบราว์เซอร์รองรับ Web Share API แบบไฟล์
+// (navigator.canShare({files})) ให้เรียก navigator.share() ตรงๆ จากปุ่มในแอปเลย ไม่ต้อง navigate ไป blob: เลย
+// สักครั้ง (ต่างจาก PDF ตรงที่ CSV ไม่มีอะไรให้ preview เลยไม่ต้องทำ overlay/iframe เหมือน My Type) เบราว์เซอร์ที่
+// ไม่รองรับค่อย fallback ไปทาง <a download> แบบเดิม (ใช้ได้ปกติบน desktop และ Android Chrome อยู่แล้ว)
+async function downloadCsv(csvContent, filename){
+  const safeFilename = filename || 'export.csv';
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const file = new File([blob], safeFilename, { type: 'text/csv' });
+  const canShareFile = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
+
+  if(canShareFile){
+    try{
+      // P1-fix: เดิมส่ง title ไปด้วย ({files, title}) -> บาง share target (เช่น LINE/Messages) เอา title มาโชว์
+      // เป็นข้อความ caption แยกก้อนอยู่เหนือไฟล์แนบ (เห็นชื่อไฟล์ซ้ำเป็น text bubble ก่อนไฟล์จริง) ทั้งที่ตัวไฟล์
+      // ก็มีชื่อไฟล์ถูกต้องติดไปอยู่แล้วในตัวเอง ไม่จำเป็นต้องมี caption ซ้ำ -> ส่งแค่ files อย่างเดียวพอ
+      await navigator.share({ files: [file] });
+      return;
+    }catch(e){
+      // user กด Cancel เอง หรือ share ไม่สำเร็จ — ไม่ใช่ error ที่ต้อง toast ฟ้อง, fallback ไปดาวน์โหลดปกติแทน
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = safeFilename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- Upgrade flow (redirect ไป Stripe Checkout -> actionCreateCheckoutSession) ---------- */
+async function handleUpgradeClick(){
+  const btn = document.getElementById('upgradeProBtn');
+  if(btn) setBtnLoading(btn, true, t('pcPayLoading'));
+  const res = await api('createCheckoutSession', { session_token: STATE.session.session_token }, 'POST');
+  if(!res.success){
+    if(btn) setBtnLoading(btn, false);
+    showToast(res.message);
+    return;
+  }
+  // full-page redirect ไปหน้าจ่ายเงินที่ Stripe โฮสต์เอง (ไม่ใช่ modal ในเว็บเรา) — บัตรของ user ไม่ผ่าน
+  // server ของเราแม้แต่วินาทีเดียว จ่ายเสร็จ Stripe จะ redirect กลับมาที่ profile.html ให้เอง (ดู confirmCheckoutIfNeeded)
+  window.location.href = res.checkout_url;
+}
+
+document.getElementById('chargeFailedRetryBtn').addEventListener('click', ()=>{
+  goToPlanBillingTab();
+  handleUpgradeClick();
+});
+
+// เรียกทันทีตอนหน้าโหลดถ้า URL มี ?checkout=success&stripe_session_id=... (Stripe redirect กลับมาหลังจ่ายเงินสำเร็จ)
+// ยืนยันกับ backend อีกทีว่าจ่ายจริง แล้วค่อยปลด PRO ในหน้าเว็บ — ไม่เชื่อ query string เฉยๆ เพราะปลอมง่าย
+// เคลียร์ query string ออกจาก URL ด้วย history.replaceState หลังประมวลผลเสร็จ กันรีเฟรชหน้าแล้วยิงซ้ำ/สับสน
+async function confirmCheckoutIfNeeded(){
+  const params = new URLSearchParams(window.location.search);
+  const checkoutResult = params.get('checkout');
+  const stripeSessionId = params.get('stripe_session_id');
+
+  if(checkoutResult === 'cancel'){
+    history.replaceState(null, '', window.location.pathname);
+    showToast(t('checkoutCanceledToast'));
+    return;
+  }
+
+  if(checkoutResult !== 'success' || !stripeSessionId) return;
+
+  history.replaceState(null, '', window.location.pathname); // เคลียร์ query string ทันที กันยิงซ้ำถ้ารีเฟรชหน้า
+  const res = await api('confirmCheckoutSession', { session_token: STATE.session.session_token, stripe_session_id: stripeSessionId }, 'POST');
+  if(!res.success){
+    showToast(res.message);
+    return;
+  }
+
+  STATE.profile.plan = res.plan;
+  STATE.profile.subscription_status = res.subscription_status;
+  STATE.profile.pro_until = res.pro_until;
+  STATE.profile.next_billing_date = res.next_billing_date;
+  STATE.profile.last_charge_status = 'success';
+  renderPlanStatusCard();
+  renderChargeFailedBanner();
+  showToast(t('upgradeSuccessToast'));
+  loadPlanBilling(); // ดึงประวัติการตัดเงินใหม่ ให้เห็นแถวล่าสุดที่เพิ่งจ่ายไป
+}
+
+/* ---------- Cancel flow ---------- */
+function handleCancelClick(){
+  showConfirmPopup({
+    title: t('cancelProConfirmTitle'),
+    message: t('cancelProConfirmMsg').replace('{date}', formatDateShort(STATE.profile.pro_until)),
+    confirmLabel: t('cancelProConfirmBtn'),
+    cancelLabel: t('cancelProConfirmDismissBtn'), // P1-fix: เดิมไม่ส่ง cancelLabel มา เลย fallback ไปใช้ค่า
+    // default ในตัว showConfirmPopup() ซึ่ง hardcode เป็นภาษาไทย ('ยกเลิก') เสมอไม่ว่า user จะสลับเว็บเป็น EN
+    // อยู่หรือไม่ก็ตาม -> ทำให้ปุ่มข้างๆ กัน TH/EN ปนกัน แก้โดยส่ง label ที่ผ่าน t() มาเอง ตรงตามภาษาเว็บจริง
+    // เลือกคำว่า "Keep Subscription" (แทน No/Yes/Back ทั่วไป) เพราะบอกผลลัพธ์ของการกดตรงๆ ไม่ต้องตีความเพิ่ม
+    // และไม่ซ้ำคำ "Cancel" กับปุ่มข้างๆ (Confirm Cancel) เป็น pattern มาตรฐานที่แนะนำสำหรับ destructive confirm
+    // dialog (ตรงข้ามกับ Yes/No ซึ่งเป็น anti-pattern เพราะ user ต้องย้อนอ่านคำถามซ้ำเพื่อตีความว่า Yes/No คืออะไร)
+    danger: true,
+    onConfirm: doCancelSubscription
+  });
+}
+
+async function doCancelSubscription(){
+  closeModal('confirmModal');
+  const res = await api('cancelSubscription', { session_token: STATE.session.session_token }, 'POST');
+  if(!res.success){ showToast(res.message); return; }
+  STATE.profile.subscription_status = 'canceled';
+  renderPlanStatusCard();
+  showToast(t('cancelSuccessToast'));
+}
+
+/* ---------- Init ---------- */
+async function initProfilePage(){
+  if(!isLoggedIn()){
+    document.getElementById('lockedState').style.display = 'block';
+    return;
+  }
+
+  fillCountrySelect();
+  fillProvinceSelect();
+  fillBirthdaySelects();
+
+  const res = await api('getMyProfile', { session_token: STATE.session.session_token });
+  if(!res.success){
+    // บั๊กที่เจอ: เดิม logout() + ล็อกหน้าทันทีทุกครั้งที่ res.success===false — แต่ api() เองก็คืน
+    // success:false เหมือนกันตอนเน็ต/Apps Script สะดุดจนคำขอไม่สำเร็จ (ไม่ใช่ backend ตอบมาว่า session ไม่ถูกต้องจริง)
+    // ผลคือ user login ปกติดีอยู่ดันโดนเตะออกทั้งที่ session ยังใช้ได้ แค่เน็ตสะดุดตอนโหลดหน้าพอดี
+    // แก้โดยเช็ค _networkError ก่อน — logout เฉพาะตอน backend ยืนยันจริงๆ ว่า session ไม่ถูกต้องเท่านั้น
+    // ส่วนเน็ต/เซิร์ฟเวอร์สะดุด ให้โชว์ error state ที่กด "ลองใหม่" ได้ โดยไม่แตะ session เลย
+    if(res._networkError){
+      document.getElementById('loadErrorState').style.display = 'block';
+      document.getElementById('loadErrorRetryBtn').addEventListener('click', ()=>{
+        document.getElementById('loadErrorState').style.display = 'none';
+        initProfilePage();
+      }, { once:true });
+      return;
+    }
+    showToast(res.message);
+    logout();
+    document.getElementById('lockedState').style.display = 'block';
+    return;
+  }
+
+  STATE.profile = res.user;
+  document.getElementById('profileContent').style.display = 'block';
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    logout();
+    showToast(t('logoutToast'));
+    setTimeout(()=>{ location.href = 'index.html'; }, 600);
+  });
+
+  renderProfileHead();
+  populateEditForm();
+  loadDashboard();
+  loadMyTopics();
+  loadMyComments();
+  loadPlanBilling();
+
+  // ตัดเงินรอบล่าสุดล้มเหลว (sweepSubscriptions ปรับเป็น free อัตโนมัติไปแล้ว) -> เตือนทันทีตอนเข้าเว็บ
+  // แม้ตอนนี้จะเปิดอยู่ที่แท็บ Dashboard ก็ตาม เพราะ user อาจไม่ได้กดไปดูแท็บ Plan & Billing เอง
+  if(STATE.profile.last_charge_status === 'failed' && STATE.profile.plan !== 'pro'){
+    showToast(t('chargeFailedToast'));
+  }
+
+  // Stripe Checkout ส่งกลับมาที่ ?tab=planbilling&checkout=success|cancel เสมอ (ดู createCheckoutSession
+  // ฝั่ง backend) — เปิดแท็บ Plan & Billing ให้ทันทีก่อนแล้วค่อยยืนยันผลการจ่ายเงินกับ backend
+  const urlParams = new URLSearchParams(window.location.search);
+  if(urlParams.get('tab') === 'planbilling'){
+    goToPlanBillingTab();
+  }
+  if(urlParams.get('checkout')){
+    confirmCheckoutIfNeeded();
+  }
+}
+initProfilePage();
+</script>
+
+</body>
+</html>
