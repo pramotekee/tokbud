@@ -2108,12 +2108,12 @@ async function loadTopics(){
   if(STATE.sortMode === 'shuffle') params.shuffle_seed = STATE.shuffleSeed;
   if(STATE.activeCategory) params.category = STATE.activeCategory;
   if(STATE.searchQuery) params.search = STATE.searchQuery;
-  const res = await api('getTopics', params);
+  const res = await api('getCompanies', params);
 
   // แยกเคส "ยิง API ไม่สำเร็จ" ออกจากเคส "ยิงสำเร็จแต่ไม่มีหัวข้อจริงๆ" ให้ชัดเจน
   // กันไม่ให้ user เห็นข้อความ "ยังไม่มีหัวข้อ" ทั้งที่จริงๆ แล้วระบบแค่โหลดพัง/ช้าเกินไป
   STATE.feedLoadError = res.success ? '' : (res.message || t('apiErrorMsg'));
-  STATE.topics = res.success ? res.topics : [];
+  STATE.topics = res.success ? res.companies : [];
   STATE.totalCount = res.success ? (res.count || 0) : 0;
   STATE.totalPages = res.success ? (res.total_pages || 1) : 1;
   if(res.success && res.page) STATE.page = res.page; // เผื่อ backend ปรับ page ให้ (เช่นขอหน้าที่เกินจริง)
@@ -2142,7 +2142,7 @@ async function loadHomeFeed(){
   const res = await api('getHomeFeed', params);
 
   STATE.feedLoadError = res.success ? '' : (res.message || t('apiErrorMsg'));
-  STATE.topics = res.success ? res.topics : [];
+  STATE.topics = res.success ? res.companies : [];
   STATE.totalCount = res.success ? (res.count || 0) : 0;
   STATE.totalPages = res.success ? (res.total_pages || 1) : 1;
   if(res.success && res.page) STATE.page = res.page;
@@ -3375,7 +3375,7 @@ async function initFocusMode(topicId){
   feed.innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading topic...</div>`;
 
   const res = await api('getCompanyDetail', { company_id: topicId });
-  if(!res.success || !res.topic){
+  if(!res.success || !res.company){
     feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ไม่พบหัวข้อนี้ (อาจถูกลบหรือหมดอายุไปแล้ว)<br>
       <a class="btn btn-primary" href="index.html" style="margin-top:14px;display:inline-block;">See all topics →</a></div>`;
     return;
@@ -3383,8 +3383,8 @@ async function initFocusMode(topicId){
 
   // เก็บไว้ใน STATE.topics (แค่ 1 รายการ) เพราะฟังก์ชันเดิมของการ์ด (แชร์/แปลภาษา/อ่านเพิ่มเติม ฯลฯ) ทุกอันหา
   // ข้อมูลหัวข้อจาก STATE.topics.find(...) อยู่แล้ว ทำแบบนี้จะได้ไม่ต้องแก้ฟังก์ชันพวกนั้นเลยสักตัว ใช้ต่อได้ทันที
-  STATE.topics = [res.topic];
-  feed.innerHTML = topicCardHTML(res.topic)
+  STATE.topics = [res.company];
+  feed.innerHTML = topicCardHTML(res.company)
     + `<div style="text-align:center;padding:24px 20px 8px;">
         <a class="btn btn-ghost" href="index.html">See all topics →</a>
       </div>`;
