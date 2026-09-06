@@ -1,0 +1,3446 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOKBUD — Find the place where you shine.</title>
+
+<!-- Open Graph (ค่า default — หน้ารายละเอียดหัวข้อที่แชร์จะใช้ meta แบบไดนามิกจากฝั่ง Apps Script แยกต่างหาก) -->
+<meta property="og:title" content="TOKBUD — Find the place where you shine.">
+<meta property="og:description" content="Real company experiences, shared by real employees.">
+<meta property="og:type" content="website">
+
+<!-- P0-fix (footer flash on load): ปิด auto scroll-restoration ของ browser ตั้งแต่ต้น ก่อน layout/paint ใดๆ
+     เกิดขึ้น — ต้นเหตุคือ Safari (โดยเฉพาะ reload/สลับกลับมาที่แท็บ) จะพยายาม restore scroll position เดิมที่ผู้ใช้
+     เคยอยู่ แต่ตอน paint แรกสุด #heroTrack กับ #feed ยังว่างเปล่า (รอ loadHomeFeed() ยิง API ซึ่งอาจช้าเพราะ Apps
+     Script cold start) หน้าเว็บเลยเตี้ยผิดปกติชั่วขณะ -> พิกัด scroll เดิมที่ browser พยายาม restore ตกไปอยู่แถว
+     footer พอดี ผู้ใช้เลยเห็น footer มาก่อนเป็นบางครั้ง ปิดพฤติกรรมนี้แล้วบังคับ scroll ไปบนสุดเองแทน (ดูตอนท้าย
+     <script> หลักด้านล่าง) เพื่อให้พิกัดเริ่มต้นชัวร์ 100% ไม่ว่าหน้าจะสูงเท่าไหร่ตอน paint แรก -->
+<script>
+  if('scrollRestoration' in history){ history.scrollRestoration = 'manual'; }
+  window.scrollTo(0, 0);
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@100;400;700&family=Lexend:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- QR code generation ฝั่ง client ล้วนๆ (ไม่พึ่ง API ภายนอกตอน user ใช้งานจริง โหลด lib ครั้งเดียวตอนเปิดเว็บ) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Vercel Analytics + Speed Insights (static site) -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<script>
+  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
+
+<style>
+  :root{
+    --primary: #1B3A6B;      /* น้ำเงินหลัก - TOKBUD theme */
+    --primary-dark: #0F2648;
+    --primary-light: #3E6099;
+    --accent: #FFC93C;       /* เหลือง */
+    --bg: #F7F8FA;           /* ขาวอมเทาอ่อนมาก */
+    --surface: #FFFFFF;
+    --text: #14213D;
+    --text-muted: #667085;
+    --line: #E4E7EC;
+    --side-a: #1B3A6B;        /* Join because... = น้ำเงิน */
+    --side-b: #E0932C;        /* Leave because... = เหลืองเข้ม/ส้ม แยกจากปุ่มปกติชัดเจน */
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(20, 33, 61, 0.08);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter', sans-serif; font-weight:400; font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3, .topic-title, .vb-label, .btn, .modal-head h3, .creator-name{
+    font-family:'Lexend', sans-serif;
+  }
+  img{ max-width:100%; display:block; }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; }
+  input, select, textarea{ font-family:inherit; }
+  a{ color:inherit; text-decoration:none; }
+
+  /* ===== Header ===== */
+  header.site-header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,255,255,0.9); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px;
+  }
+  .logo-wrap{ display:flex; align-items:baseline; gap:10px; }
+  .logo-wrap .brand{
+    font-family:'Antonio', sans-serif; font-weight:700; font-size:28px;
+    letter-spacing:1px; color:var(--primary);
+  }
+  .logo-wrap a.brand{ text-decoration:none; cursor:pointer; } /* กด TOKBUD มุมซ้ายบนแล้วพากลับหน้า home */
+  .logo-wrap .tagline{
+    font-family:'Antonio', sans-serif; font-weight:100; font-size:14px;
+    color:var(--accent); text-transform:uppercase; letter-spacing:2px;
+    background:var(--primary-dark); padding:2px 8px; border-radius:6px;
+  }
+  .header-actions{ display:flex; align-items:center; gap:10px; }
+  .lang-toggle{ display:flex; align-items:center; background:var(--bg); border:1.5px solid var(--line); border-radius:100px; padding:3px; gap:2px; flex-shrink:0; }
+  .lang-toggle button{ padding:5px 12px; border-radius:100px; font-size:12px; font-weight:700; font-family:'Lexend', sans-serif; color:var(--text-muted); transition:all .15s ease; }
+  .lang-toggle button.active{ background:var(--primary); color:#fff; }
+  .btn{
+    padding:9px 18px; border-radius:100px; font-size:14px; font-weight:500;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:active{ transform:scale(0.96); }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-primary:hover{ box-shadow:0 6px 16px rgba(91,42,158,0.35); }
+  .btn-ghost{ background:var(--surface); color:var(--primary); border:1.5px solid var(--line); }
+  .btn-accent{ background:var(--accent); color:var(--primary-dark); font-weight:600; }
+
+  .avatar-btn{
+    width:38px; height:38px; border-radius:50%; overflow:hidden;
+    border:2px solid var(--primary); background:var(--primary-light);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600;
+  }
+  .avatar-btn img{ width:100%; height:100%; object-fit:cover; }
+
+  /* ===== Hero banner (conveyor, auto-scroll + drag) ===== */
+  .hero{
+    position:relative; overflow:hidden;
+    background:linear-gradient(120deg, var(--primary-dark) 0%, var(--primary) 55%, var(--primary-light) 100%);
+    padding:36px 0 28px;
+  }
+  .hero::after{
+    content:''; position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(255,201,60,0.18), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,255,255,0.10), transparent 45%);
+    pointer-events:none;
+  }
+  .hero-title{
+    position:relative; z-index:2;
+    text-align:center; color:#fff; margin:0 0 22px; padding:0 20px;
+    font-family:'Kanit', sans-serif; font-weight:500; font-size:15px;
+    letter-spacing:.5px; opacity:.9;
+  }
+  .hero-title b{ color:var(--accent); font-weight:600; }
+  .hero-track-wrap{ position:relative; z-index:2; overflow:hidden; cursor:grab; touch-action:pan-y; }
+  .hero-track-wrap.dragging{ cursor:grabbing; }
+  .hero-track{
+    display:flex; gap:14px; width:max-content; padding:0 20px;
+    will-change:transform;
+    min-height:146px; /* P0-fix (footer flash on load): กันหน้าเว็บเตี้ยวูบเดียวก่อน hero cards โหลดเสร็จ
+      (146px = ความสูงการ์ด 260px กว้าง x 16/9) ความสูงตอน paint แรกจะใกล้เคียงตอนโหลดเสร็จ ลดโอกาสที่
+      scroll-restoration ของ browser จะไปเทียบพิกัดกับหน้าที่สั้นผิดปกติแล้วตกไปโผล่แถว footer */
+  }
+  .hero-card{
+    width:260px; flex-shrink:0; border-radius:14px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.18); display:block;
+  }
+  .hero-card img{ aspect-ratio:16/9; object-fit:cover; }
+
+  /* ===== Search + Category pills ===== */
+  .filter-bar{
+    position:sticky; top:63px; z-index:40; background:var(--bg);
+    padding:14px 20px 10px; border-bottom:1px solid var(--line);
+  }
+  .search-row{ display:flex; gap:10px; margin-bottom:12px; }
+  .search-box{
+    flex:1; display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:1.5px solid var(--line); border-radius:100px;
+    padding:9px 16px;
+  }
+  .search-box input{ border:none; outline:none; flex:1; font-size:14px; background:transparent; }
+  .history-btn{ flex-shrink:0; white-space:nowrap; padding:9px 14px; font-size:13px; }
+  .view-toggle{ display:flex; background:var(--surface); border:1.5px solid var(--line); border-radius:100px; padding:3px; }
+  .view-toggle button{ padding:6px 12px; border-radius:100px; font-size:13px; color:var(--text-muted); }
+  .view-toggle button.active{ background:var(--primary); color:#fff; }
+  #feedSortToggle{ width:fit-content; margin-bottom:10px; }
+
+  .pill-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+  .pill-row::-webkit-scrollbar{ display:none; }
+  .result-count-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:10px; }
+  .result-count{ font-size:12.5px; color:var(--text-muted); padding:0 2px; }
+  .result-count b{ color:var(--text); }
+  .feed-view-toggle{ display:flex; gap:3px; background:var(--surface); border:1.5px solid var(--line);
+    border-radius:100px; padding:3px; flex-shrink:0; }
+  .fv-btn{ width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+    border-radius:100px; color:var(--text-muted); transition:all .15s ease; }
+  .fv-btn.active{ background:var(--primary); color:#fff; }
+
+  /* ===== Pagination ===== */
+  .pagination-row{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px;
+    padding:22px 16px 8px;
+  }
+  .page-size-select{
+    margin-left:auto; padding:8px 10px; border-radius:10px; border:1.5px solid var(--line);
+    background:var(--surface); font-size:12.5px; color:var(--text-muted); outline:none;
+  }
+  .page-btn{
+    min-width:34px; height:34px; padding:0 8px; border-radius:9px; border:1.5px solid var(--line);
+    background:var(--surface); color:var(--text-muted); font-size:13px; font-weight:600;
+  }
+  .page-btn.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .page-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .page-ellipsis{ color:var(--text-muted); padding:0 2px; font-size:13px; }
+  @media(max-width:480px){ .page-size-select{ margin-left:0; width:100%; order:10; } }
+  .category-pill{
+    flex-shrink:0; padding:8px 16px; border-radius:100px; font-size:13px;
+    background:var(--surface); border:1.5px solid var(--line); color:var(--text-muted);
+    white-space:nowrap; transition:all .15s ease;
+  }
+  .category-pill.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:500; }
+
+  /* ===== Voter targeting checklist (สร้าง/แก้ไขหัวข้อ) ===== */
+  /* หมายเหตุ: ต้อง prefix ด้วย .target-checklist เสมอ เพราะ .field label (specificity class+element)
+     สูงกว่า .check-row เดี่ยวๆ (specificity class อย่างเดียว) จะไปทับ display:flex กลายเป็น display:block
+     ทำให้ span.check-box (เป็น inline โดย default) ไม่ยอมรับ width/height ที่ตั้งไว้ ยุบเหลือเป็นเส้นบางๆ */
+  .target-checklist{ display:flex; flex-direction:column; }
+  .target-checklist .check-row{
+    display:flex; align-items:center; gap:12px; padding:11px 4px;
+    font-size:14px; color:var(--text); cursor:pointer; user-select:none;
+    border-bottom:1px solid var(--line); position:relative; margin-bottom:0;
+  }
+  .target-checklist .check-row:last-child{ border-bottom:none; }
+  .target-checklist .check-row input{ position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .target-checklist .check-box{
+    flex-shrink:0; width:20px; height:20px; border-radius:6px;
+    border:1.5px solid var(--line); background:var(--surface);
+    position:relative; transition:all .15s ease;
+  }
+  .target-checklist .check-row input:checked + .check-box{ background:var(--primary); border-color:var(--primary); }
+  .target-checklist .check-row input:checked + .check-box::after{
+    content:''; position:absolute; left:6px; top:2px; width:5px; height:10px;
+    border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+
+  /* ===== Feed ===== */
+  .feed{ max-width:640px; margin:0 auto; padding:20px 16px 60px; display:flex; flex-direction:column; gap:20px;
+    min-height:60vh; /* P0-fix (footer flash on load): เหตุผลเดียวกับ .hero-track ด้านบน — กันหน้าเว็บเตี้ยวูบเดียว
+      ระหว่างรอ loadHomeFeed() ยิง API (cold start ของ Apps Script อาจกินเวลาหลายวิ) ก่อนการ์ดหัวข้อจะถูก render เข้ามา */
+  }
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--text-muted); }
+  .empty-state .emoji{ font-size:40px; margin-bottom:10px; }
+
+  /* ===== Line view (feature: View by Card/Line) ===== */
+  .feed.view-line{ gap:8px; } /* แถบเส้นบางกว่าการ์ดเต็ม ใช้ gap แคบลงเพื่อไม่ให้ดูโล่งเกินไป */
+  .line-item{ display:flex; flex-direction:column; }
+  .line-bar{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 16px; background:color-mix(in srgb, var(--card-color, var(--primary)) 8%, white);
+    border:2px solid var(--card-color, var(--primary));
+    border-radius:var(--radius); text-align:left; cursor:pointer; transition:background .15s ease;
+  }
+  .line-bar:hover{ background:color-mix(in srgb, var(--card-color, var(--primary)) 15%, white); }
+  .line-bar-text{
+    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:14px; font-weight:600; color:var(--text);
+  }
+  .line-bar-arrow{ flex-shrink:0; font-size:11px; color:var(--text-muted); transition:transform .2s ease; }
+  .line-bar[aria-expanded="true"] .line-bar-arrow{ transform:rotate(180deg); }
+  /* grid-template-rows: 0fr → 1fr คือเทคนิค animate ความสูง "auto" แบบ smooth โดยไม่ต้องวัด scrollHeight ด้วย JS
+     (เนื้อหาข้างในความสูงไม่คงที่ เช่น mini-dash ที่ขยายได้อีกชั้น — ถ้าใช้ max-height คงที่แบบเดิมจะพังกรณีนี้) */
+  .line-expand-wrap{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s ease; }
+  .line-expand-wrap.open{ grid-template-rows:1fr; }
+  .line-expand-inner{ overflow:hidden; min-height:0; }
+  .line-expand-inner .topic-card{ margin-top:10px; }
+
+  /* ===== Carousel view (feature: View by Carousel — Netflix-style poster grid) ===== */
+  /* .feed ปกติ max-width:640px (มือถือ-ก่อน) แต่โหมดนี้ตั้งใจกว้างขึ้นเป็นพิเศษบนจอคอมพิวเตอร์ ให้แสดง 6 คอลัมน์
+     ได้จริงโดยไม่บีบการ์ดเล็กจิ๋ว — .feed.view-carousel specificity สูงกว่า .feed เดิม จึง override ได้โดยไม่กระทบ
+     Card/Line view ที่ยังอยากคงความกว้าง 640px แบบอ่านสบายเหมือนเดิม */
+  .feed.view-carousel{
+    max-width:1100px; display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;
+  }
+  @media(min-width:768px){
+    .feed.view-carousel{ grid-template-columns:repeat(6, 1fr); gap:16px; }
+  }
+  .carousel-item{ display:flex; flex-direction:column; gap:6px; text-align:left; padding:0; width:100%; transition:transform .12s ease; }
+  .carousel-item:active{ transform:scale(0.97); }
+  .carousel-thumb{ aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:var(--bg); }
+  .carousel-thumb img{ width:100%; height:100%; object-fit:cover; }
+  /* หัวข้อไม่มีรูปประกอบ: ดึงชื่อหัวข้อมาวางตัวใหญ่หนาแทนพื้นที่รูป (เห็นชัดว่าไม่มีรูป ไม่ใช่ปล่อยว่างเปล่า) */
+  .carousel-thumb-text-wrap{
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:12px;
+    background:linear-gradient(150deg, var(--card-color, var(--primary)) 0%, color-mix(in srgb, var(--card-color, var(--primary)) 55%, black) 100%);
+  }
+  .carousel-thumb-text{
+    color:#fff; font-family:'Lexend', sans-serif; font-weight:800; font-size:13.5px; line-height:1.3; text-align:center;
+    display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  /* แคปชั่นเล็กใต้รูป: จำกัด 2 บรรทัดเสมอ (แม้หัวข้อไม่มีรูป ก็ยังโชว์ซ้ำตัวเล็กแบบนี้ไว้ด้วย) */
+  .carousel-caption{
+    font-size:12.5px; font-weight:600; color:var(--text); line-height:1.35; padding:0 1px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+
+  .topic-card{
+    background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    overflow:hidden; border:2px solid var(--card-color, var(--primary)); border-top-width:5px;
+  }
+  .card-top{
+    display:flex; align-items:center; justify-content:space-between; padding:12px 14px 0;
+  }
+  .creator{ display:flex; align-items:center; gap:8px; }
+  .creator-avatar{
+    width:32px; height:32px; border-radius:50%; overflow:hidden; flex-shrink:0;
+    background:var(--primary-light); border:1.5px solid var(--line); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:600;
+  }
+  .creator-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .creator-name{ font-size:13px; color:var(--text-muted); font-weight:500; }
+  .share-icon-btn{
+    width:32px; height:32px; border-radius:50%; background:var(--bg);
+    display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--primary);
+  }
+  .topic-card .share-icon-btn{ color:var(--card-color, var(--primary)); }
+  .qr-code-box{
+    display:flex; align-items:center; justify-content:center; padding:16px;
+    background:#fff; border:1.5px solid var(--line); border-radius:14px; min-height:220px;
+  }
+  .qr-code-box img, .qr-code-box canvas{ display:block; max-width:100%; }
+
+  .card-content-block{ padding:12px 14px 4px; }
+  .cover-img{ width:100%; height:100%; object-fit:contain; display:block; }
+  .cover-img-wrap{ aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:var(--bg); cursor:zoom-in; }
+  .text-topic-box{
+    background:var(--bg); border-radius:12px; padding:22px 16px; text-align:center; min-height:120px;
+    display:flex; flex-direction:column; justify-content:center; gap:8px;
+  }
+  .topic-title{ font-size:18px; font-weight:700; line-height:1.4; margin:8px 0 4px; color:var(--text); }
+  .topic-desc{ font-size:13.5px; color:#3A3347; line-height:1.5; word-break:break-word; }
+  .topic-desc a{ color:var(--primary); text-decoration:underline; word-break:break-all; }
+  /* จำกัดคำอธิบายไว้ 2 บรรทัดในการ์ด ไม่ว่า user จะพิมพ์ยาวแค่ไหน ยาวเกินให้กดปุ่ม "อ่านเพิ่มเติม" แทน */
+  .topic-desc.clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .desc-more-btn{
+    display:none; font-size:12.5px; font-weight:600; color:var(--primary); background:none;
+    margin-top:2px; padding:0;
+  }
+  .desc-more-btn.show{ display:inline-block; }
+  #descModalBody{ font-size:14px; line-height:1.65; color:var(--text); white-space:pre-wrap; word-break:break-word; }
+  #descModalBody a{ color:var(--primary); text-decoration:underline; word-break:break-all; }
+  /* หัวข้อ+รายละเอียดของการ์ดแบบรูปภาพ: ไม่มีกล่องพื้นหลังแบบ text-topic-box แต่ต้องมี title/desc ให้ user อ่านก่อนโหวตเหมือนกัน */
+  .card-content-block > .topic-title{ margin-top:0; }
+  .card-content-block > .topic-desc{ margin-top:2px; }
+
+  .meta-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:10px 14px 0; }
+  .cat-tag{ font-size:11.5px; background:var(--primary); color:#fff; padding:4px 10px; border-radius:100px; }
+  .tag-chip{ font-size:11.5px; background:var(--bg); color:var(--text-muted); padding:4px 10px; border-radius:100px; }
+  .req-mark{ color:#D64545; font-weight:700; }
+  .ynu-btn{ flex:1; padding:8px 4px; border:1.5px solid var(--line); border-radius:8px; font-size:12.5px; background:var(--surface); color:var(--text); }
+  .ynu-btn.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
+  .score-btn{ width:34px; height:34px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
+  .score-btn.selected{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); font-weight:700; }
+  .topic-card .cat-tag{ background:var(--card-color, var(--primary)); }
+  .topic-card .tag-chip{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); color:var(--text-muted); }
+
+  /* --- vote row: ซ้าย = A / กลาง(ว่างช่องแค่แบ่ง) / ขวา = B --- */
+  .vote-row{ display:flex; gap:8px; padding:14px; }
+  .vote-btn{
+    flex:1; padding:16px 10px; border-radius:12px; text-align:center;
+    background:var(--bg); border:2px solid var(--line); transition:all .15s ease;
+  }
+  .vote-btn .vb-label{ font-size:14.5px; font-weight:600; margin-bottom:4px; }
+  .vote-btn .vb-pct{ font-size:22px; font-weight:700; font-family:'Antonio',sans-serif; }
+  .vote-btn.side-a{ }
+  .vote-btn.side-b{ }
+  .vote-btn.selected.side-a{ background:var(--side-a); border-color:var(--side-a); color:#fff; }
+  .vote-btn.selected.side-b{ background:var(--side-b); border-color:var(--side-b); color:#fff; }
+  .vote-btn:disabled{ opacity:.55; cursor:not-allowed; }
+  /* --- โทนสีของการ์ดต้องไหลเข้าไปในองค์ประกอบภายในด้วย ไม่ใช่แค่ขอบ --- */
+  .topic-card .vote-btn{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); border-color:color-mix(in srgb, var(--card-color, var(--primary)) 30%, white); }
+  .topic-card .vote-btn.selected{ background:var(--card-color, var(--primary)); border-color:var(--card-color, var(--primary)); color:#fff; }
+  .topic-card .cover-img-wrap{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); }
+  .topic-card .text-topic-box{ background:color-mix(in srgb, var(--card-color, var(--primary)) 8%, white); }
+
+  /* --- vote row แบบมีรูป: [A][รูป][B] ทั้ง 3 แท่งสัดส่วนเท่ากันหมด คือสี่เหลี่ยมผืนผ้าแนวตั้ง 9:16 --- */
+  .vote-row-image{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:14px; }
+  .vote-row-image .vote-btn{
+    aspect-ratio:9/16; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:8px 4px; word-break:break-word;
+  }
+
+  /* --- comment buttons: อยู่ใต้ปุ่มโหวตเสมอ คนละปุ่มคนละฝั่ง (A/B) โชว์ตลอดกดได้เสมอแม้ N=0 --- */
+  .comment-row{ display:flex; gap:8px; padding:0 14px 14px; margin-top:-6px; }
+  .comment-row-image{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:0 14px 14px; margin-top:-6px; }
+  .comment-btn{
+    flex:1; text-align:center; font-size:12px; font-weight:600; color:var(--text-muted);
+    background:var(--bg); border:1.5px solid var(--line); border-radius:100px; padding:7px 8px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .comment-btn:active{ background:var(--line); }
+
+  /* --- comment modal: list + infinite scroll ผ่าน IntersectionObserver --- */
+  .comment-list{ display:flex; flex-direction:column; gap:10px; min-height:60px; }
+  .comment-item{
+    background:var(--bg); border-radius:12px; padding:10px 14px; font-size:13.5px;
+    line-height:1.6; color:var(--text); white-space:pre-wrap; word-break:break-word;
+  }
+  .comment-item-time{ display:block; margin-top:6px; font-size:11px; color:var(--text-muted); }
+  .comment-empty, .comment-loading{ text-align:center; font-size:13px; color:var(--text-muted); padding:26px 0; }
+  #commentSentinel{ height:1px; }
+
+  /* --- mini dashboard --- */
+  .mini-dash{ border-top:1px solid var(--line); padding:12px 14px 16px; display:flex; flex-direction:column; gap:8px; }
+  .mini-dash-title{ font-size:11.5px; color:var(--text-muted); font-weight:500; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+  .mini-dash-summary{ display:inline-flex; align-items:center; gap:4px; }
+  .days-left{ white-space:nowrap; }
+  .days-left.urgent{ color:var(--danger); font-weight:600; }
+
+  /* ปุ่มลูกศรเปิด/ปิด voter summary — หมุน 180deg ตอนเปิดแทนการสลับตัวอักษร */
+  .dash-toggle-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:50%; background:var(--bg);
+    color:var(--text-muted); font-size:10px; line-height:1; flex-shrink:0;
+    transition:transform .2s ease, background .15s ease;
+  }
+  .dash-toggle-btn:active{ background:var(--line); }
+  .dash-toggle-btn.open{ transform:rotate(180deg); }
+
+  /* mini-dash-body ยุบ/ขยายด้วย max-height กันไม่ต้องคำนวณความสูงจริงด้วย JS */
+  .mini-dash-body{
+    max-height:0; opacity:0; overflow:hidden;
+    transition:max-height .3s ease, opacity .25s ease;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .mini-dash-body.open{ max-height:600px; opacity:1; }
+
+  /* เพศ(donut ซ้าย) + ช่วงอายุ(bar ขวา) เคียงข้างกันเสมอ ไม่ stack แม้จอแคบ — donut หดเล็กลงเพื่อพอดีจอ */
+  .dash-cols{ display:flex; align-items:flex-start; gap:10px; }
+  .dash-group{ display:flex; flex-direction:column; gap:6px; }
+  .dash-group-gender{ flex:0 0 auto; }
+  .dash-group-age{ flex:1 1 auto; min-width:0; }
+  .dash-group-title{ font-size:13px; font-weight:700; color:var(--text); }
+  .dash-item-row{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); }
+  .dash-item-label{ width:44px; flex-shrink:0; }
+  .dash-item-bg{ flex:1; height:8px; border-radius:4px; background:var(--bg); overflow:hidden; }
+  .dash-item-fill{ display:block; height:100%; border-radius:4px; transition:width .5s ease; }
+  .dash-item-fill.zero{ background:var(--line) !important; }
+  .dash-item-pct{ width:30px; flex-shrink:0; text-align:right; font-weight:600; color:var(--text); }
+  .dash-empty-hint{ font-size:12px; color:var(--text-muted); text-align:center; padding:4px 0; }
+
+  /* วง spinner หมุนตอนกำลังโหลดสรุปผู้โหวต — โชว์ทันทีที่กด toggle เปิด กันไม่ให้ user คิดว่าค้าง/พัง
+     ระหว่างรอ getTopicDetail ตอบกลับ (เฉพาะเคสที่คิว preload พื้นหลังยังโหลดไม่ถึงการ์ดนี้) */
+  .dash-loading{ display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 0; }
+  .dash-spinner{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0;
+    border:2px solid var(--line); border-top-color:var(--primary);
+    animation:dash-spin .7s linear infinite;
+  }
+  .dash-loading-text{ font-size:12px; color:var(--text-muted); }
+  @keyframes dash-spin{ to{ transform:rotate(360deg); } }
+  .dash-retry-btn{
+    font-size:11.5px; font-weight:600; color:var(--primary); background:none;
+    border:1px solid var(--primary); border-radius:20px; padding:3px 12px;
+    flex-shrink:0; transition:background .15s ease;
+  }
+  .dash-retry-btn:active{ background:rgba(91,42,158,0.08); }
+
+  /* --- gender donut chart (แทนแถบสีเดิม) --- */
+  .dash-donut-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .dash-donut{ display:block; }
+  .dash-donut circle{ transition:stroke-dasharray .5s ease; }
+  .dash-legend{ display:flex; flex-direction:column; gap:2px; width:100%; }
+  .dash-legend-row{ display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-muted); white-space:nowrap; }
+  .dash-legend-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .dash-legend-label{ flex-shrink:0; }
+  .dash-legend-pct{ font-weight:600; color:var(--text); margin-left:auto; }
+  @media(max-width:360px){
+    .dash-cols{ gap:8px; }
+    .dash-item-label{ width:38px; }
+    .dash-item-pct{ width:26px; }
+  }
+
+  /* --- translate button (อยู่ใต้ปุ่มตัวเลือก เหนือเส้นแบ่ง mini-dash) --- */
+  .translate-row{ padding:0 14px 12px; margin-top:-6px; display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+  .translate-btn{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--primary); padding:4px 2px; }
+  .translate-btn .tr-icon{ font-size:13px; }
+  .translate-btn.loading{ opacity:.55; pointer-events:none; }
+  .tr-translated-note{ font-size:12px; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px; }
+  .translate-original-link, .translate-change-link{ font-size:12px; color:var(--primary); text-decoration:underline; font-weight:500; }
+
+  /* --- language picker modal --- */
+  .lang-pick-grid{ display:flex; flex-direction:column; gap:6px; max-height:56vh; overflow-y:auto; }
+  .lang-pick-btn{ text-align:left; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-size:14px; font-weight:500; color:var(--text); background:var(--bg); }
+  .lang-pick-btn:active{ background:var(--surface); border-color:var(--primary); }
+
+  /* ===== Modals ===== */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(28,19,41,0.55); backdrop-filter:blur(3px);
+    display:none; align-items:flex-end; justify-content:center; z-index:100;
+  }
+  .modal-overlay.open{ display:flex; }
+  @media(min-width:520px){ .modal-overlay{ align-items:center; } }
+  /* UX-fix (feature: View by Carousel): modal ทุกตัวใน z-index:100 เท่ากันหมด เวลาเท่ากัน browser จัดลำดับซ้อนทับ
+     ตามตำแหน่งใน HTML (อยู่หลังกว่า = วาดทับ) ไม่ใช่ตามลำดับเวลาที่เปิด — carouselCardModal ถูกเพิ่มเข้ามาทีหลังใน
+     HTML เลยวาดทับ voteConfirmModal/commentModal/descModal ฯลฯ ที่ user เปิดซ้อนจากข้างในโดยไม่ตั้งใจ (user เห็น
+     เหมือนกดโหวต/คอมเมนต์แล้ว "ไม่มีอะไรเกิดขึ้น" ทั้งที่ popup เปิดจริง แค่โผล่ไปอยู่หลัง full card) แก้โดยลด
+     z-index เฉพาะ carouselCardModal ให้ต่ำกว่า modal อื่นทั้งหมดเสมอ ไม่ว่าจะมี modal ใหม่เพิ่มเข้ามาที่ไหนใน
+     HTML ในอนาคตก็ยังถูกต้องอัตโนมัติ ไม่ต้องพึ่งการเรียงลำดับโค้ดที่ลืมง่าย */
+  #carouselCardModal{ z-index:90; }
+  .modal-box{
+    background:var(--surface); width:100%; max-width:420px; border-radius:20px 20px 0 0;
+    padding:24px 22px 28px; max-height:88vh; overflow-y:auto;
+    animation:slideUp .25s ease;
+  }
+  @media(min-width:520px){ .modal-box{ border-radius:20px; } }
+  @keyframes slideUp{ from{ transform:translateY(30px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .modal-head h3{ margin:0; font-size:18px; font-weight:600; }
+  .modal-close{ font-size:20px; color:var(--text-muted); width:30px; height:30px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px; font-weight:500; }
+  .field input, .field select, .field textarea{
+    width:100%; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:14px; outline:none; background:var(--bg);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{ border-color:var(--primary); background:#fff; }
+  #ctTitle{ resize:none; overflow:hidden; line-height:1.5; min-height:44px; font-family:inherit; }
+  .field-error{ color:#D64545; font-size:12px; margin-top:4px; display:none; }
+  .field-hint{ font-weight:400; color:var(--text-muted); }
+
+  /* ===== Signup wizard (step-by-step) ===== */
+  .su-progress{ margin-bottom:22px; }
+  .su-progress-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+  .su-progress-label{ font-size:12.5px; font-weight:600; color:var(--primary); }
+  .su-progress-pct{ font-size:12.5px; font-weight:700; color:var(--primary); }
+  .su-progress-track{ height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
+  .su-progress-fill{ height:100%; width:0%; background:var(--primary); border-radius:3px; transition:width .35s ease; }
+  .su-dots{ display:flex; justify-content:space-between; margin-top:14px; }
+  .su-dot{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; }
+  .su-dot-circle{
+    width:26px; height:26px; border-radius:50%; border:2px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;
+    color:var(--text-muted); background:var(--surface); transition:all .2s ease;
+  }
+  .su-dot.done .su-dot-circle{ background:var(--primary); border-color:var(--primary); color:#fff; }
+  .su-dot.active .su-dot-circle{ border-color:var(--primary); color:var(--primary); }
+  .su-dot-label{ font-size:9px; color:var(--text-muted); text-align:center; line-height:1.2; }
+  .su-dot.active .su-dot-label, .su-dot.done .su-dot-label{ color:var(--primary); font-weight:600; }
+  .su-step{ display:none; animation:slideUp .2s ease; }
+  .su-step.active{ display:block; }
+  .su-passcode-note{
+    background:color-mix(in srgb, var(--accent) 18%, white); border:1px solid color-mix(in srgb, var(--accent) 45%, white);
+    border-radius:10px; padding:10px 12px; font-size:12.5px; color:var(--primary-dark); margin-top:10px;
+    line-height:1.5; display:flex; gap:8px; align-items:flex-start;
+  }
+  .su-nav{ display:flex; gap:10px; margin-top:6px; }
+  .su-nav .btn{ flex:1; padding:13px; border-radius:12px; font-size:15px; font-weight:600; }
+  .welcome-check{
+    width:60px; height:60px; border-radius:50%; background:var(--primary); color:#fff;
+    font-size:28px; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;
+  }
+
+  /* create-topic form */
+  .type-toggle{ display:flex; gap:8px; }
+  .type-toggle button{
+    flex:1; padding:10px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:13.5px; font-weight:600; color:var(--text-muted); background:var(--bg);
+  }
+  .type-toggle button.selected{ border-color:var(--primary); color:var(--primary); background:#fff; }
+  .cover-upload{
+    width:100%; aspect-ratio:9/16; max-height:520px; border:1.5px dashed var(--line); border-radius:12px;
+    display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:13px;
+    background:var(--bg); overflow:hidden; text-align:center; padding:10px;
+  }
+  .cover-upload img{ width:100%; height:100%; object-fit:contain; }
+  .preview-3col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; align-items:stretch; }
+  .preview-3col .cover-upload{ max-height:none; }
+  .preview-vote-btn{
+    aspect-ratio:9/16; border-radius:12px; background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white);
+    border:2px solid color-mix(in srgb, var(--card-color, var(--primary)) 30%, white);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:12.5px; font-weight:600; color:var(--text-muted); padding:6px 4px; word-break:break-word;
+  }
+  #coverField .cover-upload{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); }
+  .color-swatches{ display:flex; flex-wrap:wrap; gap:10px; }
+  .color-swatch{
+    width:30px; height:30px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line);
+  }
+  .color-swatch.selected{ box-shadow:0 0 0 2px var(--text); }
+  .tag-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .tag-grid input{ padding:9px 12px !important; font-size:13px !important; }
+  .date-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px; } /* margin อยู่ที่ตัว row เอง ไม่ใช่ field ข้างใน กันซ้อนกับ gap แต่ยังเว้นระยะก่อนเนื้อหาถัดไป */
+  .date-row .field{ flex:1 1 140px; min-width:140px; margin-bottom:0; } /* gap ของ flex จัดระยะให้แล้ว ไม่ต้องมี margin-bottom ซ้ำ */
+  .date-row.stack-row{ flex-direction:column; gap:14px; } /* บังคับแยกคนละแถวเต็มความกว้าง กันชนกันบนจอแคบ */
+  .date-row.stack-row .field{ flex:0 0 auto; min-width:0; } /* สำคัญ: ตอน column, flex-basis:140px จะกลายเป็นความ "สูง" ไม่ใช่ความกว้าง ทำให้แต่ละ field ยืดเต็มพื้นที่แนวตั้งจนช่องว่างถ่างมหาศาล ต้องปิด flex-grow ทิ้งตอน stack */
+  .dob-row{ display:flex; gap:8px; }
+  .dob-row select{ flex:1; }
+
+  /* passcode show/hide toggle */
+  .passcode-wrap{ position:relative; }
+  .passcode-wrap input{ padding-right:42px; }
+  /* ช่อง passcode ใช้ type="text" จริงๆ (ไม่ใช้ type="password") เพราะ browser/OS ผูกพฤติกรรม "เสนอสร้าง Strong Password ให้อัตโนมัติ" ไว้กับ type="password" โดยเฉพาะ
+     ทำให้ user บางคนกดใช้รหัสที่ device สุ่มให้ แล้วจำไม่ได้ ภายหลังแก้ไขข้อมูลตัวเองไม่ได้เพราะต้องใช้ passcode ยืนยัน
+     ใช้ -webkit-text-security แทนเพื่อยังคงพรางตัวอักษรเป็นจุดๆ เหมือน password ปกติ แต่ browser จะไม่มองว่าเป็นช่อง password จึงไม่เสนอ auto-gen ให้
+     (หมายเหตุ: Firefox ไม่รองรับ -webkit-text-security ตัวอักษรจะไม่ถูกพรางบน Firefox — ถือเป็น trade-off ที่ยอมรับได้เพราะกลุ่มผู้ใช้หลักเป็นมือถือ Chrome/Safari) */
+  .passcode-wrap input{ -webkit-text-security:disc; text-security:disc; }
+  .passcode-wrap input.pc-visible{ -webkit-text-security:none; text-security:none; }
+  .passcode-toggle{
+    position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    font-size:16px; color:var(--text-muted); border-radius:8px;
+  }
+  .passcode-toggle:hover{ color:var(--primary); }
+
+  /* loading spinners (แทนข้อความ "..." ตอนกำลังประมวลผล) */
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .upload-spinner{
+    width:22px; height:22px; margin:0 auto; border-radius:50%;
+    border:3px solid rgba(255,255,255,0.4); border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+  /* กล่องอัปโหลดรูปหัวข้อ (.cover-upload) พื้นหลังเป็นสีอ่อนเกือบขาว spinner สีขาวเลยมองแทบไม่เห็นตอนหมุน ใช้สีเข้ม/สีธีมแทน */
+  .cover-upload .upload-spinner{
+    border:3px solid color-mix(in srgb, var(--card-color, var(--primary)) 25%, white);
+    border-top-color:var(--card-color, var(--primary));
+  }
+  .btn-spinner{
+    display:inline-block; width:14px; height:14px; margin-right:7px; vertical-align:-2px;
+    border-radius:50%; border:2px solid rgba(255,255,255,0.45); border-top-color:#fff;
+    animation:spin .7s linear infinite;
+  }
+  .btn-ghost .btn-spinner{ border-color:rgba(91,42,158,0.3); border-top-color:var(--primary); }
+  /* spinner กลางพื้นที่ ใช้ตอนกำลังดึงข้อมูล เช่น เปลี่ยน pill หมวดหมู่ / พิมพ์ค้นหา / โหลด feed ครั้งแรก */
+  .area-loading{ text-align:center; padding:50px 20px; color:var(--text-muted); font-size:13.5px; }
+  .area-spinner{
+    width:28px; height:28px; margin:0 auto 12px; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--primary);
+    animation:spin .7s linear infinite;
+  }
+  .full-btn{ width:100%; padding:13px; border-radius:12px; font-size:15px; font-weight:600; }
+  .divider-note{
+    text-align:center; margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);
+    font-size:12.5px; color:var(--text-muted); line-height:1.6;
+  }
+  .divider-note b{ color:var(--primary); }
+  .signup-cta-btn{ margin-top:10px; }
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--primary-dark); color:#fff; padding:13px 22px; border-radius:10px;
+    font-size:13.5px; z-index:200; display:none; box-shadow:0 8px 24px rgba(0,0,0,0.25);
+    max-width:min(92vw, 480px); width:max-content; text-align:center; line-height:1.5;
+  }
+  .toast.show{ display:block; animation:fadeInUp .2s ease; }
+  @keyframes fadeInUp{ from{ opacity:0; transform:translate(-50%,10px);} to{opacity:1; transform:translate(-50%,0);} }
+
+  /* lightbox */
+  .lightbox{
+    position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:150;
+    display:none; align-items:center; justify-content:center; padding:30px;
+  }
+  .lightbox.open{ display:flex; }
+  .lightbox img{ max-width:100%; max-height:80vh; border-radius:12px; }
+  .lightbox-close{
+    position:absolute; top:20px; right:20px; width:40px; height:40px; border-radius:50%;
+    background:rgba(255,255,255,0.15); color:#fff; font-size:20px;
+  }
+
+  /* jump to top */
+  .jump-top{
+    position:fixed; bottom:24px; right:20px; width:46px; height:46px; border-radius:50%;
+    background:var(--primary); color:#fff; font-size:18px; box-shadow:0 8px 20px rgba(91,42,158,0.4);
+    display:none; align-items:center; justify-content:center; z-index:60;
+  }
+  .jump-top.show{ display:flex; }
+
+  footer.site-footer{
+    background:var(--primary-dark); color:rgba(255,255,255,0.85); padding:40px 20px 24px; margin-top:20px;
+  }
+  .footer-inner{
+    max-width:960px; margin:0; display:flex; flex-wrap:wrap; gap:48px;
+    padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.15);
+  }
+  .footer-col{ display:flex; flex-direction:column; gap:8px; text-align:left; }
+  .footer-col.footer-brand-col{ flex:1 1 260px; max-width:340px; }
+  @media(max-width:480px){
+    .footer-inner{ flex-direction:column; flex-wrap:nowrap; gap:24px; }
+    .footer-col.footer-brand-col{ flex:none; max-width:none; }
+  }
+  footer.site-footer .f-brand{ font-family:'Antonio',sans-serif; font-weight:700; color:#fff; font-size:22px; margin-bottom:8px; }
+  footer.site-footer .f-desc{ font-size:12.5px; line-height:1.7; color:rgba(255,255,255,0.65); text-align:left; }
+  footer.site-footer .f-heading{ font-family:'Lexend',sans-serif; font-size:13px; font-weight:600; color:#fff; margin-bottom:10px; }
+  footer.site-footer .footer-col a{ font-size:12.5px; color:rgba(255,255,255,0.7); }
+  footer.site-footer .footer-col a:hover{ color:var(--accent); }
+  footer.site-footer .footer-bottom{
+    max-width:960px; margin:18px 0 0; text-align:left; font-size:11.5px; color:rgba(255,255,255,0.5);
+  }
+
+  /* ===== Confetti celebration (โผล่ตอนสร้างหัวข้อสำเร็จ) ===== */
+  #confettiLayer{
+    position:fixed; inset:0; z-index:300; pointer-events:none; overflow:hidden;
+  }
+  .confetti-piece{
+    position:absolute; top:-12px; will-change:translate,rotate,opacity;
+    animation-name:confettiDrop, confettiSpin;
+    animation-timing-function:linear, linear;
+    animation-fill-mode:forwards, forwards;
+  }
+  /* ตกตรงๆ ลงมา ความเร็วคงที่ (linear) มีแค่จุดเริ่ม-จุดจบ คำนวณเบามาก ลื่นแม้จำนวนชิ้นเยอะ */
+  @keyframes confettiDrop{
+    0%{ translate:0 0; opacity:1; }
+    100%{ translate:0 110vh; opacity:0.9; }
+  }
+  /* หมุนสะบัดในตัวเองต่อเนื่อง (ทิศเดียวไม่กลับทิศ) ผสมพลิกหน้า-หลัง 1 จังหวะกลางทาง จำลองความพริ้วของกระดาษ แยกเป็นคนละ CSS property จาก translate จึงไม่ชนกัน คำนวณคนละชุด เบามาก */
+  @keyframes confettiSpin{
+    0%{ rotate:0deg; scale:1 1; }
+    50%{ rotate:var(--rotMid); scale:1 var(--flipMid); }
+    100%{ rotate:var(--rotEnd); scale:1 1; }
+  }
+  .confetti-star{
+    clip-path:polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+</style>
+</head>
+<body>
+<div id="confettiLayer" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="logo-wrap">
+    <a class="brand" href="index.html">TOKBUD</a>
+  </div>
+  <div class="header-actions" id="headerActions">
+    <div class="lang-toggle" id="langToggle">
+      <button type="button" data-lang="th">TH</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+    <button class="btn btn-accent" id="createBtn" data-i18n="createBtn">＋ สร้างหัวข้อ</button>
+    <button class="btn btn-ghost" id="loginBtn" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="hero-title" data-i18n="heroTitle"><b>Ask</b> Better. See Further.</p>
+  <div class="hero-track-wrap" id="heroWrap">
+    <div class="hero-track" id="heroTrack"></div>
+  </div>
+</section>
+
+<div class="filter-bar">
+  <div class="search-row">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="ค้นหาหัวข้อ, tag..." data-i18n-ph="searchPlaceholder">
+    </div>
+    <a class="btn btn-ghost history-btn" href="history.html" data-i18n="historyLink">🕓 ประวัติ</a>
+  </div>
+  <div class="view-toggle" id="feedSortToggle">
+    <button data-sort="shuffle" class="active" data-i18n="sortShuffle">Shuffle</button>
+    <button data-sort="latest" data-i18n="sortLatest">Latest</button>
+    <button data-sort="popular" data-i18n="sortPopular">Popular</button>
+  </div>
+  <div class="pill-row" id="categoryPills"></div>
+  <div class="result-count-row">
+    <div class="result-count" id="resultCount"></div>
+    <div class="feed-view-toggle" id="feedViewToggle">
+      <button type="button" class="fv-btn" data-view="card" aria-label="Card view" title="Card view">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="7" height="7" rx="1.4"/><rect x="11" y="2" width="7" height="7" rx="1.4"/><rect x="2" y="11" width="7" height="7" rx="1.4"/><rect x="11" y="11" width="7" height="7" rx="1.4"/></svg>
+      </button>
+      <button type="button" class="fv-btn" data-view="line" aria-label="Line view" title="Line view">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/></svg>
+      </button>
+      <button type="button" class="fv-btn" data-view="carousel" aria-label="Carousel view" title="Carousel view">
+        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.5" y="4" width="4.6" height="12" rx="1.2"/><rect x="7.7" y="2" width="4.6" height="16" rx="1.2"/><rect x="13.9" y="4" width="4.6" height="12" rx="1.2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<main class="feed" id="feed"></main>
+<div class="pagination-row" id="paginationRow"></div>
+
+<button class="jump-top" id="jumpTop">↑</button>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col footer-brand-col">
+      <div class="f-brand">TOKBUD</div>
+      <p class="f-desc" data-i18n="footerDesc">Find the place where you shine.</p>
+    </div>
+    <div class="footer-col">
+      <div class="f-heading" data-i18n="footerMenuHeading">เมนู</div>
+      <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" data-i18n="footerHome">หน้าแรก</a>
+      <a href="#" id="footerCreateLink" data-i18n="createBtn2">สร้างหัวข้อ</a>
+      <a href="#" id="footerLoginLink" data-i18n="footerLoginLink">เข้าสู่ระบบ / สมัครสมาชิก</a>
+      <a href="https://wezide.vercel.app/about.html" target="_blank" rel="noopener">About</a>
+      <a href="https://wezide.vercel.app/terms.html" target="_blank" rel="noopener">Terms</a>
+      <a href="https://wezide.vercel.app/privacy.html" target="_blank" rel="noopener">Privacy</a>
+    </div>
+  </div>
+  <div class="footer-bottom">Copyright © 2026 TOKBUD. All rights reserved.</div>
+</footer>
+
+<!-- ===== Login Modal ===== -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="loginModalTitle" data-i18n="loginTitle">อ่ะ! คุณลืม login</h3>
+      <button class="modal-close" data-close="loginModal">✕</button>
+    </div>
+    <p id="loginModalHint" style="font-size:13.5px;color:var(--text-muted);margin-top:-8px;margin-bottom:16px;" data-i18n="loginHint">กรอก 2 ช่องนี้แล้วกด login มาเลือกความคิดเห็นกันเลย</p>
+    <div class="field">
+      <label data-i18n="phoneLabel">เบอร์โทรศัพท์</label>
+      <input type="tel" id="loginPhone" placeholder="08xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Passcode</label>
+      <div class="passcode-wrap">
+        <input type="text" id="loginPasscode" placeholder="Passcode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="loginPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
+      </div>
+    </div>
+    <div class="field-error" id="loginError"></div>
+    <button class="btn btn-primary full-btn" id="loginSubmitBtn" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+
+    <div class="divider-note">
+      <span data-i18n="signupCta">หากคุณยังไม่ได้เป็นสมาชิก สมัครเพียง <b>30 วินาที</b> ก็เข้าร่วมสนุกกับพวกเราได้แล้ว</span>
+      <button class="btn btn-accent full-btn signup-cta-btn" id="openSignupBtn" data-i18n="signupBtn">สมัครเลย</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Signup Modal ===== -->
+<div class="modal-overlay" id="signupModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="signupTitle">สร้างโปรไฟล์ TOKBUD</h3>
+      <button class="modal-close" data-close="signupModal">✕</button>
+    </div>
+
+    <!-- Progress: เลื่อนทีละ 20% ต่อ step (0→20→40→60→80) เต็ม 100% ตอนสมัครสำเร็จ (แสดงผลเป็น welcomeModal) -->
+    <div class="su-progress">
+      <div class="su-progress-top">
+        <span class="su-progress-label" id="suProgressLabel"></span>
+        <span class="su-progress-pct" id="suProgressPct">0%</span>
+      </div>
+      <div class="su-progress-track"><div class="su-progress-fill" id="suProgressFill"></div></div>
+      <div class="su-dots">
+        <div class="su-dot active" data-dot="1"><div class="su-dot-circle">1</div><div class="su-dot-label" data-i18n="suDotProfile">โปรไฟล์</div></div>
+        <div class="su-dot" data-dot="2"><div class="su-dot-circle">2</div><div class="su-dot-label" data-i18n="suDotContact">ติดต่อ</div></div>
+        <div class="su-dot" data-dot="3"><div class="su-dot-circle">3</div><div class="su-dot-label" data-i18n="suDotSecurity">รหัสผ่าน</div></div>
+        <div class="su-dot" data-dot="4"><div class="su-dot-circle">4</div><div class="su-dot-label" data-i18n="suDotPersonal">ส่วนตัว</div></div>
+        <div class="su-dot" data-dot="5"><div class="su-dot-circle">5</div><div class="su-dot-label" data-i18n="suDotLocation">ที่อยู่</div></div>
+      </div>
+    </div>
+
+    <!-- Step 1: รูปโปรไฟล์ + Username -->
+    <div class="su-step active" data-step="1">
+      <div class="field" style="text-align:center;">
+        <label data-i18n="avatarLabel">รูปโปรไฟล์</label>
+        <div class="creator-avatar" id="signupAvatarPreview" style="width:72px;height:72px;margin:0 auto;font-size:24px;" onclick="document.getElementById('signupAvatarFile').click()">＋</div>
+        <input type="file" accept="image/*" id="signupAvatarFile" style="display:none;">
+      </div>
+      <div class="field"><label>Username</label><input type="text" id="suUsername"></div>
+    </div>
+
+    <!-- Step 2: Email + Phone -->
+    <div class="su-step" data-step="2">
+      <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="you@email.com"></div>
+      <div class="field"><label data-i18n="phoneLabel">เบอร์โทรศัพท์</label><input type="tel" id="suPhone" placeholder="08xxxxxxxx"></div>
+    </div>
+
+    <!-- Step 3: Passcode -->
+    <div class="su-step" data-step="3">
+      <div class="field">
+        <label><span data-i18n="setPasscodeLabel">ตั้ง Passcode</span> <span class="field-hint" data-i18n="passcodeHint">(อย่างน้อย 6 หลัก)</span></label>
+        <div class="passcode-wrap">
+          <input type="text" id="suPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button type="button" class="passcode-toggle" data-target="suPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
+        </div>
+        <div class="su-passcode-note"><span>🔐</span><span data-i18n="suPasscodeNote">อย่าลืมนะ! โปรดจดจำหรือจัดเก็บ Passcode นี้ไว้ให้ดี เพราะต้องใช้คู่กับเบอร์โทรศัพท์ทุกครั้งที่เข้าสู่ระบบ</span></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Birthday + Gender -->
+    <div class="su-step" data-step="4">
+      <div class="field">
+        <label><span data-i18n="birthdayLabel">วันเกิด</span> <span class="field-hint">(ค.ศ.)</span></label>
+        <div class="dob-row">
+          <select id="suBirthDay"><option value="" data-i18n="dayOpt">วัน</option></select>
+          <select id="suBirthMonth"><option value="" data-i18n="monthOpt">เดือน</option></select>
+          <select id="suBirthYear"><option value="" data-i18n="yearOpt">ปี</option></select>
+        </div>
+      </div>
+      <div class="field">
+        <label data-i18n="genderLabel">เพศ</label>
+        <select id="suGender">
+          <option value="" data-i18n="genderChoose">เลือกเพศ</option>
+          <option value="ชาย" data-i18n="genderMale">ชาย</option>
+          <option value="หญิง" data-i18n="genderFemale">หญิง</option>
+          <option value="อื่นๆ" data-i18n="genderOther">อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Step 5: Country + Province/City -->
+    <div class="su-step" data-step="5">
+      <div class="field">
+        <label data-i18n="countryLabel">ประเทศ</label>
+        <select id="suCountry"></select>
+      </div>
+      <div class="field" id="suProvinceField">
+        <label data-i18n="provinceLabel">จังหวัด</label>
+        <select id="suProvince"><option value="" data-i18n="provinceChoose">เลือกจังหวัด</option></select>
+      </div>
+      <div class="field" id="suCityStateField" style="display:none;">
+        <label>City / State <span style="color:var(--danger);">*</span></label>
+        <input type="text" id="suCityState" maxlength="100" placeholder="e.g. Tokyo, New York, Osaka">
+      </div>
+    </div>
+
+    <div class="field-error" id="signupError"></div>
+    <div class="su-nav">
+      <button type="button" class="btn btn-ghost" id="suBackBtn" data-i18n="suBackBtn" style="display:none;">ย้อนกลับ</button>
+      <button type="button" class="btn btn-primary" id="suNextBtn" data-i18n="suNextBtn">ถัดไป</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Welcome Modal (โผล่หลังสมัครสมาชิกสำเร็จ แทน toast เล็กๆ เดิม) ===== -->
+<div class="modal-overlay" id="welcomeModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="welcomeModal" style="margin-left:auto;display:block;">✕</button>
+    <div class="welcome-check">✓</div>
+    <h3 style="margin:0 0 10px;"><span data-i18n="welcomeTitlePre">ยินดีต้อนรับคุณ</span> <span id="welcomeUsername" style="color:var(--primary)"></span> <span data-i18n="welcomeTitlePost">เข้าสู่ TOKBUD</span></h3>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;" data-i18n="welcomeDesc">การตั้งคำถามและความขี้สงสัย คือทักษะที่สำคัญของคนยุคใหม่</p>
+    <!-- กรณีสมัครจาก pendingVote (กดโหวตตอนยังไม่ login มาก่อน): แสดง 2 ปุ่ม กลับไปโหวต / สร้างหัวข้อ -->
+    <div style="display:flex;gap:10px;" id="welcomeActionsVote">
+      <button class="btn btn-primary full-btn" id="welcomeVoteBtn" data-i18n="welcomeVoteBtn">กลับไปโหวต</button>
+      <button class="btn btn-ghost full-btn" id="welcomeCreateBtn" data-i18n="welcomeCreateBtn">สร้างคำถาม</button>
+    </div>
+    <!-- กรณีสมัครตรงๆ ไม่ได้มาจากการกดโหวต: เหลือปุ่มเดียว ชวนสร้างหัวข้อแรก -->
+    <button class="btn btn-primary full-btn" id="welcomeCreateFirstBtn" data-i18n="welcomeCreateFirstBtn" style="display:none;">มาสร้างหัวข้อแรกของคุณกันเลย! 🚀</button>
+  </div>
+</div>
+
+<!-- ===== Create Topic Modal ===== -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="createModalTitle">สร้างบริษัทใหม่</h3>
+      <button class="modal-close" data-close="createModal">✕</button>
+    </div>
+
+    <div class="field" id="coverField">
+      <label><span data-i18n="coverImageLabel">โลโก้บริษัท (สัดส่วน 9:16)</span> <span class="field-hint" data-i18n="coverImageHint">— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด</span></label>
+      <div class="cover-upload" id="coverPreview" onclick="document.getElementById('coverFile').click()">
+        <span data-i18n="coverUploadPrompt">＋ แตะเพื่อแนบโลโก้บริษัท</span>
+      </div>
+      <input type="file" accept="image/*" id="coverFile" style="display:none;">
+    </div>
+
+    <div class="field"><label><span data-i18n="ctTitleLabel">ชื่อบริษัท</span> <span class="req-mark" data-i18n="requiredMark">*</span></label><textarea id="ctTitle" rows="1" placeholder="เช่น บริษัท ABC จำกัด" data-i18n-ph="ctTitlePh"></textarea></div>
+    <div class="field"><label><span data-i18n="ctDescLabel">รายละเอียด</span> <span class="field-hint" data-i18n="optionalHint2">(ไม่บังคับ)</span></label><textarea id="ctDescription" rows="3" placeholder="อธิบายเพิ่มเติมเกี่ยวกับบริษัท..." data-i18n-ph="ctDescPh"></textarea></div>
+
+    <div class="field">
+      <label><span data-i18n="ctCategoryLabel">หมวดหมู่</span> <span class="req-mark" data-i18n="requiredMark">*</span></label>
+      <select id="ctCategory" multiple><option value="" data-i18n="ctCategoryChoose">เลือกหมวดหมู่ (เลือกได้มากกว่า 1)</option></select>
+    </div>
+
+    <div class="field">
+      <label><span data-i18n="ctTagLabel">Tag</span> <span class="field-hint" data-i18n="ctTagHint">(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)</span></label>
+      <div class="tag-grid">
+        <input type="text" id="ctTag1" placeholder="Tag 1">
+        <input type="text" id="ctTag2" placeholder="Tag 2">
+        <input type="text" id="ctTag3" placeholder="Tag 3">
+        <input type="text" id="ctTag4" placeholder="Tag 4">
+        <input type="text" id="ctTag5" placeholder="Tag 5">
+      </div>
+    </div>
+
+    <div class="field">
+      <label data-i18n="ctColorLabel">สีการ์ด</label>
+      <div class="color-swatches" id="colorSwatches"></div>
+    </div>
+
+    <div class="field-error" id="createError"></div>
+    <button class="btn btn-primary full-btn" id="createSubmitBtn" data-i18n="createSubmitBtn">สร้างบริษัท</button>
+  </div>
+</div>
+
+
+<!-- ===== Create Topic Success Modal (โผล่หลังสร้างหัวข้อสำเร็จ แทน toast เล็กๆ เดิม) ===== -->
+<div class="modal-overlay" id="createSuccessModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="createSuccessModal" style="margin-left:auto;display:block;">✕</button>
+    <h3 style="margin:0 0 10px;" data-i18n="createSuccessTitle">หัวข้อของคุณสร้างสำเร็จ และเผยแพร่แล้ว</h3>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;" data-i18n="createSuccessDesc">หัวข้อของคุณถูกเผยแพร่ขึ้นหน้าแรกเรียบร้อยแล้ว ไปดูกันเลย!</p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary full-btn" id="createSuccessCreateBtn" data-i18n="createSuccessCreateBtn">สร้างหัวข้อต่อ</button>
+      <button class="btn btn-ghost full-btn" id="createSuccessHomeBtn" data-i18n="homeBtn">กลับหน้าแรก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Vote Confirm Modal (ยืนยันก่อนโหวตจริง แทนการโหวตทันทีที่กด) ===== -->
+<div class="modal-overlay" id="voteConfirmModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="voteConfirmModal" style="margin-left:auto;display:block;">✕</button>
+    <h3 style="margin:0 0 10px;" data-i18n="voteConfirmTitle">ยืนยันการเลือก</h3>
+    <p id="voteConfirmText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;"></p>
+    <div id="voteCommentWrap" style="display:none;text-align:left;margin:-10px 0 18px;">
+      <label id="voteCommentLabel" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;"></label>
+      <textarea id="voteCommentInput" maxlength="300" rows="3" placeholder=""
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;"></textarea>
+      <div id="voteCommentCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">0/300</div>
+    </div>
+    <div id="voteQuestionsWrap" style="text-align:left;margin:0 0 18px;"></div>
+    <div style="display:flex;gap:10px;" id="voteConfirmActions">
+      <button class="btn btn-ghost full-btn" id="voteCancelBtn">ยกเลิก</button>
+      <button class="btn btn-primary full-btn" id="voteConfirmBtn">ยืนยันเลือก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Comment List Modal (อ่านความคิดเห็นแบบ public/anonymous แยกฝั่ง A/B, infinite scroll ทีละ 20) ===== -->
+<div class="modal-overlay" id="commentModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="commentModalTitle"></h3>
+      <button class="modal-close" data-close="commentModal">✕</button>
+    </div>
+    <div class="comment-list" id="commentList"></div>
+    <div id="commentSentinel"></div>
+  </div>
+</div>
+
+<!-- ===== Description Modal (โผล่ตอนกด "อ่านเพิ่มเติม" จากคำอธิบายที่ถูกตัดไว้แค่ 2 บรรทัดในการ์ด) ===== -->
+<div class="modal-overlay" id="descModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="descModalTitle"></h3>
+      <button class="modal-close" data-close="descModal">✕</button>
+    </div>
+    <div id="descModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== Carousel Full Card Modal (feature: View by Carousel — โผล่ตอนกด thumbnail แล้วแตะเปิดการ์ดเต็ม) ===== -->
+<div class="modal-overlay" id="carouselCardModal">
+  <div class="modal-box" style="padding:14px;">
+    <button class="modal-close" data-close="carouselCardModal" style="margin-left:auto;display:flex;margin-bottom:6px;">✕</button>
+    <div id="carouselCardModalBody"></div>
+  </div>
+</div>
+
+<!-- ===== Translate Language Picker Modal (โผล่ตอนกดปุ่ม "แปล" ครั้งแรกในเซสชัน — เลือกครั้งเดียวจำไว้ใช้กับการ์ดถัดไป) ===== -->
+<div class="modal-overlay" id="translateLangModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Translate to</h3>
+      <button class="modal-close" data-close="translateLangModal">✕</button>
+    </div>
+    <div class="lang-pick-grid" id="langPickGrid"></div>
+  </div>
+</div>
+
+<!-- ===== Translate Error Modal (ข้อความคงที่เป็น EN เสมอ ตามที่ตกลงกัน ไม่ว่า error จริงจะเป็นอะไร) ===== -->
+<div class="modal-overlay" id="translateErrorModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="translateErrorModal" style="margin-left:auto;display:block;">✕</button>
+    <div style="font-size:32px;margin-bottom:8px;">😕</div>
+    <h3 style="margin:0 0 6px;">Oops! Something went wrong.</h3>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;">Please try again.</p>
+    <button class="btn btn-primary full-btn" id="translateRetryBtn">Try Again</button>
+  </div>
+</div>
+
+<!-- ===== Lightbox ===== -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">✕</button>
+  <img id="lightboxImg" src="">
+</div>
+
+<!-- ===== Share Menu (เลือกว่าจะแชร์ลิงก์ทันที หรือแสดง QR Code) — ข้อความ hardcode เป็น EN ตายตัวตาม decision ของ Pop ===== -->
+<div class="modal-overlay" id="shareMenuModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="shareMenuModal" style="margin-left:auto;display:block;">✕</button>
+    <h3 style="margin:0 0 18px;">Share this topic</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary full-btn" id="shareNowBtn">🔗 Share Link</button>
+      <button class="btn btn-ghost full-btn" id="shareQrBtn">📱 Show QR Code</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== QR Code Modal (แปล EN ให้ครบทั้ง flow แชร์ ไม่ให้ค้าง TH กลางทาง) ===== -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="qrModal" style="margin-left:auto;display:block;">✕</button>
+    <h3 id="qrModalTitle" style="margin:0 0 6px;font-size:15.5px;"></h3>
+    <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 16px;">Scan to vote on this topic right away</p>
+    <div id="qrCodeContainer" class="qr-code-box"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-ghost full-btn" id="qrDownloadBtn">⬇️ Download Image</button>
+      <button class="btn btn-primary full-btn" id="qrShareBtn" style="display:none;">📤 Share This Image</button>
+    </div>
+    <p id="qrShareHint" style="font-size:11.5px;color:var(--text-muted);margin:10px 0 0;display:none;">
+      This device doesn't support sharing image files directly — please download it and share it yourself, or take a screenshot.
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   TOKBUD — index.js (inline)
+   ============================================================ */
+
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbwH_KorLbUReFtJ0q3uxLBcc802Crm451rlc31PlOeBZCL2oL9bUu-Jlb3bJnMBQnlbgw/exec',
+  // ใช้เฉพาะตอนสร้างลิงก์ที่คนจะ "เปิดตรงๆ" เอง (เช่น QR code) ต้องตรงกับ FRONTEND_URL ฝั่ง appscript.txt เสมอ
+  // ถ้าย้ายโดเมนวันหลัง ต้องแก้ 2 ที่คู่กัน (ที่นี่ + FRONTEND_URL ใน appscript.txt)
+  FRONTEND_URL: 'https://wezide.vercel.app'
+};
+
+/* ================= I18N (TH ⇄ EN toggle สำหรับข้อความระบบ/static UI) =================
+   นี่คือคนละระบบกับปุ่ม "แปล" บนการ์ดหัวข้อ (ที่แปลเนื้อหาที่ user สร้างผ่าน LanguageApp)
+   ระบบนี้แปลเฉพาะข้อความคงที่ของ UI ด้วย dictionary มือ ไม่ยิง API แปล runtime
+   Key ตรวจสอบแล้วว่าไม่ชนกับ localStorage key เดิม ('wz_session') ที่ใช้เก็บ session อยู่แล้ว */
+const LANG_KEY = 'wz_lang';
+/* Feed view toggle (Card/Line) — คนละ key กับ LANG_KEY/wz_session เดิม ไม่ชนกัน
+   first-time user (ไม่มี key นี้เลย) = default 'card' เสมอ, ค่าอื่นที่ไม่ใช่ 'line' ก็ถือเป็น 'card' */
+const FEED_VIEW_KEY = 'wz_feed_view';
+const I18N = {
+  th: {
+    createBtn: '＋ สร้างบริษัท', createBtn2: 'สร้างบริษัท', loginBtn: 'เข้าสู่ระบบ',
+    heroTitle: '<b>Find</b> the place where you shine.',
+    searchPlaceholder: 'ค้นหาบริษัท, tag...', historyLink: '🕓 ประวัติ',
+    sortShuffle: 'สุ่ม', sortLatest: 'ล่าสุด', sortPopular: 'ยอดนิยม',
+    loginTitle: 'อ่ะ! คุณลืม login', loginHint: 'กรอก 2 ช่องนี้แล้วกด login มาแชร์ความคิดเห็นกันเลย',
+    loginDirectTitle: 'เข้าสู่ระบบ TOKBUD', loginDirectHint: 'กรอกเบอร์โทรและ Passcode เพื่อเข้าสู่ระบบ',
+    phoneLabel: 'เบอร์โทรศัพท์',
+    signupCta: 'หากคุณยังไม่ได้เป็นสมาชิก สมัครเพียง <b>30 วินาที</b> ก็เข้าร่วมสนุกกับพวกเราได้แล้ว',
+    signupBtn: 'สมัครเลย', signupTitle: 'สร้างโปรไฟล์ TOKBUD', avatarLabel: 'รูปโปรไฟล์',
+    setPasscodeLabel: 'ตั้ง Passcode', passcodeHint: '(อย่างน้อย 6 หลัก)', birthdayLabel: 'วันเกิด',
+    dayOpt: 'วัน', monthOpt: 'เดือน', yearOpt: 'ปี', genderLabel: 'เพศ',
+    genderChoose: 'เลือกเพศ', genderMale: 'ชาย', genderFemale: 'หญิง', genderOther: 'อื่นๆ',
+    provinceLabel: 'จังหวัด', provinceChoose: 'เลือกจังหวัด', signupSubmitBtn: 'สมัครสมาชิก', countryLabel: 'ประเทศ',
+    suStepLabel: 'ขั้นตอนที่ {n} จาก {total}', suBackBtn: 'ย้อนกลับ', suNextBtn: 'ถัดไป',
+    suDotProfile: 'โปรไฟล์', suDotContact: 'ติดต่อ', suDotSecurity: 'รหัสผ่าน', suDotPersonal: 'ส่วนตัว', suDotLocation: 'ที่อยู่',
+    suPasscodeNote: 'อย่าลืมนะ! โปรดจดจำหรือจัดเก็บ Passcode นี้ไว้ให้ดี เพราะต้องใช้คู่กับเบอร์โทรศัพท์ทุกครั้งที่เข้าสู่ระบบ',
+    welcomeTitlePre: 'ยินดีต้อนรับคุณ', welcomeTitlePost: 'เข้าสู่ TOKBUD',
+    welcomeDesc: 'ทุกประสบการณ์การทำงานของคุณ มีค่าสำหรับคนที่กำลังตัดสินใจ',
+    welcomeCreateBtn: 'สร้างบริษัท', homeBtn: 'กลับหน้าแรก', welcomeVoteBtn: 'กลับไปแชร์ความคิดเห็น', welcomeCreateFirstBtn: 'มาสร้างบริษัทแรกของคุณกันเลย! 🚀',
+    createSuccessTitle: 'สร้างบริษัทสำเร็จ และเผยแพร่แล้ว',
+    createSuccessDesc: 'บริษัทของคุณถูกเผยแพร่ขึ้นหน้าแรกเรียบร้อยแล้ว ไปดูกันเลย!',
+    createSuccessCreateBtn: 'สร้างบริษัทเพิ่ม', homeToMyTopicsBtn: 'กลับไปหน้าบริษัทของฉัน',
+    footerDesc: 'Find the place where you shine.',
+    footerMenuHeading: 'เมนู', footerHome: 'หน้าแรก', footerLoginLink: 'เข้าสู่ระบบ / สมัครสมาชิก',
+    createModalTitle: 'สร้างบริษัทใหม่',
+    coverImageLabel: 'โลโก้บริษัท (สัดส่วน 9:16)', coverImageHint: '— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด',
+    coverUploadPrompt: '＋ แตะเพื่อแนบโลโก้บริษัท',
+    ctTitleLabel: 'ชื่อบริษัท', ctTitlePh: 'เช่น บริษัท ABC จำกัด',
+    ctDescLabel: 'รายละเอียด', optionalHint2: '(ไม่บังคับ)', ctDescPh: 'อธิบายเพิ่มเติมเกี่ยวกับบริษัท...',
+    ctCategoryLabel: 'หมวดหมู่', ctCategoryChoose: 'เลือกหมวดหมู่ (เลือกได้มากกว่า 1)',
+    ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
+    createSubmitBtn: 'สร้างบริษัท',
+    joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
+    joinMainReasonLabel: 'ปัจจัยที่คุณสมัคร/ร่วมงานกับบริษัทนี้คืออะไร?', joinMainReasonPh: 'พิมพ์คำตอบของคุณ...',
+    leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?', leaveMainReasonPh: 'พิมพ์คำตอบของคุณ...',
+    requiredMark: '*', requiredHint: '(บังคับตอบ)',
+    yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
+    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการดี', qBrandReputation: 'ชื่อเสียงบริษัท/แบรนด์',
+    qGrowthOpportunity: 'โอกาสเติบโต/เรียนรู้', qChallengingWork: 'งานท้าทาย/ได้ใช้ทักษะ',
+    qCultureTeam: 'วัฒนธรรมองค์กรดี/ทีมดี', qLocationFlexibility: 'Location/remote flexibility',
+    confidenceScoreLabel: 'ตอนนี้คุณยังคิดว่าตัดสินใจถูกไหม?', confidenceScoreHint: '(1=กำลังหางานใหม่ ... 5=ฉันรักที่นี่มาก)',
+    qSalaryMismatch: 'เงินเดือน/สวัสดิการไม่ตรงคาดหวัง', qNoGrowth: 'ไม่มีโอกาสเติบโต',
+    qCultureMismatch: 'วัฒนธรรมองค์กรไม่เหมาะกับฉัน', qManagerMismatch: 'หัวหน้างานไม่เหมาะกับฉัน',
+    qTeamMismatch: 'ทีมงาน/เพื่อนร่วมงานไม่เหมาะกับฉัน', qWorklifeMismatch: 'Work-life balance ไม่เหมาะกับฉัน',
+    qBetterOffer: 'ได้รับ offer ที่ดีกว่าจากที่อื่น', qNotChallenging: 'งานไม่ท้าทาย/ไม่ตรงสาย',
+    leaveImprovementLabel: 'ถ้าปรับปรุงสิ่งนี้ คุณอาจจะอยู่ต่อ?', leaveImprovementPh: 'พิมพ์คำตอบของคุณ... (ไม่บังคับ)',
+    voteSubmitBtn: 'ส่งความคิดเห็น', voteUpdateBtn: 'บันทึกการแก้ไข',
+    myCompanyNavLabel: 'บริษัทของฉัน', myCommentNavLabel: 'ความคิดเห็นของฉัน',
+    editBtn: 'แก้ไข', deleteRequestBtn: 'ขอลบบริษัทนี้',
+    deleteModalTitle: 'ขอลบบริษัทนี้ออกจากระบบ', deleteReasonLabel: 'กรุณาเลือกเหตุผล',
+    deleteReasonDuplicate: 'บริษัทนี้มีอยู่ในเว็บไซต์แล้ว (สร้างซ้ำ)',
+    deleteReasonNoLongerWant: 'ไม่ต้องการให้ชื่อบริษัทที่ฉันสร้างปรากฏบนเว็บไซต์นี้อีกต่อไป',
+    deleteReasonNoLongerWantPh: 'เหตุใดทำให้คุณอยากลบชื่อบริษัทนี้ออก?',
+    deleteReasonTesting: 'สร้างเพื่อทดสอบระบบเท่านั้น', deleteReasonOther: 'อื่นๆ', deleteReasonOtherPh: 'ระบุเหตุผล...',
+    deletePasscodeLabel: 'กรอก Passcode เพื่อยืนยันการขอลบ', deleteConfirmBtn: 'ส่งคำขอลบ',
+    deletePendingMsg: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ',
+    errTitleRequired: 'กรุณากรอกชื่อบริษัท',
+    errCategoryRequired: 'กรุณาเลือกหมวดหมู่', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
+    errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
+    errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก',
+    errPasscodeRequired: 'กรุณากรอก Passcode', errDeleteReasonRequired: 'กรุณาเลือกเหตุผลและกรอกรายละเอียดให้ครบ',
+    errSignupAvatarRequired: 'กรุณาอัพโหลดรูปโปรไฟล์ก่อนสมัครสมาชิก', errSignupUsernameRequired: 'กรุณากรอก Username',
+    errSignupEmailRequired: 'โปรดใส่อีเมล เพื่อไม่เสียสิทธิ์ในการร่วมสนุก ลุ้นรับรางวัลต่างๆ และใช้เป็นช่องทางในการติดต่อจากทีมงานถึงคุณ',
+    errSignupEmailInvalid: 'อีเมลไม่ถูกต้อง กรุณาใส่ @ ด้วย', errSignupPhoneRequired: 'กรุณากรอกเบอร์โทรศัพท์',
+    errSignupPasscodeRequired: 'กรุณาตั้ง Passcode', errSignupPasscodeTooShort: 'Passcode ต้องมีอย่างน้อย 6 หลัก',
+    errSignupBirthdayRequired: 'กรุณาเลือกวันเกิดให้ครบ วัน/เดือน/ปี', errAgeMinimum: 'ขออภัย ไม่สามารถสมัครสมาชิกได้ เนื่องจากอายุต่ำกว่า 13 ปี',
+    errSignupGenderRequired: 'กรุณาเลือกเพศ', errSignupCountryRequired: 'กรุณาเลือกประเทศ',
+    errSignupProvinceRequired: 'กรุณาเลือกจังหวัด', myAccountFallback: 'บัญชีของฉัน', loggedOutToast: 'ออกจากระบบแล้ว',
+    imageLoadFailToast: 'โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง', imageUploadFailToast: 'อัพโหลดรูปไม่สำเร็จ',
+    loggingInText: 'กำลังเข้าสู่ระบบ...', signingUpText: 'กำลังสมัครสมาชิก...', submittingTopicText: 'กำลังส่งข้อมูล...',
+    voteConfirmTitle: 'ยืนยันการเลือก', cancelBtn: 'ยกเลิก', voteConfirmBtnLabel: 'ยืนยันเลือก',
+    okBtn: 'ตกลง', understandBtn: 'เข้าใจแล้ว', savingText: 'กำลังบันทึก...',
+    sideLabelPrefix: 'ฝั่ง',
+    voteConfirmMsg: 'คุณกำลังเลือก "{side}" เมื่อยืนยันแล้วคำตอบของคุณจะถูกบันทึกทันที และสามารถกลับมาแก้ไขภายหลังได้ที่หน้า "ความคิดเห็นของฉัน"',
+    apiErrorMsg: 'Oops! Something went wrong. Please try refreshing and try again.',
+    dashGenderTitle: 'เพศ', dashAgeGroupTitle: 'ช่วงอายุ', dashLoadingText: 'กำลังโหลดข้อมูล...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
+    commentPlaceholder: 'หากคุณมีความคิดเห็นเพิ่มเติม แบ่งปันมาได้เลย',
+    commentEmptyMsg: 'ยังไม่มีความคิดเห็นในฝั่งนี้',
+    commentLoadingText: 'กำลังโหลดความคิดเห็น...'
+  },
+  en: {
+    createBtn: '＋ Create Company', createBtn2: 'Create Company', loginBtn: 'Log In',
+    heroTitle: '<b>Find</b> the place where you shine.',
+    searchPlaceholder: 'Search companies, tags...', historyLink: '🕓 History',
+    sortShuffle: 'Shuffle', sortLatest: 'Latest', sortPopular: 'Popular',
+    loginTitle: 'Oops! You forgot to log in', loginHint: 'Fill in these 2 fields and log in to start sharing',
+    loginDirectTitle: 'Log In to TOKBUD', loginDirectHint: 'Enter your phone number and passcode to log in',
+    phoneLabel: 'Phone Number',
+    signupCta: 'Not a member yet? Sign up in <b>30 seconds</b> and join the fun',
+    signupBtn: 'Sign Up', signupTitle: 'Create your TOKBUD profile', avatarLabel: 'Profile Photo',
+    setPasscodeLabel: 'Set Passcode', passcodeHint: '(at least 6 digits)', birthdayLabel: 'Birthday',
+    dayOpt: 'Day', monthOpt: 'Month', yearOpt: 'Year', genderLabel: 'Gender',
+    genderChoose: 'Select Gender', genderMale: 'Male', genderFemale: 'Female', genderOther: 'Other',
+    provinceLabel: 'Province', provinceChoose: 'Select Province', signupSubmitBtn: 'Sign Up', countryLabel: 'Country',
+    suStepLabel: 'Step {n} of {total}', suBackBtn: 'Back', suNextBtn: 'Next',
+    suDotProfile: 'Profile', suDotContact: 'Contact', suDotSecurity: 'Security', suDotPersonal: 'Personal', suDotLocation: 'Location',
+    suPasscodeNote: "Don't forget! Please remember or save this Passcode — you'll need it together with your phone number every time you log in.",
+    welcomeTitlePre: 'Welcome', welcomeTitlePost: 'to TOKBUD',
+    welcomeDesc: 'Your work experience is valuable to someone trying to decide',
+    welcomeCreateBtn: 'Create a Company', homeBtn: 'Back to Home', welcomeVoteBtn: 'Back to Sharing', welcomeCreateFirstBtn: "Let's create your first company! 🚀",
+    createSuccessTitle: 'Your company was created and published',
+    createSuccessDesc: 'Your company is now live on the homepage. Go check it out!',
+    createSuccessCreateBtn: 'Create Another', homeToMyTopicsBtn: 'Back to My Company',
+    footerDesc: 'Find the place where you shine.',
+    footerMenuHeading: 'Menu', footerHome: 'Home', footerLoginLink: 'Log In / Sign Up',
+    createModalTitle: 'Create New Company',
+    coverImageLabel: 'Company logo (9:16 ratio)', coverImageHint: '— this preview is exactly how it will look in the feed',
+    coverUploadPrompt: '＋ Tap to attach a company logo',
+    ctTitleLabel: 'Company Name', ctTitlePh: 'e.g. ABC Corporation',
+    ctDescLabel: 'Description', optionalHint2: '(optional)', ctDescPh: 'Add more detail about the company...',
+    ctCategoryLabel: 'Category', ctCategoryChoose: 'Select Category (multiple allowed)',
+    ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
+    createSubmitBtn: 'Create Company',
+    joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
+    joinMainReasonLabel: 'What made you apply to / join this company?', joinMainReasonPh: 'Type your answer...',
+    leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
+    requiredMark: '*', requiredHint: '(required)',
+    yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
+    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits', qBrandReputation: 'Company/brand reputation',
+    qGrowthOpportunity: 'Growth/learning opportunity', qChallengingWork: 'Challenging work / uses my skills',
+    qCultureTeam: 'Good culture / good team', qLocationFlexibility: 'Location/remote flexibility',
+    confidenceScoreLabel: 'Do you still think it was the right choice?', confidenceScoreHint: '(1=job hunting now ... 5=absolutely yes!)',
+    qSalaryMismatch: 'Salary/benefits didn\'t meet expectations', qNoGrowth: 'No growth opportunity',
+    qCultureMismatch: "Culture didn't fit me", qManagerMismatch: "Manager didn't fit me",
+    qTeamMismatch: "Team/colleagues didn't fit me", qWorklifeMismatch: "Work-life balance didn't fit me",
+    qBetterOffer: 'Got a better offer elsewhere', qNotChallenging: "Work wasn't challenging / not my field",
+    leaveImprovementLabel: 'What could have made you stay?', leaveImprovementPh: 'Type your answer... (optional)',
+    voteSubmitBtn: 'Submit', voteUpdateBtn: 'Save changes',
+    myCompanyNavLabel: 'My Company', myCommentNavLabel: 'My Comment',
+    editBtn: 'Edit', deleteRequestBtn: 'Request to delete this company',
+    deleteModalTitle: 'Request to remove this company', deleteReasonLabel: 'Please select a reason',
+    deleteReasonDuplicate: 'Duplicate company already exists on the website',
+    deleteReasonNoLongerWant: 'I no longer want this company I created listed on this platform',
+    deleteReasonNoLongerWantPh: "What's making you want to remove it?",
+    deleteReasonTesting: 'Created for testing only', deleteReasonOther: 'Other', deleteReasonOtherPh: 'Please specify...',
+    deletePasscodeLabel: 'Enter your Passcode to confirm this request', deleteConfirmBtn: 'Submit delete request',
+    deletePendingMsg: 'A delete request is already pending review',
+    errTitleRequired: 'Please enter a company name',
+    errCategoryRequired: 'Please select a category', errTagRequired: 'Please add at least 1 tag',
+    errCoverRequired: 'Please attach a company logo before creating the company',
+    errMainReasonRequired: 'Please fill in this field before saving',
+    errPasscodeRequired: 'Please enter your Passcode', errDeleteReasonRequired: 'Please select a reason and fill in all required details',
+    errSignupAvatarRequired: 'Please upload a profile picture before signing up', errSignupUsernameRequired: 'Please enter a Username',
+    errSignupEmailRequired: 'Please enter your email so you don\'t miss out on giveaways and updates from our team',
+    errSignupEmailInvalid: 'Invalid email, please include an @', errSignupPhoneRequired: 'Please enter your phone number',
+    errSignupPasscodeRequired: 'Please set a Passcode', errSignupPasscodeTooShort: 'Passcode must be at least 6 digits',
+    errSignupBirthdayRequired: 'Please select your full birthday (day/month/year)', errAgeMinimum: 'Sorry, you must be at least 13 years old to sign up',
+    errSignupGenderRequired: 'Please select your gender', errSignupCountryRequired: 'Please select a country',
+    errSignupProvinceRequired: 'Please select a province', myAccountFallback: 'My Account', loggedOutToast: 'Logged out',
+    imageLoadFailToast: 'Failed to load image, please try uploading again', imageUploadFailToast: 'Image upload failed',
+    loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
+    voteConfirmTitle: 'Confirm your choice', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
+    okBtn: 'OK', understandBtn: 'Got it', savingText: 'Saving...',
+    sideLabelPrefix: 'Side',
+    voteConfirmMsg: 'You are choosing "{side}". Once confirmed, your answer is saved immediately, and you can come back to edit it anytime from "My Comment".',
+    apiErrorMsg: 'Oops! Something went wrong. Please try refreshing and try again.',
+    dashGenderTitle: 'Gender', dashAgeGroupTitle: 'Age', dashLoadingText: 'Loading...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
+    commentPlaceholder: 'Tell us more about your answer...',
+    commentEmptyMsg: 'No comments on this side yet',
+    commentLoadingText: 'Loading comments...'
+  }
+};
+function getLang(){ return localStorage.getItem(LANG_KEY) === 'th' ? 'th' : 'en'; }
+function t(key){ const lang = getLang(); return (I18N[lang] && I18N[lang][key] !== undefined) ? I18N[lang][key] : (I18N.th[key] || ''); }
+// alias ของ t() ไว้ใช้ในจุดที่มีตัวแปร local ชื่อ t ทับอยู่แล้ว (เช่น "const t = STATE.topics.find(...)"
+// ในฟังก์ชันเกี่ยวกับโหวต) กันเรียก t('key') แล้วดันไปชนกับ topic object แทนฟังก์ชันแปลภาษา
+const t18n = t;
+function applyLang(lang){
+  const dict = I18N[lang] || I18N.th;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(dict[key] !== undefined) el.innerHTML = dict[key];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    const key = el.getAttribute('data-i18n-ph');
+    if(dict[key] !== undefined) el.placeholder = dict[key];
+  });
+  document.querySelectorAll('.lang-toggle button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+  document.documentElement.lang = lang;
+}
+function setLang(lang){
+  localStorage.setItem(LANG_KEY, lang);
+  applyLang(lang);
+  // label ในการ์ด mini-dash (เพศ/ช่วงอายุ) เป็น dynamic HTML ที่ generate ผ่าน t() ตอน render
+  // ไม่ผ่าน [data-i18n] loop ของ applyLang() จึงต้อง re-render ใหม่ทุกครั้งที่สลับภาษา — ใช้ cache ไม่ยิง API ใหม่
+  rerenderLoadedDashboards();
+  // เดือนใน birthday select ก็เป็นชื่อภาษาเหมือนกัน ไม่ผ่าน [data-i18n] เพราะ generate ด้วย JS ตอน loadBirthdaySelects()
+  // ต้อง rebuild ใหม่ทุกครั้งที่สลับภาษาด้วย ไม่งั้นจะค้างเป็นภาษาตอนโหลดหน้าครั้งแรก (บั๊กที่เจอ)
+  if(document.getElementById('suBirthMonth')) populateBirthMonths();
+}
+document.querySelectorAll('.lang-toggle button').forEach(b=>{
+  b.addEventListener('click', ()=> setLang(b.dataset.lang));
+});
+applyLang(getLang());
+
+const PROVINCES = ['กรุงเทพมหานคร','กระบี่','กาญจนบุรี','กาฬสินธุ์','กำแพงเพชร','ขอนแก่น','จันทบุรี','ฉะเชิงเทรา','ชลบุรี','ชัยนาท','ชัยภูมิ','ชุมพร','เชียงราย','เชียงใหม่','ตรัง','ตราด','ตาก','นครนายก','นครปฐม','นครพนม','นครราชสีมา','นครศรีธรรมราช','นครสวรรค์','นนทบุรี','นราธิวาส','น่าน','บึงกาฬ','บุรีรัมย์','ปทุมธานี','ประจวบคีรีขันธ์','ปราจีนบุรี','ปัตตานี','พระนครศรีอยุธยา','พังงา','พัทลุง','พิจิตร','พิษณุโลก','เพชรบุรี','เพชรบูรณ์','แพร่','ภูเก็ต','มหาสารคาม','มุกดาหาร','แม่ฮ่องสอน','ยโสธร','ยะลา','ร้อยเอ็ด','ระนอง','ระยอง','ราชบุรี','ลพบุรี','ลำปาง','ลำพูน','เลย','ศรีสะเกษ','สกลนคร','สงขลา','สตูล','สมุทรปราการ','สมุทรสงคราม','สมุทรสาคร','สระแก้ว','สระบุรี','สิงห์บุรี','สุโขทัย','สุพรรณบุรี','สุราษฎร์ธานี','สุรินทร์','หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี','อุตรดิตถ์','อุทัยธานี','อุบลราชธานี'];
+
+// ประเทศ: โชว์เป็นภาษาอังกฤษล้วนทั้ง UI โหมด TH/EN (ไม่แปล) เรียง A-Z — ตาม decision ของ Pop
+const COUNTRIES = ['Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo (Brazzaville)','Congo (Kinshasa)','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Djibouti','Dominica','Dominican Republic','Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras','Hong Kong','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kosovo','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Macau','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway','Oman','Pakistan','Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','Sao Tome and Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu','Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe'];
+
+// สร้าง seed สุ่มใหม่ 1 ค่าทุกครั้งที่โหลดสคริปต์นี้ (= ทุกครั้งที่เข้า/รีเฟรชหน้า Home) ส่งไป backend
+// คู่กับ sort=shuffle เพื่อให้ backend สร้างลำดับสุ่มที่ "คงที่" ตลอดรอบนี้ (เปลี่ยนหมวด/เปลี่ยนหน้าไม่กระโดดมั่ว)
+// แต่พอรีเฟรชหน้าใหม่ ตัวแปรนี้ถูกสร้างใหม่ทั้งหมด เลยได้ลำดับสุ่มใหม่ทันทีตามที่ต้องการ
+function genShuffleSeed(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+let STATE = {
+  session: JSON.parse(localStorage.getItem('wz_session') || 'null'),
+  topics: [],
+  categories: [],
+  activeCategory: '',
+  searchQuery: '',
+  sortMode: 'shuffle', // 'shuffle' (default เสมอทุกครั้งที่เข้า/รีเฟรชหน้า Home) | 'latest' | 'popular'
+  shuffleSeed: genShuffleSeed(), // สุ่มใหม่ 1 ค่าต่อการเปิดหน้า Home 1 รอบ — คงที่ตลอดจนกว่าจะรีเฟรชหน้า
+  page: 1,
+  pageSize: 20,
+  totalCount: 0,
+  totalPages: 1,
+  pendingVote: null, // {topicId, side} ถ้าโหวตตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ
+  // first-time (key ไม่มีเลย) = 'card' เสมอ — รองรับ 3 ค่า: 'card' | 'line' | 'carousel' (feature: View by Carousel)
+  feedView: (()=>{ const v = localStorage.getItem(FEED_VIEW_KEY); return (v === 'line' || v === 'carousel') ? v : 'card'; })()
+};
+
+// topicId ของการ์ดที่เปิด (expand) อยู่ใน Line view — module-level เจตนาให้ "อยู่ข้ามการ re-render"
+// (เช่นหลังโหวตสำเร็จที่ยิง loadTopics() ใหม่ทั้งก้อน) การ์ดที่เปิดอยู่ก่อนหน้าจะยังถูก render เป็น "เปิด" ต่อทันที
+// ไม่ auto-หุบเอง — user เป็นคนกดปิดเองเท่านั้น ตามที่ confirm ไว้
+let EXPANDED_TOPIC_ID = null;
+
+/* ---------- API helper ---------- */
+async function api(action, params = {}, method = 'GET', _isRetry = false){
+  // ลด timeout ต่อครั้งเหลือ 15 วิ (จากที่เคยขยับเป็น 30 วิ) เพราะรวมกับ retry 1 ครั้งแล้ว worst-case
+  // จะยาวถึง 30 วิต่อ 1 คำขอ — ตอน init หน้าแรกมีหลายคำขอยิงพร้อมกัน (hero banner/categories/topics/session)
+  // ถ้าปล่อยให้แต่ละอันรอนานถึง 60 วิ จะรู้สึกเหมือนหน้าเว็บค้างจริงจนคนกดรีเฟรชซ้ำๆ ระหว่างที่ของเดิมยังโหลดไม่เสร็จ
+  // ซึ่งเป็นสาเหตุคลาสสิกที่ Safari มือถือขึ้น "A problem repeatedly occurred" (WebKit ล้มซ้ำจากการรีเฟรชทับกัน)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  try{
+    let res;
+    if(method === 'GET'){
+      const qs = new URLSearchParams({action, ...params}).toString();
+      res = await fetch(`${CONFIG.API_URL}?${qs}`, { signal: controller.signal });
+    } else {
+      res = await fetch(CONFIG.API_URL, {
+        method: 'POST',
+        body: JSON.stringify({action, ...params}),
+        signal: controller.signal
+      });
+    }
+    return await res.json();
+  }catch(err){
+    // retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง error จริงให้ user เห็น — ช่วยลด error หลอกจาก cold start/เน็ตสะดุดชั่วครู่
+    if(!_isRetry) return api(action, params, method, true);
+    // _networkError:true = ยิง request ไม่สำเร็จเลย (timeout/เน็ตหลุด/response ไม่ใช่ JSON) แยกไว้ให้ต่างจาก
+    // res.success===false ปกติที่ backend ตอบกลับมาจริงๆ ว่า "ไม่ผ่าน" (เช่น session หมดอายุจริง) — เพราะ 2 เคสนี้
+    // ต้องจัดการต่างกัน จุดที่เรียก validateSession ต้อง "ไม่" logout ถ้าสาเหตุคือเน็ตสะดุด ไม่ใช่ session ไม่ถูกต้องจริง
+    // กันทุกกรณี error (timeout / เน็ตหลุด / response ไม่ใช่ JSON ฯลฯ) ไม่ให้หลุดไปเป็น unhandled exception
+    // ที่ทำให้หน้าจอค้างเป็น spinner ตลอดกาลโดยไม่มีข้อความอะไรบอก user เลย — ต้อง fail แบบมี message เสมอ
+    return { success:false, message: t('apiErrorMsg'), _networkError:true };
+  }finally{
+    clearTimeout(timeoutId);
+  }
+}
+
+function showToast(msg, durationMs){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer); // กันเคส toast ถูกเรียกซ้อนกัน ตัวเก่าจะไปลบ .show ทับตัวใหม่ก่อนเวลาที่ควรจะเป็น
+  t._hideTimer = setTimeout(()=> t.classList.remove('show'), durationMs || 4000); // มาตรฐานใหม่ 4 วิ (เดิม 2.6 วิ อ่านไม่ทันสำหรับข้อความยาว)
+}
+
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// เปิด loginModal โดยสลับหัวข้อ/คำโปรยตามที่มา:
+// 'direct'   = user ตั้งใจกดปุ่ม Log In เอง -> ข้อความต้อนรับปกติ ไม่มี "Oops"
+// 'redirect' = user โดนเด้งมาเพราะพยายามทำอย่างอื่น (สร้างหัวข้อ/โหวต) ทั้งที่ยังไม่ login -> คงข้อความ "Oops! คุณลืม login" ไว้ (ค่า default)
+function openLoginModal(mode){
+  const titleKey = mode === 'direct' ? 'loginDirectTitle' : 'loginTitle';
+  const hintKey = mode === 'direct' ? 'loginDirectHint' : 'loginHint';
+  const titleEl = document.getElementById('loginModalTitle');
+  const hintEl = document.getElementById('loginModalHint');
+  titleEl.setAttribute('data-i18n', titleKey);
+  titleEl.textContent = t(titleKey);
+  hintEl.setAttribute('data-i18n', hintKey);
+  hintEl.textContent = t(hintKey);
+  openModal('loginModal');
+}
+
+/* ===== Confetti celebration ===== */
+function fireConfetti(){
+  const layer = document.getElementById('confettiLayer');
+  if(!layer) return;
+  const colors = ['#FF3B5C','#FFB800','#2FD675','#3B82F6','#A855F7','#FF7A00','#00C2D1'];
+  const shapes = ['rect','square','star'];
+  // จอกว้าง (คอม/แท็บเล็ต) พื้นที่เยอะกว่ามือถือ เพิ่มจำนวนและขนาดชิ้นเล็กน้อยให้เต็มตา ไม่ดูโหรงเหรง
+  const isWide = window.innerWidth >= 900;
+  const pieceCount = isWide ? 260 : 130;
+  const baseSize = isWide ? 8 : 6;
+  const rnd = (min,max)=> min + Math.random()*(max-min);
+  const fragment = document.createDocumentFragment(); // สร้างทุกชิ้นใน memory ก่อน แล้ว insert เข้าจอครั้งเดียว กัน reflow ซ้ำๆ ระหว่างสร้างหลายร้อยชิ้น ซึ่งเป็นสาเหตุหลักที่ทำให้ main thread ค้างตอนเริ่ม
+  for(let i=0;i<pieceCount;i++){
+    const piece = document.createElement('div');
+    const shape = shapes[Math.floor(Math.random()*shapes.length)];
+    piece.className = 'confetti-piece' + (shape === 'star' ? ' confetti-star' : '');
+    const size = baseSize + Math.random()*(baseSize+1);
+    piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+    if(shape === 'rect'){
+      piece.style.width = size + 'px';
+      piece.style.height = (size * (0.4 + Math.random()*0.9)) + 'px';
+      piece.style.borderRadius = '2px';
+    } else if(shape === 'square'){
+      piece.style.width = size + 'px';
+      piece.style.height = size + 'px';
+      piece.style.borderRadius = '2px';
+    } else { // star ห้าแฉก
+      const starSize = size * 1.4;
+      piece.style.width = starSize + 'px';
+      piece.style.height = starSize + 'px';
+    }
+    piece.style.left = (Math.random()*100) + 'vw';
+    // หมุนสะบัดในตัวเองทิศเดียวต่อเนื่อง (2-4 รอบเต็ม) + พลิกหน้า-หลัง 1 จังหวะกลางทาง ไม่มีการเบี่ยงซ้าย-ขวา ตกตรงดิ่งลงมา
+    const totalSpin = rnd(720, 1440) * (Math.random() < 0.5 ? 1 : -1);
+    piece.style.setProperty('--rotMid', (totalSpin*0.5) + 'deg');
+    piece.style.setProperty('--rotEnd', totalSpin + 'deg');
+    piece.style.setProperty('--flipMid', rnd(-1, 1).toFixed(2));
+    const duration = 1.7 + Math.random()*1.1; // เร่งความเร็วร่วงขึ้นจากเดิม (เดิม 3.6-6.2s)
+    const spinDuration = duration * rnd(0.55, 0.9); // หมุนเร็วกว่าจังหวะร่วงเล็กน้อยให้เห็นการสะบัดชัด
+    const delay = Math.random()*0.6; // กระจายจังหวะเริ่มเล็กน้อยไม่ให้ตกพร้อมกันเป๊ะ
+    piece.style.animationDuration = duration + 's, ' + spinDuration + 's';
+    piece.style.animationDelay = delay + 's, ' + delay + 's';
+    fragment.appendChild(piece);
+    setTimeout(()=>{ piece.remove(); }, (duration+delay)*1000 + 200);
+  }
+  layer.appendChild(fragment); // insert ทั้งหมดในจังหวะเดียว
+}
+document.querySelectorAll('[data-close]').forEach(btn=>{
+  btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
+});
+// modal ที่เป็นฟอร์มยาว กรอกข้อมูลเยอะ ต้องกันพลาด: ปิดได้เฉพาะกดปุ่ม (x) เท่านั้น ห้ามปิดด้วยการแตะนอกกรอบ
+const STRICT_CLOSE_MODALS = ['createModal'];
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  if(STRICT_CLOSE_MODALS.includes(ov.id)) return;
+  ov.addEventListener('click', (e)=>{ if(e.target === ov) ov.classList.remove('open'); });
+});
+
+/* ---------- Passcode show/hide toggle ---------- */
+document.querySelectorAll('.passcode-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.target);
+    const nowVisible = input.classList.toggle('pc-visible');
+    btn.textContent = nowVisible ? '🙈' : '👁️';
+  });
+});
+
+/* ---------- Button loading state helper (แทนข้อความ "..." ตอนรอผลจาก server) ---------- */
+function setBtnLoading(btn, loading, loadingLabel){
+  if(loading){
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span>${loadingLabel === undefined ? 'กำลังดำเนินการ...' : loadingLabel}`;
+  } else {
+    btn.disabled = false;
+    if(btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+  }
+}
+
+/* ---------- Auth ---------- */
+function isLoggedIn(){ return !!(STATE.session && STATE.session.session_token); }
+
+/* เช็คกับ server ว่า session_token ที่เก็บไว้ใน localStorage ยังใช้ได้จริงไหม
+   บั๊กเดิม: header เชื่อ localStorage อย่างเดียว (isLoggedIn() เช็คแค่ว่ามี token อยู่ ไม่ได้เช็คว่า token ยังตรงกับฝั่ง server)
+   ถ้า user เคย login เครื่อง/เบราว์เซอร์อื่นทีหลัง (หรือ token หมดอายุ/ถูก rotate) ฝั่ง server จะสร้าง session_token ใหม่ทับของเดิม
+   ทำให้ token เก่าที่ค้างอยู่ในเครื่องนี้ใช้ไม่ได้แล้ว แต่ header ยังโชว์ username เหมือน login ปกติอยู่
+   จนกว่าจะกด action ที่ต้อง auth จริงๆ (เช่นสร้างหัวข้อ) ถึงจะเจอ "กรุณา login ก่อน" งงว่าทำไมเพิ่งโชว์ชื่ออยู่ดีๆ
+   แก้โดยยิงเช็คนี้ทุกครั้งที่เปิดหน้า ถ้า token ใช้ไม่ได้แล้วให้ logout ทันทีเงียบๆ ก่อน user จะเจอ error ตอนพยายามใช้งานจริง */
+async function validateSessionOnLoad(){
+  if(!isLoggedIn()) return;
+  const res = await api('validateSession', { session_token: STATE.session.session_token });
+  if(!res.success){
+    // บั๊กที่เจอ: เดิม logout() ทันทีทุกครั้งที่ res.success===false — แต่ api() เองก็คืน success:false
+    // เหมือนกันตอนเน็ต/Apps Script สะดุดจนคำขอไม่สำเร็จ (ไม่ใช่ backend ตอบมาจริงๆ ว่า session ไม่ถูกต้อง)
+    // เลยกลายเป็นว่า user login อยู่ดีๆ โดน logout ทั้งที่ session ยังใช้ได้ปกติ แค่เน็ตสะดุดตอนเช็คพอดี
+    // แก้โดยเช็ค _networkError ก่อน — logout เฉพาะตอนที่ backend ตอบกลับมาจริงๆ ว่า session ไม่ถูกต้องเท่านั้น
+    if(res._networkError) return; // เน็ต/เซิร์ฟเวอร์สะดุดชั่วคราว ไม่ใช่ session ผิดจริง ปล่อยผ่านไปก่อน รอบหน้าค่อยเช็คใหม่
+    logout();
+    showToast(res.message || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง', 6000); // ข้อความนี้ยาวกว่าปกติ ให้เวลาอ่านนานกว่า toast ทั่วไป
+    return;
+  }
+  // sync username/avatar เผื่อมีการแก้ไขโปรไฟล์จากที่อื่นแล้วยังไม่อัปเดต
+  STATE.session.username = res.username;
+  STATE.session.profile_image_url = res.profile_image_url;
+  localStorage.setItem('wz_session', JSON.stringify(STATE.session));
+  renderHeaderAuth();
+}
+
+function saveSession(data){
+  STATE.session = data;
+  localStorage.setItem('wz_session', JSON.stringify(data));
+  renderHeaderAuth();
+}
+
+function logout(){
+  STATE.session = null;
+  localStorage.removeItem('wz_session');
+  renderHeaderAuth();
+  showToast(t('loggedOutToast'));
+}
+
+function renderHeaderAuth(){
+  const el = document.getElementById('headerActions');
+  if(isLoggedIn()){
+    const uname = (STATE.session && STATE.session.username) ? STATE.session.username : t('myAccountFallback');
+    el.innerHTML = `
+      <button class="btn btn-accent" id="createBtn" data-i18n="createBtn">${t('createBtn')}</button>
+      <a class="btn btn-ghost" href="profile.html" id="authBtn">${escapeHtml(uname)}</a>
+    `;
+  } else {
+    el.innerHTML = `
+      <button class="btn btn-accent" id="createBtn" data-i18n="createBtn">${t('createBtn')}</button>
+      <button class="btn btn-ghost" id="authBtn" data-i18n="loginBtn">${t('loginBtn')}</button>
+    `;
+  }
+  document.getElementById('createBtn').addEventListener('click', handleCreateClick);
+  if(!isLoggedIn()){
+    document.getElementById('authBtn').addEventListener('click', ()=> openLoginModal('direct'));
+  }
+  // ตอน login แล้ว authBtn เป็นลิงก์ไปหน้า profile.html โดยตรง (ย้ายปุ่มออกจากระบบไปไว้ท้ายหน้า profile แทน)
+}
+
+function handleCreateClick(){
+  if(!isLoggedIn()){ openLoginModal('redirect'); return; }
+  openModal('createModal');
+}
+
+document.getElementById('openSignupBtn').addEventListener('click', ()=>{
+  closeModal('loginModal');
+  resetSignupWizard();
+  openModal('signupModal');
+});
+
+document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
+  const phone = document.getElementById('loginPhone').value.trim();
+  const passcode = document.getElementById('loginPasscode').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if(!phone || !passcode){
+    errEl.textContent = 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ';
+    errEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('loginSubmitBtn');
+  setBtnLoading(btn, true, t('loggingInText'));
+  const res = await api('login', {phone, passcode}, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  saveSession(res);
+  closeModal('loginModal');
+  showToast(`ยินดีต้อนรับ ${res.username}`);
+  // เดิม flow นี้เคย auto-vote ให้เงียบๆ เหมือนกับฝั่ง signup (บั๊กเดียวกัน) — แก้ตามหลักการเดียวกัน:
+  // ไม่โหวตให้ แค่พา user กลับไปที่การ์ดหัวข้อที่ตั้งใจโหวตไว้ก่อน login ให้เขากดโหวตเองอีกครั้ง
+  if(STATE.pendingVote){
+    const { topicId } = STATE.pendingVote;
+    STATE.pendingVote = null;
+    scrollToTopicCard(topicId);
+  }
+});
+
+/* ---------- Signup Wizard (5 steps: Photo+Username / Email+Phone / Passcode / Birthday+Gender / Location) ----------
+   เดิมฟอร์มนี้เป็นฟอร์มยาวหน้าเดียว 8 จังหวะ user เห็นพรืดเดียวทั้งหมดจนรู้สึกหนัก เปลี่ยนมาทีละ step แทน
+   validate เฉพาะ field ของ step ปัจจุบันก่อนปล่อยให้กด Next ไป step ถัดไป (บล็อคจนกว่าจะถูกต้อง)
+   progress bar ขยับ 0/20/40/60/80% ตาม step ที่ "ผ่านแล้ว" และเต็ม 100% ตอนสมัครสำเร็จ (แสดงผลต่อใน welcomeModal) */
+const SU_TOTAL_STEPS = 5;
+let suCurrentStep = 1;
+let lastVotedTopicId = null; // เก็บ topicId ที่ user ตั้งใจโหวตไว้ก่อน signup เพื่อใช้พา user กลับไปที่การ์ดนั้นตอนกด "กลับไปโหวต"
+
+// ใช้ร่วมกันทั้ง flow signup และ login resume: พาผู้ใช้กลับไปที่การ์ดหัวข้อที่ตั้งใจโหวตไว้ตอนแรก
+// (ไม่ได้โหวตให้ — user ต้องกดโหวตเองอีกครั้งที่การ์ดนั้น เพื่อความชัดเจน ไม่มี action ใดๆ เกิดขึ้นแบบเงียบๆ)
+function scrollToTopicCard(topicId){
+  if(!topicId) return;
+  setTimeout(()=>{ // รอเฟรมถัดไปกันเคส modal ปิดแอนิเมชันชนกับ scroll ทันที
+    const card = document.querySelector(`.topic-card[data-card-id="${topicId}"]`);
+    if(card) card.scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 150);
+}
+
+function resetSignupWizard(){
+  suCurrentStep = 1;
+  document.getElementById('signupError').style.display = 'none';
+  renderSuStep();
+}
+
+function renderSuStep(){
+  document.querySelectorAll('.su-step').forEach(el=>{
+    el.classList.toggle('active', Number(el.dataset.step) === suCurrentStep);
+  });
+  document.querySelectorAll('.su-dot').forEach(el=>{
+    const n = Number(el.dataset.dot);
+    el.classList.toggle('done', n < suCurrentStep);
+    el.classList.toggle('active', n === suCurrentStep);
+  });
+  // % คิดจากจำนวน step ที่ผ่านมาแล้ว (ไม่รวม step ปัจจุบันที่ยังกรอกไม่เสร็จ) เพื่อให้ผู้ใช้เห็นความคืบหน้าที่ "สำเร็จแล้วจริง"
+  const pct = Math.round(((suCurrentStep - 1) / SU_TOTAL_STEPS) * 100);
+  document.getElementById('suProgressFill').style.width = pct + '%';
+  document.getElementById('suProgressPct').textContent = pct + '%';
+  document.getElementById('suProgressLabel').textContent = t('suStepLabel').replace('{n}', suCurrentStep).replace('{total}', SU_TOTAL_STEPS);
+  document.getElementById('suBackBtn').style.display = suCurrentStep === 1 ? 'none' : 'block';
+  document.getElementById('suNextBtn').textContent = suCurrentStep === SU_TOTAL_STEPS ? t('signupSubmitBtn') : t('suNextBtn');
+  document.getElementById('signupError').style.display = 'none';
+}
+
+// validate เฉพาะ field ของ step ที่ระบุ คืนค่า true/false — เจอ error แรกจุดไหนหยุดจุดนั้นทันที (ตามลำดับบนลงล่างของ step นั้น)
+function validateSuStep(step){
+  const errEl = document.getElementById('signupError');
+  const showErr = (msg)=>{ errEl.textContent = msg; errEl.style.display = 'block'; };
+
+  if(step === 1){
+    if(!signupAvatarUrl){ showErr(t('errSignupAvatarRequired')); return false; }
+    if(!document.getElementById('suUsername').value.trim()){ showErr(t('errSignupUsernameRequired')); return false; }
+    return true;
+  }
+  if(step === 2){
+    const email = document.getElementById('suEmail').value.trim();
+    if(!email){ showErr(t('errSignupEmailRequired')); return false; }
+    if(email.indexOf('@') === -1){ showErr(t('errSignupEmailInvalid')); return false; }
+    if(!document.getElementById('suPhone').value.trim()){ showErr(t('errSignupPhoneRequired')); return false; }
+    return true;
+  }
+  if(step === 3){
+    const pc = document.getElementById('suPasscode').value.trim();
+    if(!pc){ showErr(t('errSignupPasscodeRequired')); return false; }
+    if(pc.length < 6){ showErr(t('errSignupPasscodeTooShort')); return false; }
+    return true;
+  }
+  if(step === 4){
+    const bDay = document.getElementById('suBirthDay').value;
+    const bMonth = document.getElementById('suBirthMonth').value;
+    const bYear = document.getElementById('suBirthYear').value;
+    if(!bDay || !bMonth || !bYear){ showErr(t('errSignupBirthdayRequired')); return false; }
+    const today = new Date();
+    const birthDate = new Date(parseInt(bYear,10), parseInt(bMonth,10)-1, parseInt(bDay,10));
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const hasHadBirthdayThisYear = (today.getMonth() > birthDate.getMonth()) ||
+      (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+    if(!hasHadBirthdayThisYear) age--;
+    if(age < 13){ showErr(t('errAgeMinimum')); return false; }
+    if(!document.getElementById('suGender').value){ showErr(t('errSignupGenderRequired')); return false; }
+    return true;
+  }
+  if(step === 5){
+    const country = document.getElementById('suCountry').value;
+    if(!country){ showErr(t('errSignupCountryRequired')); return false; }
+    if(country === 'Thailand' && !document.getElementById('suProvince').value){ showErr(t('errSignupProvinceRequired')); return false; }
+    // ข้อความนี้ EN ตายตัว (ไม่ผูกกับ toggle) เพราะ error นี้เจอเฉพาะคนที่เลือกประเทศไม่ใช่ Thailand เท่านั้น
+    // การล็อก EN ไว้ตรงนี้ยังเป็นทางเลือกที่ปลอดภัยที่สุด แม้ default lang ของเว็บจะเป็น EN แล้วก็ตาม
+    if(country !== 'Thailand' && !document.getElementById('suCityState').value.trim()){ showErr('Please enter your city/state'); return false; }
+    return true;
+  }
+  return true;
+}
+
+document.getElementById('suBackBtn').addEventListener('click', ()=>{
+  if(suCurrentStep > 1){
+    suCurrentStep--;
+    renderSuStep();
+  }
+});
+
+document.getElementById('suNextBtn').addEventListener('click', async ()=>{
+  if(!validateSuStep(suCurrentStep)) return;
+
+  if(suCurrentStep < SU_TOTAL_STEPS){
+    suCurrentStep++;
+    renderSuStep();
+    return;
+  }
+
+  // step สุดท้ายผ่านแล้ว = กดสมัครสมาชิกจริง
+  const bDay = document.getElementById('suBirthDay').value;
+  const bMonth = document.getElementById('suBirthMonth').value;
+  const bYear = document.getElementById('suBirthYear').value;
+  const payload = {
+    username: document.getElementById('suUsername').value.trim(),
+    email: document.getElementById('suEmail').value.trim(),
+    phone: document.getElementById('suPhone').value.trim(),
+    passcode: document.getElementById('suPasscode').value.trim(),
+    birthday: `${bYear}-${bMonth}-${bDay}`,
+    gender: document.getElementById('suGender').value,
+    country: document.getElementById('suCountry').value,
+    province: document.getElementById('suProvince').value,
+    city_state: document.getElementById('suCityState').value.trim(),
+    profile_image_url: signupAvatarUrl || ''
+  };
+
+  const btn = document.getElementById('suNextBtn');
+  setBtnLoading(btn, true, t('signingUpText'));
+  const res = await api('signup', payload, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){
+    document.getElementById('signupError').textContent = res.message;
+    document.getElementById('signupError').style.display = 'block';
+    return;
+  }
+
+  saveSession(res);
+  closeModal('signupModal');
+  document.getElementById('welcomeUsername').textContent = res.username;
+
+  // ไม่ auto-vote ให้ user แล้ว (เดิมเคยแอบโหวตให้เงียบๆ ตอนสมัครเสร็จ — พบว่า user งง เพราะไม่รู้ว่าระบบ
+  // โหวตไปให้แล้วหรือยัง ไม่มี feedback อะไรเลยระหว่าง journey สมัครสมาชิก) เปลี่ยนเป็นแค่ "จำ" topicId ที่ตั้งใจโหวตไว้
+  // ให้ user กดโหวตเองอีกครั้งตอนกด "กลับไปโหวต" — ชัดเจน ตรงไปตรงมา ไม่มีอะไรเกิดขึ้นโดยที่ user ไม่รู้ตัว
+  const hadPendingVote = !!STATE.pendingVote;
+  if(hadPendingVote){
+    lastVotedTopicId = STATE.pendingVote.topicId;
+    STATE.pendingVote = null;
+  }
+  document.getElementById('welcomeActionsVote').style.display = hadPendingVote ? 'flex' : 'none';
+  document.getElementById('welcomeCreateFirstBtn').style.display = hadPendingVote ? 'none' : 'block';
+  openModal('welcomeModal');
+});
+
+document.getElementById('welcomeVoteBtn').addEventListener('click', ()=>{
+  closeModal('welcomeModal');
+  scrollToTopicCard(lastVotedTopicId); // แค่พาไปที่การ์ด ไม่ได้โหวตให้ — user ต้องกดโหวตเองที่การ์ดนั้นอีกที
+});
+document.getElementById('welcomeCreateBtn').addEventListener('click', ()=>{
+  closeModal('welcomeModal');
+  openModal('createModal');
+});
+document.getElementById('welcomeCreateFirstBtn').addEventListener('click', ()=>{
+  closeModal('welcomeModal');
+  openModal('createModal');
+});
+
+/* ---------- Image upload (profile & cover) ---------- */
+let signupAvatarUrl = '';
+function fileToBase64(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ย่อรูปฝั่ง frontend ก่อนอัพโหลด กันไฟล์ใหญ่จากมือถือ
+function compressImage(file, maxSize = 1600, quality = 0.8){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      img.onload = ()=>{
+        let { width, height } = img;
+        if(width > maxSize || height > maxSize){
+          if(width > height){ height = Math.round(height * maxSize / width); width = maxSize; }
+          else { width = Math.round(width * maxSize / height); height = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImageFile(file){
+  const base64 = await compressImage(file);
+  const res = await api('uploadImage', {
+    file_data: base64,
+    mime_type: 'image/jpeg',
+    file_name: file.name
+  }, 'POST');
+  if(!res.success) throw new Error(res.message);
+  return res.image_url;
+}
+
+document.getElementById('signupAvatarFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const preview = document.getElementById('signupAvatarPreview');
+  preview.innerHTML = '<div class="upload-spinner"></div>';
+  try{
+    const url = await uploadImageFile(file);
+    loadImageWithRetry(url,
+      (u)=>{ signupAvatarUrl = u; preview.innerHTML = `<img src="${u}">`; },
+      ()=>{ signupAvatarUrl = ''; preview.textContent = '＋'; showToast(t('imageLoadFailToast')); }
+    );
+  }catch(err){
+    showToast(t('imageUploadFailToast') + ': ' + err.message);
+    preview.textContent = '＋';
+  }
+});
+
+// ลองโหลดรูปเช็คก่อนใช้จริง กันเคสรูปเพิ่งอัพโหลดขึ้น Google Drive ยังไม่พร้อมให้ endpoint thumbnail เสิร์ฟภาพทันที
+// (ใช้เวลาสร้าง thumbnail สักครู่) เลย retry สัก 2-3 ครั้งก่อนค่อยฟันธงว่าโหลดไม่ได้จริง — ใช้ร่วมกันทั้งรูปโปรไฟล์และรูปประกอบหัวข้อ
+function loadImageWithRetry(url, onSuccess, onFail, attempt = 0){
+  const MAX_ATTEMPTS = 4;
+  const testImg = new Image();
+  testImg.onload = ()=> onSuccess(url);
+  testImg.onerror = ()=>{
+    if(attempt < MAX_ATTEMPTS - 1){
+      setTimeout(()=> loadImageWithRetry(url, onSuccess, onFail, attempt + 1), 1500);
+      return;
+    }
+    onFail();
+  };
+  testImg.src = url;
+}
+
+/* ---------- Reference data ---------- */
+async function loadProvinces(){
+  const sel = document.getElementById('suProvince');
+  PROVINCES.forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    sel.appendChild(opt);
+  });
+}
+
+// ประเทศ: default เลือก 'Thailand' ไว้ก่อนเสมอ (user ไทยซึ่งเป็นกลุ่มหลักจะไม่รู้สึกถึงการเปลี่ยนแปลงเลย
+// ต้องกดเปลี่ยนเองเฉพาะคนที่ไม่ใช่ไทยเท่านั้น) เลือกไทย -> โชว์ dropdown จังหวัดเดิม, เลือกอื่น -> โชว์ช่อง City/State (บังคับกรอก)
+function loadCountries(){
+  const sel = document.getElementById('suCountry');
+  COUNTRIES.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  sel.value = 'Thailand';
+  sel.addEventListener('change', ()=> toggleCountryFields(sel.value));
+  toggleCountryFields(sel.value);
+}
+
+function toggleCountryFields(country){
+  const isThailand = country === 'Thailand';
+  document.getElementById('suProvinceField').style.display = isThailand ? 'block' : 'none';
+  document.getElementById('suCityStateField').style.display = isThailand ? 'none' : 'block';
+  if(isThailand) document.getElementById('suCityState').value = '';
+  else document.getElementById('suProvince').value = '';
+}
+
+const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const EN_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function loadBirthdaySelects(){
+  const daySel = document.getElementById('suBirthDay');
+  for(let d = 1; d <= 31; d++){
+    const opt = document.createElement('option');
+    opt.value = String(d).padStart(2,'0'); opt.textContent = d;
+    daySel.appendChild(opt);
+  }
+  populateBirthMonths();
+  const yearSel = document.getElementById('suBirthYear');
+  const thisYear = new Date().getFullYear();
+  for(let y = thisYear - 13; y >= thisYear - 90; y--){
+    const opt = document.createElement('option');
+    opt.value = String(y); opt.textContent = y; // ค.ศ. (Gregorian) ล้วนๆ ไม่มี พ.ศ. ปนเลย เพื่อไม่ให้สับสน
+    yearSel.appendChild(opt);
+  }
+}
+
+// เดือนเป็นชื่อภาษา (ต่างจาก day/year ที่เป็นตัวเลขล้วน ไม่ผูกภาษา) จึงต้อง rebuild option ใหม่ทุกครั้งที่สลับ EN/TH
+// เดิมบั๊กคือ hardcode เป็น THAI_MONTHS ตายตัว ทำให้ตอนสลับไป EN ทั้งหน้า เดือนกลับยังเป็นไทยอยู่ (ตลกอย่างที่ Pop ทัก)
+function populateBirthMonths(){
+  const monthSel = document.getElementById('suBirthMonth');
+  const prevValue = monthSel.value;
+  // ลบเฉพาะ option ที่ JS สร้างเอง (value ไม่ว่าง) เหลือ placeholder ตัวแรกจาก HTML (value="", data-i18n="monthOpt") ไว้เหมือนเดิม
+  Array.from(monthSel.options).forEach(opt=>{ if(opt.value !== '') opt.remove(); });
+  const monthNames = getLang() === 'th' ? THAI_MONTHS : EN_MONTHS;
+  monthNames.forEach((m, i)=>{
+    const opt = document.createElement('option');
+    opt.value = String(i+1).padStart(2,'0'); opt.textContent = m;
+    monthSel.appendChild(opt);
+  });
+  if(prevValue) monthSel.value = prevValue; // คงค่าที่ user เลือกไว้แล้ว ไม่ต้องเลือกใหม่ตอนสลับภาษา
+}
+
+// P0-fix (หน้าแรกโหลดช้า/error บ่อย): แยกส่วน render ออกจากส่วนยิง api() เพื่อให้ loadHomeFeed() (ดูด้านล่าง)
+// เอา categories ที่ได้มาจากคำขอ getHomeFeed คำขอเดียวมา render ตรงนี้ซ้ำได้ ไม่ต้องยิง getCategories แยก
+function renderCategoryPills(categories){
+  STATE.categories = categories || [];
+  const wrap = document.getElementById('categoryPills');
+  wrap.innerHTML = '';
+  const allPill = document.createElement('button');
+  allPill.className = 'category-pill selected';
+  allPill.textContent = 'All';
+  allPill.addEventListener('click', ()=> selectCategory('', allPill));
+  wrap.appendChild(allPill);
+
+  STATE.categories.forEach(cat=>{
+    const pill = document.createElement('button');
+    pill.className = 'category-pill';
+    pill.textContent = cat;
+    pill.addEventListener('click', ()=> selectCategory(cat, pill));
+    wrap.appendChild(pill);
+  });
+}
+async function loadCategories(){
+  const res = await api('getCategories');
+  renderCategoryPills(res.success ? res.categories : []);
+}
+
+function selectCategory(cat, el){
+  STATE.activeCategory = cat;
+  STATE.page = 1;
+  document.querySelectorAll('.category-pill').forEach(p=> p.classList.remove('selected'));
+  if(el) el.classList.add('selected');
+  loadTopics();
+}
+
+// สลับโหมดเรียงฟีด (Shuffle/Latest/Popular) — เป็นอิสระจากหมวดหมู่/คำค้นหาที่เลือกไว้อยู่ ไม่รีเซ็ตตัวกรองอื่น
+// แค่เปลี่ยนลำดับการ์ดของหัวข้อที่ผ่าน filter เดิม แล้ว fetch หน้า 1 ใหม่
+document.getElementById('feedSortToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-sort]');
+  if(!btn) return;
+  const sortMode = btn.dataset.sort;
+  // UX-fix: เดิม shuffleSeed สุ่มแค่ครั้งเดียวตอนโหลดหน้า Home แล้วค้างอยู่แบบนั้นตลอด session เลยทำให้
+  // กดเข้า Latest/Popular แล้วกลับมา Shuffle ใหม่ เจอ "ลำดับเดิม" ทุกครั้ง ทั้งที่ user คาดหวังว่ากด Shuffle
+  // แต่ละครั้งควรได้ชุดสุ่มใหม่ (เหมือนคำว่า shuffle จริงๆ) — ตอนนี้สุ่ม seed ใหม่ทุกครั้งที่กดปุ่ม Shuffle
+  // ไม่ว่าจะกำลัง active อยู่แล้วหรือไม่ก็ตาม ส่วน Latest/Popular กดซ้ำโหมดเดิมไม่ต้อง fetch ใหม่เหมือนเดิม
+  if(sortMode === 'shuffle') STATE.shuffleSeed = genShuffleSeed();
+  else if(btn.classList.contains('active')) return;
+  document.querySelectorAll('#feedSortToggle button').forEach(b=> b.classList.remove('active'));
+  btn.classList.add('active');
+  STATE.sortMode = sortMode;
+  STATE.page = 1;
+  loadTopics();
+});
+
+/* ---------- Create Topic form ---------- */
+let ctSelectedColor = '';
+let ctCoverUrl = '';
+
+async function loadCreateFormOptions(){
+  // หมวดหมู่ใช้ list เดียวกับ filter บนหน้าแรก (STATE.categories โหลดไว้แล้วตอน init)
+  const catSel = document.getElementById('ctCategory');
+  STATE.categories.forEach(cat=>{
+    const opt = document.createElement('option');
+    opt.value = cat; opt.textContent = cat;
+    catSel.appendChild(opt);
+  });
+
+  const res = await api('getCardColors');
+  STATE.cardColors = res.success ? res.colors : [];
+  const wrap = document.getElementById('colorSwatches');
+  const DEFAULT_IDX = 8; // ม่วง — ตรงกับ default ฝั่ง backend
+  STATE.cardColors.forEach((c, i)=>{
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'color-swatch' + (i === DEFAULT_IDX ? ' selected' : '');
+    sw.style.background = c.hex;
+    sw.title = c.name;
+    sw.addEventListener('click', ()=>{
+      document.querySelectorAll('.color-swatch').forEach(s=> s.classList.remove('selected'));
+      sw.classList.add('selected');
+      ctSelectedColor = c.hex;
+      document.getElementById('createModal').style.setProperty('--card-color', c.hex);
+    });
+    wrap.appendChild(sw);
+  });
+  if(STATE.cardColors[DEFAULT_IDX]) ctSelectedColor = STATE.cardColors[DEFAULT_IDX].hex;
+  if(ctSelectedColor) document.getElementById('createModal').style.setProperty('--card-color', ctSelectedColor);
+}
+
+document.getElementById('coverFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const preview = document.getElementById('coverPreview');
+  preview.innerHTML = '<div class="upload-spinner"></div>';
+  try{
+    const url = await uploadImageFile(file);
+    loadImageWithRetry(url,
+      (u)=>{ ctCoverUrl = u; preview.innerHTML = `<img src="${u}">`; },
+      ()=>{ ctCoverUrl = ''; preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`; showToast(t('imageLoadFailToast')); }
+    );
+  }catch(err){
+    showToast(t('imageUploadFailToast') + ': ' + err.message);
+    preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`;
+  }
+});
+
+/* ---------- Title field: auto-grow ตามเนื้อหา + ปิดการตอบสนองปุ่ม Enter ---------- */
+function autoGrowTitle(){
+  const el = document.getElementById('ctTitle');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+document.getElementById('ctTitle').addEventListener('input', autoGrowTitle);
+document.getElementById('ctTitle').addEventListener('keydown', (e)=>{
+  // title เป็นข้อความบรรทัดเดียวเชิงความหมาย (คล้ายชื่อเรื่อง/hook การตลาด) ไม่ต้องการให้ Enter ทำอะไรเลย ไม่ว่าจะขึ้นบรรทัดใหม่หรือ submit ฟอร์ม
+  if(e.key === 'Enter'){ e.preventDefault(); }
+});
+
+document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('createError');
+  errEl.style.display = 'none';
+
+  const companyName = document.getElementById('ctTitle').value.trim();
+  const description = document.getElementById('ctDescription').value.trim();
+  const category = Array.from(document.getElementById('ctCategory').selectedOptions).map(o=>o.value).filter(v=>v).join(',');
+  const tags = ['ctTag1','ctTag2','ctTag3','ctTag4','ctTag5'].map(id => document.getElementById(id).value.trim());
+
+  if(!companyName){ errEl.textContent = t('errTitleRequired'); errEl.style.display = 'block'; return; }
+  if(!category){ errEl.textContent = t('errCategoryRequired'); errEl.style.display = 'block'; return; }
+  if(!tags.some(v => v)){ errEl.textContent = t('errTagRequired'); errEl.style.display = 'block'; return; }
+  if(!ctCoverUrl){ errEl.textContent = t('errCoverRequired'); errEl.style.display = 'block'; return; }
+
+  const payload = {
+    session_token: STATE.session.session_token,
+    company_name: companyName, description,
+    category,
+    tag_1: tags[0], tag_2: tags[1], tag_3: tags[2], tag_4: tags[3], tag_5: tags[4],
+    card_color: ctSelectedColor,
+    image_url_raw: ctCoverUrl
+  };
+
+  const btn = document.getElementById('createSubmitBtn');
+  setBtnLoading(btn, true, t('submittingTopicText'));
+  const res = await api('createCompany', payload, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  closeModal('createModal');
+  resetCreateForm();
+  if(STATE.cameFromProfile){
+    const homeBtnEl = document.getElementById('createSuccessHomeBtn');
+    homeBtnEl.removeAttribute('data-i18n');
+    homeBtnEl.textContent = t('homeToMyTopicsBtn');
+  }
+  openModal('createSuccessModal');
+  fireConfetti();
+});
+
+document.getElementById('createSuccessCreateBtn').addEventListener('click', ()=>{
+  closeModal('createSuccessModal');
+  openModal('createModal');
+});
+document.getElementById('createSuccessHomeBtn').addEventListener('click', ()=>{
+  closeModal('createSuccessModal');
+  // ถ้ามาจากปุ่มสร้างบริษัทในหน้า "บริษัทของฉัน" ให้พากลับไปหน้านั้นแทนหน้าแรก จะได้เห็นบริษัทใหม่ในลิสต์ทันที
+  if(STATE.cameFromProfile){ location.href = 'profile.html'; return; }
+  // ปุ่มนี้กดจากหน้าแรกอยู่แล้ว (ไม่ได้ navigate ไปไหน) เดิมแค่ปิด modal เฉยๆ ทำให้ feed ยังเป็นข้อมูลเก่า
+  // ต้องรีเฟรช feed ใหม่เอง ไม่งั้น user จะเห็นบริษัทที่เพิ่งสร้างก็ต่อเมื่อกด refresh browser เอง
+  // reset กลับหน้า 1 ด้วย เพราะบริษัทใหม่จะอยู่บนสุด (เรียงใหม่ล่าสุดก่อน) ถ้า user ค้างอยู่หน้าอื่นจะไม่เห็น
+  STATE.page = 1;
+  loadTopics();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+function resetCreateForm(){
+  document.getElementById('ctTitle').value = '';
+  document.getElementById('ctTitle').style.height = 'auto';
+  document.getElementById('ctDescription').value = '';
+  document.getElementById('ctCategory').selectedIndex = -1;
+  ['ctTag1','ctTag2','ctTag3','ctTag4','ctTag5'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('createError').style.display = 'none';
+  ctCoverUrl = '';
+  document.getElementById('coverPreview').innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`;
+  const swatches = document.querySelectorAll('.color-swatch');
+  const DEFAULT_IDX = 8;
+  swatches.forEach(s => s.classList.remove('selected'));
+  if(swatches[DEFAULT_IDX]) swatches[DEFAULT_IDX].classList.add('selected');
+
+  ctSelectedColor = STATE.cardColors && STATE.cardColors[DEFAULT_IDX] ? STATE.cardColors[DEFAULT_IDX].hex : '';
+}
+
+/* ---------- Topics / Feed ---------- */
+async function loadTopics(){
+  // ใช้ข้อความ EN ตายตัวเสมอ (ไม่ผูกกับ TH/EN toggle) ตาม decision ของ Pop เพราะเป็นแค่ spinner ชั่วคราว
+  // อยากให้คนทุกชาติเข้าใจได้ทันทีโดยไม่ต้องพึ่งภาษาที่เลือกไว้
+  document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading topics...</div>`;
+  const params = { page: STATE.page, page_size: STATE.pageSize, sort: STATE.sortMode };
+  if(STATE.sortMode === 'shuffle') params.shuffle_seed = STATE.shuffleSeed;
+  if(STATE.activeCategory) params.category = STATE.activeCategory;
+  if(STATE.searchQuery) params.search = STATE.searchQuery;
+  const res = await api('getTopics', params);
+
+  // แยกเคส "ยิง API ไม่สำเร็จ" ออกจากเคส "ยิงสำเร็จแต่ไม่มีหัวข้อจริงๆ" ให้ชัดเจน
+  // กันไม่ให้ user เห็นข้อความ "ยังไม่มีหัวข้อ" ทั้งที่จริงๆ แล้วระบบแค่โหลดพัง/ช้าเกินไป
+  STATE.feedLoadError = res.success ? '' : (res.message || t('apiErrorMsg'));
+  STATE.topics = res.success ? res.topics : [];
+  STATE.totalCount = res.success ? (res.count || 0) : 0;
+  STATE.totalPages = res.success ? (res.total_pages || 1) : 1;
+  if(res.success && res.page) STATE.page = res.page; // เผื่อ backend ปรับ page ให้ (เช่นขอหน้าที่เกินจริง)
+  renderFeed();
+  renderResultCount();
+  renderPagination();
+
+  // dashboard (สรุปเพศ/อายุ) โหลดแบบ lazy ตอน user กดเปิดเองเท่านั้น (ดู toggleDashSummary) — ไม่ preload
+  // ทั้งฟีดอัตโนมัติอีกต่อไปแล้ว เพราะเดิมทำให้ยิง API ต่อเนื่อง 20-100 ครั้งทุกครั้งที่โหลดหน้า ซึ่งเป็นสาเหตุหลัก
+  // ที่ทำให้หน้าโหลดช้า/ค้าง (ดู commit note)
+}
+
+// P0-fix (หน้าแรกโหลดช้า/ค้าง/ขึ้น error ให้ลองใหม่บ่อยมาก — feedback ของ Pop): เดิม init() ยิงแยก 3 คำขอ
+// เรียงคิวกัน (loadTopics -> loadHeroBanners -> loadCategories) ทุกครั้งที่เปิดหน้าแรก แต่ละคำขอมีโอกาสต้อง
+// แบก cold-start ของ Apps Script เองแยกกันได้ + มี timeout/retry budget ของตัวเอง (worst case ~30 วิ/คำขอ)
+// รวมกันแล้วอาจกินเวลารวมสูงถึง ~90 วิ กว่าจะเห็นหน้าแรกครบ หรือพังก่อนครบเพราะคำขอใดคำขอหนึ่งช้าเกิน
+// -> ใช้ endpoint รวม getHomeFeed (คืน topics+banners+categories มาในคำขอเดียว) แทน ตอนโหลดหน้าแรกเท่านั้น
+// ส่วนการ fetch topics รอบถัดๆ ไป (เปลี่ยนหน้า/หมวดหมู่/ค้นหา/เรียงลำดับ) ยังใช้ loadTopics() เดิมตามปกติ
+// เพราะไม่จำเป็นต้องโหลด banners/categories ซ้ำทุกครั้ง
+async function loadHomeFeed(){
+  document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading topics...</div>`;
+  const params = { page: STATE.page, page_size: STATE.pageSize, sort: STATE.sortMode };
+  if(STATE.sortMode === 'shuffle') params.shuffle_seed = STATE.shuffleSeed;
+  if(STATE.activeCategory) params.category = STATE.activeCategory;
+  if(STATE.searchQuery) params.search = STATE.searchQuery;
+  const res = await api('getHomeFeed', params);
+
+  STATE.feedLoadError = res.success ? '' : (res.message || t('apiErrorMsg'));
+  STATE.topics = res.success ? res.topics : [];
+  STATE.totalCount = res.success ? (res.count || 0) : 0;
+  STATE.totalPages = res.success ? (res.total_pages || 1) : 1;
+  if(res.success && res.page) STATE.page = res.page;
+  renderFeed();
+  renderResultCount();
+  renderPagination();
+
+  renderCategoryPills(res.success ? res.categories : []);
+  initHeroBanners(res.success ? res.banners : []);
+}
+
+function renderResultCount(){
+  const el = document.getElementById('resultCount');
+  // hardcode EN ตายตัว (ไม่ผูก TH/EN toggle) ตาม decision ของ Pop เหมือนข้อความ system อื่นๆ
+  el.innerHTML = STATE.totalCount > 0 ? `Found <b>${STATE.totalCount}</b> topics` : '';
+}
+
+function renderPagination(){
+  const el = document.getElementById('paginationRow');
+  if(STATE.totalCount === 0){ el.innerHTML = ''; return; }
+
+  const cur = STATE.page;
+  const total = STATE.totalPages;
+
+  // เลขหน้า: โชว์หน้าแรก/หน้าสุดท้ายเสมอ + หน้าใกล้ๆ ปัจจุบัน ที่เหลือย่อด้วย ...
+  const pages = [];
+  const addPage = n => pages.push(n);
+  const windowStart = Math.max(2, cur - 1);
+  const windowEnd = Math.min(total - 1, cur + 1);
+  addPage(1);
+  if(windowStart > 2) pages.push('...');
+  for(let n = windowStart; n <= windowEnd; n++) addPage(n);
+  if(windowEnd < total - 1) pages.push('...');
+  if(total > 1) addPage(total);
+
+  const pageBtns = pages.map(n =>
+    n === '...'
+      ? `<span class="page-ellipsis">…</span>`
+      : `<button class="page-btn${n === cur ? ' active' : ''}" data-page="${n}">${n}</button>`
+  ).join('');
+
+  el.innerHTML = `
+    <button class="page-btn" data-page="${cur - 1}" ${cur <= 1 ? 'disabled' : ''}>‹</button>
+    ${pageBtns}
+    <button class="page-btn" data-page="${cur + 1}" ${cur >= total ? 'disabled' : ''}>›</button>
+    <select class="page-size-select" id="pageSizeSelect">
+      <option value="20" ${STATE.pageSize===20?'selected':''}>แสดง 20 / หน้า</option>
+      <option value="50" ${STATE.pageSize===50?'selected':''}>แสดง 50 / หน้า</option>
+      <option value="100" ${STATE.pageSize===100?'selected':''}>แสดง 100 / หน้า</option>
+    </select>
+  `;
+
+  el.querySelectorAll('.page-btn[data-page]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const n = parseInt(btn.dataset.page, 10);
+      if(!n || n < 1 || n > STATE.totalPages || n === STATE.page) return;
+      STATE.page = n;
+      loadTopics();
+      document.getElementById('feed').scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+  });
+  document.getElementById('pageSizeSelect').addEventListener('change', (e)=>{
+    STATE.pageSize = parseInt(e.target.value, 10);
+    STATE.page = 1;
+    loadTopics();
+  });
+}
+
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>{
+    STATE.searchQuery = e.target.value.trim();
+    STATE.page = 1;
+    loadTopics();
+  }, 350);
+});
+
+function renderFeed(){
+  const feed = document.getElementById('feed');
+  feed.classList.toggle('view-line', STATE.feedView === 'line');
+  feed.classList.toggle('view-carousel', STATE.feedView === 'carousel');
+  if(STATE.feedLoadError){
+    feed.innerHTML = `<div class="empty-state"><div class="emoji">⚠️</div>${escapeHtml(STATE.feedLoadError)}<br>
+      <button class="btn btn-primary" id="feedRetryBtn" style="margin-top:14px;">Try again</button></div>`;
+    const retryBtn = document.getElementById('feedRetryBtn');
+    if(retryBtn) retryBtn.addEventListener('click', loadTopics);
+    return;
+  }
+  if(STATE.topics.length === 0){
+    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ยังไม่มีหัวข้อในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ</div>`;
+    return;
+  }
+  feed.innerHTML = STATE.topics.map(feedItemHTML).join('');
+  bindCardEvents(feed); // no-op ใน carousel view (ไม่มี .vote-btn/.share-icon-btn ฯลฯ อยู่ในการ์ดย่อ ไม่เป็นปัญหา)
+  setupDescMoreButtons();
+  if(STATE.feedView === 'line') bindLineEvents(feed);
+  if(STATE.feedView === 'carousel') bindCarouselEvents(feed);
+}
+
+// ---------- Carousel view (feature: View by Carousel — Netflix-style poster grid) ----------
+// การ์ดย่อแค่รูป(หรือ text แทนรูปถ้าไม่มี) + ชื่อหัวข้อบรรทัดเล็กใต้รูป กดแล้วเปิด full card เดิม (topicCardHTML)
+// เป็น modal ลอยทับจอ — ไม่ก็อปโครงสร้างการ์ดเต็มมาเขียนซ้ำ ใช้ของเดิมตรงๆ เหมือนที่ Line view ทำ
+function carouselItemHTML(t){
+  const hasImg = t.topic_type === 'image' && t.image_url;
+  const color = t.card_color || 'var(--primary)';
+  const thumbHTML = hasImg
+    ? `<img src="${t.image_url}" alt="${escapeHtml(t.company_name)}" loading="lazy">`
+    : `<div class="carousel-thumb-text-wrap"><div class="carousel-thumb-text">${escapeHtml(t.company_name)}</div></div>`;
+  return `
+  <button type="button" class="carousel-item" data-carousel-open="${t.company_id}" style="--card-color:${color}">
+    <div class="carousel-thumb">${thumbHTML}</div>
+    <span class="carousel-caption">${escapeHtml(t.company_name)}</span>
+  </button>`;
+}
+
+function bindCarouselEvents(scopeEl){
+  scopeEl.querySelectorAll('[data-carousel-open]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openCarouselCard(btn.dataset.carouselOpen));
+  });
+}
+
+// เปิด full card เดิม (topicCardHTML) ใน modal — reuse bindCardEvents/setupDescMoreButtons ตัวเดียวกับที่ฟีดปกติ
+// ใช้อยู่แล้ว (pattern เดียวกับ initFocusMode) โหวต/คอมเมนต์/แชร์/แปลภาษาในการ์ดที่เปิดจาก modal ทำงานได้ครบเหมือนการ์ดปกติ
+function openCarouselCard(topicId){
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t) return;
+  const body = document.getElementById('carouselCardModalBody');
+  body.innerHTML = topicCardHTML(t);
+  bindCardEvents(body);
+  setupDescMoreButtons();
+  openModal('carouselCardModal');
+}
+
+// ---------- Line view (feature: View by Card/Line) ----------
+// Card view: คืน full card เดิมตรงๆ ไม่แตะ
+// Line view: ห่อ full card เดิม (reuse topicCardHTML ทั้งดุ้น ไม่ก็อปโค้ดซ้ำ) ไว้ใน .line-expand-wrap
+// ที่หุบ/ขยายด้วย CSS — เปิดอยู่ตาม EXPANDED_TOPIC_ID (module-level, อยู่ข้ามการ re-render)
+function feedItemHTML(t){
+  if(STATE.feedView === 'carousel') return carouselItemHTML(t);
+  if(STATE.feedView !== 'line') return topicCardHTML(t);
+  const isOpen = EXPANDED_TOPIC_ID === t.company_id;
+  const color = t.card_color || 'var(--primary)';
+  return `
+  <div class="line-item" data-line-id="${t.company_id}">
+    <button type="button" class="line-bar" data-line-toggle="${t.company_id}" aria-expanded="${isOpen ? 'true' : 'false'}" style="--card-color:${color}">
+      <span class="line-bar-text">${escapeHtml(t.company_name)}</span>
+      <span class="line-bar-arrow">▾</span>
+    </button>
+    <div class="line-expand-wrap${isOpen ? ' open' : ''}" data-line-wrap="${t.company_id}">
+      <div class="line-expand-inner">${topicCardHTML(t)}</div>
+    </div>
+  </div>`;
+}
+
+function bindLineEvents(scopeEl){
+  scopeEl.querySelectorAll('[data-line-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=> toggleLineItem(btn.dataset.lineToggle));
+  });
+}
+
+// Exclusive accordion: เปิดได้ทีละใบ — ใบที่เปิดค้างก่อนหน้าหุบอัตโนมัติทันทีที่เปิดใบใหม่
+// ไม่มี auto-หุบหลังโหวตสำเร็จ (ตกลงกับ Pop แล้ว) — ปิดได้จาก user กดเองเท่านั้น จึงไม่มี logic auto-close อื่นใดที่นี่
+function toggleLineItem(topicId){
+  const willOpen = EXPANDED_TOPIC_ID !== topicId;
+  const prevId = EXPANDED_TOPIC_ID;
+  EXPANDED_TOPIC_ID = willOpen ? topicId : null;
+  if(prevId && prevId !== topicId) setLineItemOpen(prevId, false);
+  setLineItemOpen(topicId, willOpen);
+}
+
+function setLineItemOpen(topicId, open){
+  const wrap = document.querySelector(`.line-expand-wrap[data-line-wrap="${topicId}"]`);
+  const btn = document.querySelector(`.line-bar[data-line-toggle="${topicId}"]`);
+  if(wrap) wrap.classList.toggle('open', open);
+  if(btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function initFeedViewToggle(){
+  const wrap = document.getElementById('feedViewToggle');
+  if(!wrap) return;
+  wrap.querySelectorAll('.fv-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.view === STATE.feedView);
+    btn.addEventListener('click', ()=>{
+      const view = btn.dataset.view;
+      if(view === STATE.feedView) return;
+      STATE.feedView = view;
+      localStorage.setItem(FEED_VIEW_KEY, view);
+      wrap.querySelectorAll('.fv-btn').forEach(b=> b.classList.toggle('active', b.dataset.view === view));
+      renderFeed();
+    });
+  });
+}
+initFeedViewToggle();
+
+// ผูก event listener ให้การ์ดหัวข้อ — แยกออกมาเป็นฟังก์ชันกลาง เรียกซ้ำได้ทั้งตอน render feed ทั้งก้อน
+// (scope = #feed) และตอน re-render การ์ดเดี่ยวๆ หลังกดแปลภาษา/ดูต้นฉบับ (scope = การ์ดใบนั้นใบเดียว)
+// ทำแบบนี้เพื่อไม่ต้อง render feed ทั้งหน้าใหม่ทุกครั้งที่แปล ซึ่งจะเสีย scroll position และปิด
+// mini-dash ที่การ์ดอื่นๆ เปิดค้างอยู่ไปด้วยโดยไม่จำเป็น
+function bindCardEvents(scopeEl){
+  scopeEl.querySelectorAll('.vote-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> handleVoteClick(btn.dataset.topic, btn.dataset.side, btn));
+  });
+  scopeEl.querySelectorAll('.share-icon-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openShareMenu(btn.dataset.topic));
+  });
+  scopeEl.querySelectorAll('.comment-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openCommentModal(btn.dataset.commentTopic, btn.dataset.commentSide, btn.dataset.commentLabel));
+  });
+  scopeEl.querySelectorAll('[data-lightbox]').forEach(el=>{
+    el.addEventListener('click', ()=> openLightbox(el.dataset.lightbox));
+  });
+  scopeEl.querySelectorAll('[data-dash-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=> toggleDashSummary(btn.dataset.dashToggle));
+  });
+  scopeEl.querySelectorAll('[data-tr-topic]').forEach(btn=>{
+    btn.addEventListener('click', ()=> handleTranslateClick(btn.dataset.trTopic));
+  });
+  scopeEl.querySelectorAll('[data-tr-original]').forEach(btn=>{
+    btn.addEventListener('click', ()=> revertTranslation(btn.dataset.trOriginal));
+  });
+  scopeEl.querySelectorAll('[data-tr-change]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openLangPickerFor(btn.dataset.trChange));
+  });
+}
+
+// เปิด/ปิด voter summary ของการ์ดนั้นๆ — ปิดไว้เป็นค่าเริ่มต้นเสมอ (ดู topicCardHTML) เพื่อไม่ให้กินพื้นที่จอโดยไม่จำเป็น
+function toggleDashSummary(topicId){
+  const body = document.getElementById(`dashBody-${topicId}`);
+  const btn = document.querySelector(`.dash-toggle-btn[data-dash-toggle="${topicId}"]`);
+  if(!body || !btn) return;
+  const willOpen = !body.classList.contains('open');
+  body.classList.toggle('open', willOpen);
+  btn.classList.toggle('open', willOpen);
+  btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+  // เพิ่งเปิดแต่ข้อมูลยังไม่มา (ยังเห็น spinner ค้างอยู่ = คิว preload พื้นหลังยังโหลดมาไม่ถึงการ์ดนี้)
+  // ตัดคิวโหลดของการ์ดนี้ทันที ไม่ต้องรอคิว ระหว่างรอ spinner จะหมุนต่อไปให้เห็นว่ากำลังทำงานอยู่ ไม่ได้ค้าง
+  if(willOpen){
+    const dashEl = document.getElementById(`dash-${topicId}`);
+    if(dashEl && !dashEl.querySelector('.dash-cols')){
+      loadDashboardFor(topicId);
+    }
+  }
+}
+
+/* เช็คทีละคำอธิบายว่าล้น 2 บรรทัดที่ clamp ไว้จริงไหม (ต้องเช็คหลัง DOM วาดเสร็จแล้วเท่านั้นถึงจะรู้ scrollHeight ที่แท้จริง)
+   ถ้าล้นค่อยโชว์ปุ่ม "อ่านเพิ่มเติม" ถ้าไม่ล้น (ข้อความสั้นพอ) ก็ไม่ต้องโชว์ปุ่มให้รกการ์ดเปล่าๆ */
+function setupDescMoreButtons(){
+  document.querySelectorAll('.topic-desc.clamp-2').forEach(el=>{
+    if(el.scrollHeight > el.clientHeight + 1){
+      const btn = document.querySelector(`.desc-more-btn[data-desc-topic="${el.dataset.descTopic}"]`);
+      if(btn) btn.classList.add('show');
+    }
+  });
+  document.querySelectorAll('.desc-more-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const t = STATE.topics.find(x=> x.company_id === btn.dataset.descTopic);
+      if(!t) return;
+      document.getElementById('descModalTitle').textContent = t.company_name;
+      document.getElementById('descModalBody').innerHTML = linkifyText(t.description || '');
+      openModal('descModal');
+    });
+  });
+}
+
+function joinCaption(t){ return t.join_caption || t18n('joinBtnLabel'); }
+function leaveCaption(t){ return t.leave_caption || t18n('leaveBtnLabel'); }
+
+function topicCardHTML(t){
+  const avatarInner = t.creator_profile_image
+    ? `<img src="${t.creator_profile_image}">`
+    : (t.creator_username ? t.creator_username.charAt(0).toUpperCase() : '?');
+
+  // คำอธิบาย: จำกัดไว้ 2 บรรทัดในการ์ด (ไม่ลิมิตความยาวตอนพิมพ์) ยาวเกินให้กดปุ่ม "อ่านเพิ่มเติม" เปิด popup อ่านเต็ม
+  const descBlock = t.description
+    ? `<div class="topic-desc clamp-2" data-desc-topic="${t.company_id}">${linkifyText(t.description)}</div><button type="button" class="desc-more-btn" data-desc-topic="${t.company_id}">อ่านเพิ่มเติม</button>`
+    : '';
+
+  const textBlock = `<div class="card-content-block"><div class="topic-title">${escapeHtml(t.company_name)}</div>${descBlock}</div>`;
+
+  // TOKBUD: ทุกบริษัทมีโลโก้เสมอ (บังคับตอน create) ผู้ใช้กดฝั่งไหนก็ได้ ไม่ผูกกัน ไม่มีเปอร์เซ็นต์รวม 100% แบบ WEZIDE เดิม (เพราะคนเดียวโหวตได้ทั้ง 2 ฝั่ง)
+  const voteRowHTML = `<div class="vote-row vote-row-image">
+        <button class="vote-btn side-a" data-topic="${t.company_id}" data-side="A">
+          <div class="vb-label">${escapeHtml(joinCaption(t))}</div>
+          <div class="vb-pct">${t.join_count}</div>
+        </button>
+        <div class="cover-img-wrap" data-lightbox="${t.image_url}">
+          <img class="cover-img" src="${t.image_url}" alt="${escapeHtml(t.company_name)}">
+        </div>
+        <button class="vote-btn side-b" data-topic="${t.company_id}" data-side="B">
+          <div class="vb-label">${escapeHtml(leaveCaption(t))}</div>
+          <div class="vb-pct">${t.leave_count}</div>
+        </button>
+      </div>`;
+
+  const tagsHTML = (t.tags||[]).map(tag=>`<span class="tag-chip">#${escapeHtml(tag)}</span>`).join('');
+  const categoryChips = String(t.category||'').split(',').map(c=>c.trim()).filter(c=>c)
+    .map(c=>`<span class="cat-tag">${escapeHtml(c)}</span>`).join('');
+
+  const cntA = t._commentCountA !== undefined ? `${t._commentCountA} comment` : 'Comment';
+  const cntB = t._commentCountB !== undefined ? `${t._commentCountB} comment` : 'Comment';
+  const commentRowHTML = `<div class="comment-row comment-row-image">
+        <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="A" data-comment-label="${escapeHtml(joinCaption(t))}">💬 ${cntA}</button>
+        <div></div>
+        <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="B" data-comment-label="${escapeHtml(leaveCaption(t))}">💬 ${cntB}</button>
+      </div>`;
+
+  return `
+  <div class="topic-card" data-card-id="${t.company_id}" style="--card-color:${t.card_color || 'var(--primary)'}">
+    <div class="card-top">
+      <div class="creator">
+        <div class="creator-avatar" ${t.creator_profile_image ? `data-lightbox="${t.creator_profile_image}"` : ''}>${avatarInner}</div>
+        <span class="creator-name">${escapeHtml(t.creator_username || 'ไม่ระบุชื่อ')}</span>
+      </div>
+      <button class="share-icon-btn" data-topic="${t.company_id}">⤴</button>
+    </div>
+
+    ${textBlock}
+
+    <div class="meta-row">
+      ${categoryChips}
+      ${tagsHTML}
+    </div>
+
+    ${voteRowHTML}
+
+    ${commentRowHTML}
+
+    ${translateRowHTML(t)}
+
+    <div class="mini-dash">
+      <div class="mini-dash-title">
+        <span class="mini-dash-summary">
+          Total voters <b style="color:${t.card_color || 'var(--primary)'}">${t.total_votes}</b>
+          <button class="dash-toggle-btn" data-dash-toggle="${t.company_id}" aria-expanded="false" aria-label="Show/hide voter summary">▾</button>
+        </span>
+      </div>
+      <div class="mini-dash-body" id="dashBody-${t.company_id}">
+        <div id="dash-${t.company_id}" class="dash-loading">
+          <span class="dash-spinner"></span>
+          <span class="dash-loading-text">${t18n('dashLoadingText')}</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// แถวปุ่มแปลภาษา — โชว์ทุกการ์ดเสมอ ไม่เดาภาษาผู้ชม (ตามที่ตกลงกัน เพื่อความง่าย/เร็ว/ชัวร์ 100%)
+// ถ้าการ์ดนี้ถูกแปลอยู่แล้ว (t._translated) โชว์ label ภาษาที่แปลไป + ลิงก์สลับกลับต้นฉบับ + ลิงก์เปลี่ยนภาษา
+function translateRowHTML(t){
+  if(t._translated){
+    const langLabel = (TRANSLATE_LANGS.find(l=>l.code===t._translatedLang)||{}).label || t._translatedLang;
+    return `<div class="translate-row" data-tr-wrap="${t.company_id}">
+      <span class="tr-translated-note">🌐 Translated · ${escapeHtml(langLabel)}</span>
+      <button type="button" class="translate-original-link" data-tr-original="${t.company_id}">See original</button>
+      <button type="button" class="translate-change-link" data-tr-change="${t.company_id}">Change language</button>
+    </div>`;
+  }
+  return `<div class="translate-row" data-tr-wrap="${t.company_id}">
+    <button type="button" class="translate-btn" data-tr-topic="${t.company_id}">
+      <span class="tr-icon">🌐</span><span class="tr-label">Translate</span>
+    </button>
+  </div>`;
+}
+
+// คำนวณจำนวนวันที่เหลือก่อนปิดโหวตจาก end_date เทียบกับวันนี้ (hardcode EN ตายตัวเหมือนข้อความ system อื่นๆ)
+function daysLeftText(endDate){
+  if(!endDate) return '';
+  const end = new Date(endDate); end.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diffDays = Math.round((end - today) / 86400000);
+  if(diffDays < 0) return 'Voting closed';
+  if(diffDays === 0) return 'Closes today';
+  return `${diffDays} day${diffDays === 1 ? '' : 's'} left to vote`;
+}
+function daysLeftUrgentClass(endDate){
+  if(!endDate) return '';
+  const end = new Date(endDate); end.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diffDays = Math.round((end - today) / 86400000);
+  return (diffDays <= 2) ? ' urgent' : '';
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+/* escape ข้อความให้ปลอดภัยก่อน แล้วค่อยแปลงเฉพาะ URL ที่ขึ้นต้นด้วย http:// หรือ https:// ให้เป็นลิงก์กดได้
+   (ไม่จับโดเมนเปล่าๆ อย่าง "google.com" กันเผื่อ false-positive กับข้อความทั่วไปที่มีจุด เช่น ตัวเลขทศนิยม) */
+function linkifyText(str){
+  const escaped = escapeHtml(str || '');
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, (url)=>{
+    // ตัดวรรคตอนท้าย URL ที่มักหลุดติดมาจากประโยค เช่น จุด/จุลภาค/วงเล็บปิด ออกก่อน ไม่งั้นลิงก์จะพาไปผิดที่
+    let trail = '';
+    const m = url.match(/[.,;:!?)\]]+$/);
+    if(m){ trail = m[0]; url = url.slice(0, -trail.length); }
+    if(!url) return trail;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${url}</a>${trail}`;
+  });
+}
+
+/* โหลด dashboard breakdown ของหัวข้อเดียว — เรียกตอน user กด toggle เปิดเอง (lazy, ดู toggleDashSummary)
+   ไม่มี auto-preload ทั้งฟีดอีกต่อไป (เดิมเคยมี loadDashboards() ที่วนยิง getTopicDetail ทีละใบ sequential
+   ทุกครั้งที่โหลดหน้า/เปลี่ยนหมวด/ค้นหา/สลับภาษา — พังเพราะยิง 20-100 request ต่อเนื่องกันทุกครั้ง ทำให้หน้าโหลดช้ามาก
+   เอาออกทั้งหมดแล้ว เหลือแค่โหลดเฉพาะใบที่ user กดเปิดจริงๆ) */
+// topic_id ที่กำลังมี request getTopicDetail ค้างอยู่ — กันยิงซ้ำซ้อนเวลา user กด toggle เปิดรัวๆ
+const DASH_LOADING = new Set();
+
+// โหลด dashboard breakdown ของหัวข้อเดียว — เรียกซ้ำได้หลัง re-render การ์ดเดี่ยวๆ (เช่นหลังกดแปลภาษา)
+async function loadDashboardFor(topicId){
+  if(DASH_LOADING.has(topicId)) return; // มี request ของการ์ดนี้กำลังทำงานอยู่แล้ว ไม่ยิงซ้ำ
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t) return;
+  DASH_LOADING.add(topicId);
+  try{
+    const res = await api('getCompanyDetail', {company_id: topicId});
+    if(!res.success){
+      // โหลดพัง (เน็ตหลุด/เซิร์ฟเวอร์ error) — โชว์ข้อความสั้นๆ + ปุ่ม Try again แทน spinner ที่จะหมุนค้างตลอดไปแบบไม่มีที่สิ้นสุด
+      // ไม่งั้น user จะงงว่าต้องทำยังไงต่อ (รอ? รีเฟรชทั้งหน้า?) ปุ่มนี้กดแล้ว retry เฉพาะการ์ดนี้การ์ดเดียวพอ
+      // ใช้ t18n() ไม่ใช่ t() เพราะตัวแปร local "t" ในฟังก์ชันนี้คือ topic object ไม่ใช่ฟังก์ชันแปลภาษา (ดู alias บรรทัด ~1072)
+      const dashEl = document.getElementById(`dash-${topicId}`);
+      if(dashEl && dashEl.classList.contains('dash-loading')){
+        dashEl.innerHTML = `<span class="dash-loading-text">⚠️ ${t18n('dashLoadFailedText')}</span><button type="button" class="dash-retry-btn" data-dash-retry="${topicId}">${t18n('dashRetryBtn')}</button>`;
+        const retryBtn = dashEl.querySelector('.dash-retry-btn');
+        if(retryBtn) retryBtn.addEventListener('click', ()=> retryLoadDashboard(topicId));
+      }
+      return;
+    }
+    renderDashboard(topicId, res.dashboard, t.card_color);
+    t._dashData = res.dashboard; // cache ไว้ใช้ re-render ตอนสลับภาษา (ดู rerenderLoadedDashboards) กันยิง API ซ้ำโดยไม่จำเป็น
+
+    // cache เลข comment count ไว้ที่ topic object เอง เผื่อ re-render การ์ด (เช่นหลังแปลภาษา) จะได้โชว์เลขที่มีอยู่แล้ว
+    // ทันทีโดยไม่ต้องรอโหลดใหม่ — อัพเดตแค่ label ของปุ่มในตำแหน่งเดิม ไม่ full re-render การ์ดทั้งใบ
+    t._commentCountA = res.dashboard.comment_count_a || 0;
+    t._commentCountB = res.dashboard.comment_count_b || 0;
+    updateCommentBtnLabel(topicId, 'A', t._commentCountA);
+    updateCommentBtnLabel(topicId, 'B', t._commentCountB);
+  } finally {
+    DASH_LOADING.delete(topicId);
+  }
+}
+
+// รีเรนเดอร์เฉพาะ dashboard ที่โหลดข้อมูลมาแล้ว (มี t._dashData cache อยู่) ด้วย label ภาษาใหม่ โดยไม่ยิง API ซ้ำ
+// ใช้ตอนสลับภาษา (setLang) แทนการเรียก loadDashboards() แบบเดิมที่ยิง getTopicDetail ใหม่ทั้งหมดทุกใบ —
+// ตัวเลข % ไม่เปลี่ยนตามภาษา เปลี่ยนแค่ label เพศ/หัวข้อกลุ่มเท่านั้น จึงใช้ข้อมูลเดิมมา render ซ้ำได้เลย
+// ใบที่ยังไม่เคยโหลด (ไม่มี _dashData เพราะ user ยังไม่เคยกดเปิด) จะไม่ทำอะไร ปล่อยให้โหลดตอนกดเปิดตามปกติ
+function rerenderLoadedDashboards(){
+  STATE.topics.forEach(t=>{
+    if(t._dashData) renderDashboard(t.company_id, t._dashData, t.card_color);
+  });
+}
+
+// รีเซ็ต dash placeholder กลับเป็น spinner แล้วยิงโหลดใหม่เฉพาะการ์ดนี้ — ใช้ตอนกดปุ่ม "Try again" หลังโหลด error
+function retryLoadDashboard(topicId){
+  const dashEl = document.getElementById(`dash-${topicId}`);
+  if(dashEl){
+    dashEl.classList.add('dash-loading');
+    dashEl.innerHTML = `<span class="dash-spinner"></span><span class="dash-loading-text">${t18n('dashLoadingText')}</span>`;
+  }
+  loadDashboardFor(topicId);
+}
+
+function updateCommentBtnLabel(topicId, side, count){
+  const btn = document.querySelector(`.comment-btn[data-comment-topic="${topicId}"][data-comment-side="${side}"]`);
+  if(btn) btn.textContent = `💬 ${count} comment`;
+}
+
+// สีเพศตายตัวเสมอ ไม่ผูกกับ card_color ของหัวข้อ (ใช้โทนเดียวกับ palette การ์ดสี ฟ้า/ชมพู/ม่วง ที่มีอยู่แล้วในระบบ)
+const GENDER_BAR_DEFS = [
+  { key:'ชาย', color:'#00A1FF', labelKey:'genderMale' },
+  { key:'หญิง', color:'#FF42A1', labelKey:'genderFemale' },
+  { key:'อื่นๆ', color:'#8E7CC3', labelKey:'genderOther' }
+];
+const AGE_BAR_ORDER = ['18-24','25-34','35-44','45-54','55+'];
+
+// สร้าง 1 แถวบาร์ (label ซ้าย + บาร์ + % ขวา) ช่วงที่ไม่มีคนโหวตเลย (0%) แสดงเป็นบาร์เทาเต็มเส้นบางๆ แทนที่จะว่างเปล่าไปเลย
+// กันสับสนว่า "ไม่มีข้อมูล" กับ "มีข้อมูลแต่เป็น 0%"
+function dashBarRowHTML(label, pct, color){
+  const isZero = !pct;
+  const fillWidth = isZero ? 100 : pct;
+  return `<div class="dash-item-row">
+    <span class="dash-item-label">${escapeHtml(label)}</span>
+    <div class="dash-item-bg"><span class="dash-item-fill${isZero ? ' zero' : ''}" style="width:${fillWidth}%;${isZero ? '' : `background:${color}`}"></span></div>
+    <span class="dash-item-pct">${pct || 0}%</span>
+  </div>`;
+}
+
+// สร้าง donut chart (SVG ล้วน ไม่พึ่ง library ภายนอก) จากสัดส่วนเพศ + legend ใต้วง (label + %)
+// ถ้ายังไม่มีคนโหวตเลย (ทุก % เป็น 0) แสดงวงเทาเต็มวงแทนวงว่างเปล่า เพื่อกันสับสนกับ "กำลังโหลด"
+const DASH_DONUT_SIZE = 72, DASH_DONUT_R = 27, DASH_DONUT_CX = 36, DASH_DONUT_CY = 36, DASH_DONUT_SW = 12;
+function buildGenderDonutHTML(dash){
+  const genderPct = dash.gender_percent || {};
+  const total = GENDER_BAR_DEFS.reduce((sum, g) => sum + (genderPct[g.key] || 0), 0);
+  const circumference = 2 * Math.PI * DASH_DONUT_R;
+
+  let circlesHTML;
+  if(!total){
+    circlesHTML = `<circle cx="${DASH_DONUT_CX}" cy="${DASH_DONUT_CY}" r="${DASH_DONUT_R}" fill="none" stroke="var(--line)" stroke-width="${DASH_DONUT_SW}"/>`;
+  } else {
+    let acc = 0;
+    circlesHTML = GENDER_BAR_DEFS.map(g => {
+      const pct = genderPct[g.key] || 0;
+      if(pct <= 0) return '';
+      const segLen = (pct / 100) * circumference;
+      const dashOffset = -(acc / 100) * circumference;
+      acc += pct;
+      return `<circle cx="${DASH_DONUT_CX}" cy="${DASH_DONUT_CY}" r="${DASH_DONUT_R}" fill="none" stroke="${g.color}" stroke-width="${DASH_DONUT_SW}" stroke-dasharray="${segLen} ${circumference - segLen}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${DASH_DONUT_CX} ${DASH_DONUT_CY})"/>`;
+    }).join('');
+  }
+
+  const legendHTML = GENDER_BAR_DEFS.map(g => {
+    const pct = genderPct[g.key] || 0;
+    return `<div class="dash-legend-row">
+      <span class="dash-legend-dot" style="background:${g.color}"></span>
+      <span class="dash-legend-label">${escapeHtml(t(g.labelKey))}</span>
+      <span class="dash-legend-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="dash-donut-wrap">
+    <svg class="dash-donut" viewBox="0 0 ${DASH_DONUT_SIZE} ${DASH_DONUT_SIZE}" width="${DASH_DONUT_SIZE}" height="${DASH_DONUT_SIZE}">${circlesHTML}</svg>
+    <div class="dash-legend">${legendHTML}</div>
+  </div>`;
+}
+
+function renderDashboard(topicId, dash, cardColor){
+  const el = document.getElementById(`dash-${topicId}`);
+  if(!el) return;
+  el.classList.remove('dash-loading'); // ล้าง class ของ placeholder ทิ้ง กัน layout เพี้ยน (flex-center/padding ของ spinner ค้างอยู่)
+  const ageColor = cardColor || '#5B2A9E';
+
+  const genderDonutHTML = buildGenderDonutHTML(dash);
+  const ageRows = AGE_BAR_ORDER.map(a => dashBarRowHTML(a, (dash.age_group_percent || {})[a] || 0, ageColor)).join('');
+
+  el.innerHTML = `
+    <div class="dash-cols">
+      <div class="dash-group dash-group-gender">
+        <div class="dash-group-title">${t('dashGenderTitle')}</div>
+        ${genderDonutHTML}
+      </div>
+      <div class="dash-group dash-group-age">
+        <div class="dash-group-title">${t('dashAgeGroupTitle')}</div>
+        ${ageRows}
+      </div>
+    </div>`;
+}
+
+// re-render เฉพาะการ์ดเดียวหลังแปล/ย้อนกลับต้นฉบับ — ไม่แตะการ์ดอื่นในฟีด กัน scroll กระโดด/
+// mini-dash การ์ดอื่นๆ ที่เปิดค้างอยู่ถูกปิดไปด้วยโดยไม่จำเป็น
+function rerenderSingleCard(topicId){
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t) return;
+  const oldEl = document.querySelector(`.topic-card[data-card-id="${topicId}"]`);
+  if(!oldEl) return;
+
+  const wasDashOpen = oldEl.querySelector('.mini-dash-body')?.classList.contains('open') || false;
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = topicCardHTML(t).trim();
+  const newEl = wrap.firstElementChild;
+  oldEl.replaceWith(newEl);
+  bindCardEvents(newEl);
+  setupDescMoreButtons();
+
+  // mini-dash โดน re-render ทิ้งไปพร้อมการ์ด (DOM ใหม่ทั้งใบ) — ถ้าเดิมเปิดค้างอยู่ก่อนแปล ให้เปิดต่อ
+  // แล้วถ้ามี dashboard cache ไว้แล้ว (t._dashData จากโหลดครั้งก่อน) render จาก cache ทันที ไม่ต้องรอ API
+  // ถ้ายังไม่เคยโหลดมาก่อนเลยค่อยยิงจริง — และถ้าปิดอยู่ (ไม่เคยเปิด) ไม่ต้องโหลดอะไรเลย ปล่อย lazy ตามปกติ
+  if(wasDashOpen){
+    const body = newEl.querySelector('.mini-dash-body');
+    const toggleBtn = newEl.querySelector('.dash-toggle-btn');
+    if(body) body.classList.add('open');
+    if(toggleBtn){ toggleBtn.classList.add('open'); toggleBtn.setAttribute('aria-expanded','true'); }
+    if(t._dashData) renderDashboard(topicId, t._dashData, t.card_color);
+    else loadDashboardFor(topicId);
+  }
+
+  // Line view: การ์ดที่แปลอยู่ ถ้าถูกห่อด้วย .line-item อยู่ ต้อง sync หัวข้อบน .line-bar (แถบหุบ)
+  // ให้ตรงกับ title ที่แปลแล้วด้วย ไม่งั้นแถบข้างบนจะค้างภาษาเดิมทั้งที่การ์ดข้างในแปลไปแล้ว
+  const lineBarText = document.querySelector(`.line-bar[data-line-toggle="${topicId}"] .line-bar-text`);
+  if(lineBarText) lineBarText.textContent = t.company_name;
+}
+
+/* ================= Translate (ปุ่ม "แปล" บนการ์ดหัวข้อ) =================
+ * ปุ่มแปลอยู่ทุกการ์ดเสมอ ไม่เดาภาษาผู้ชม (ตามที่ตกลง เพื่อความง่าย/เร็ว/ชัวร์ 100%) เลือกภาษาครั้งแรก
+ * ในเซสชันนี้ครั้งเดียวผ่าน modal แล้วจำไว้ กดแปลการ์ดถัดไปใช้ภาษาเดิมได้ทันที (มีปุ่ม "Change language"
+ * ต่อการ์ดให้เปลี่ยนได้เสมอ) รายชื่อภาษาต้อง sync กับ TRANSLATE_LANGS ฝั่ง appscript.txt ทุกครั้งที่แก้ */
+const TRANSLATE_LANGS = [
+  {code:'en',    label:'English'},
+  {code:'zh-CN', label:'中文 (简体)'},
+  {code:'es',    label:'Español'},
+  {code:'hi',    label:'हिन्दी'},
+  {code:'ar',    label:'العربية'},
+  {code:'pt',    label:'Português'},
+  {code:'bn',    label:'বাংলা'},
+  {code:'ru',    label:'Русский'},
+  {code:'ja',    label:'日本語'},
+  {code:'de',    label:'Deutsch'},
+  {code:'fr',    label:'Français'},
+  {code:'ko',    label:'한국어'},
+  {code:'vi',    label:'Tiếng Việt'},
+  {code:'id',    label:'Bahasa Indonesia'},
+  {code:'th',    label:'ภาษาไทย'}
+];
+
+let TR_SESSION_LANG = null;   // ภาษาที่จำไว้ในเซสชันนี้ (รีเฟรชหน้าใหม่ค่อยรีเซ็ต ไม่ persist ข้าม session)
+let TR_PENDING_TOPIC = null;  // topic_id ที่กำลังรอเลือกภาษาจาก modal
+let TR_PENDING_RETRY = null;  // {topicId, lang} เก็บไว้ให้ปุ่ม "Try Again" เรียกซ้ำได้โดยไม่ต้องกดปุ่มแปลใหม่
+const TR_CACHE = {};          // key: `${companyId}_${lang}` -> {company_name,description} กันยิงแปลซ้ำถ้า toggle ไปมาในเซสชันเดียว
+
+function buildLangPickGrid(){
+  const grid = document.getElementById('langPickGrid');
+  if(!grid) return;
+  grid.innerHTML = TRANSLATE_LANGS.map(l => `<button type="button" class="lang-pick-btn" data-lang="${l.code}">${escapeHtml(l.label)}</button>`).join('');
+  grid.querySelectorAll('.lang-pick-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const lang = btn.dataset.lang;
+      closeModal('translateLangModal');
+      if(!TR_PENDING_TOPIC) return;
+      TR_SESSION_LANG = lang;
+      const topicId = TR_PENDING_TOPIC;
+      TR_PENDING_TOPIC = null;
+      runTranslate(topicId, lang);
+    });
+  });
+}
+buildLangPickGrid();
+
+function handleTranslateClick(topicId){
+  if(TR_SESSION_LANG){ runTranslate(topicId, TR_SESSION_LANG); return; }
+  openLangPickerFor(topicId);
+}
+function openLangPickerFor(topicId){
+  TR_PENDING_TOPIC = topicId;
+  openModal('translateLangModal');
+}
+
+async function runTranslate(topicId, lang){
+  const btn = document.querySelector(`.translate-btn[data-tr-topic="${topicId}"]`);
+  if(btn){ btn.classList.add('loading'); const lbl = btn.querySelector('.tr-label'); if(lbl) lbl.textContent = 'Translating...'; }
+
+  const cacheKey = topicId + '_' + lang;
+  const cached = TR_CACHE[cacheKey];
+  if(cached){ applyTranslation(topicId, cached, lang); return; }
+
+  const res = await api('translateCompany', { company_id: topicId, target_lang: lang });
+  if(!res.success){
+    if(btn){ btn.classList.remove('loading'); const lbl = btn.querySelector('.tr-label'); if(lbl) lbl.textContent = 'Translate'; }
+    TR_PENDING_RETRY = { topicId, lang };
+    openModal('translateErrorModal');
+    return;
+  }
+  TR_CACHE[cacheKey] = res.translated;
+  applyTranslation(topicId, res.translated, lang);
+}
+
+function applyTranslation(topicId, translated, lang){
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t) return;
+  // เก็บต้นฉบับไว้ครั้งแรกที่แปลเท่านั้น เผื่อ toggle "See original" กลับไปกลับมาหลายรอบ
+  // company_name ไม่แปล ไม่ต้องเก็บ/ไม่ต้องคืนค่า (ห้ามแปลชื่อเฉพาะ ป้องกันความหมายเพี้ยน)
+  if(!t._original){
+    t._original = { description:t.description, join_caption:t.join_caption, leave_caption:t.leave_caption };
+  }
+  t.description = translated.description;
+  t.join_caption = translated.join_caption;
+  t.leave_caption = translated.leave_caption;
+  t._translated = true;
+  t._translatedLang = lang;
+  rerenderSingleCard(topicId);
+}
+
+function revertTranslation(topicId){
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t || !t._original) return;
+  Object.assign(t, t._original);
+  t._translated = false;
+  t._translatedLang = null;
+  rerenderSingleCard(topicId);
+}
+
+document.getElementById('translateRetryBtn').addEventListener('click', ()=>{
+  closeModal('translateErrorModal');
+  if(TR_PENDING_RETRY){
+    const { topicId, lang } = TR_PENDING_RETRY;
+    TR_PENDING_RETRY = null;
+    runTranslate(topicId, lang);
+  }
+});
+
+/* ---------- Voting ---------- */
+let pendingVoteConfirm = null; // {topicId, side, btnEl} รอ user กดยืนยันใน voteConfirmModal
+
+// backend ส่งข้อความบางจุดมาเป็น "ไทย / English" คู่กัน (ตาม pattern เดิมของ fail message ส่วนใหญ่ในระบบ)
+// ฟังก์ชันนี้เลือกฝั่งที่ตรงกับภาษาปัจจุบันของ user ให้ ถ้าไม่มี " / " ก็ส่งข้อความเดิมกลับไปเฉยๆ (กันเคส message เก่าที่ยังไม่ bilingual)
+function pickLang(msg){
+  if(!msg || msg.indexOf(' / ') === -1) return msg;
+  const [th, en] = msg.split(' / ');
+  return getLang() === 'en' ? (en || msg) : th;
+}
+
+/* popup ข้อความเดียวปุ่มเดียว ใช้แทน toast ทุกจุดที่เกี่ยวกับการโหวต (สำเร็จ/error/ห้ามโหวตหัวข้อตัวเอง ฯลฯ) */
+function showInfoPopup(message, btnLabel){
+  document.getElementById('voteConfirmText').textContent = message;
+  document.getElementById('voteCommentWrap').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์ช่องคอมเมนต์
+  document.getElementById('voteConfirmActions').innerHTML =
+    `<button class="btn btn-primary full-btn" id="voteOkBtn">${btnLabel || t('okBtn')}</button>`;
+  document.getElementById('voteOkBtn').addEventListener('click', ()=> closeModal('voteConfirmModal'));
+  openModal('voteConfirmModal');
+}
+
+// นับตัวอักษรวิ่งตาม input event มุมขวาล่างของ textarea — maxlength="300" กันพิมพ์เกินตั้งแต่ client แล้ว
+// แต่ยังโชว์ตัวนับให้ user เห็นความคืบหน้า element เป็น static (อยู่ใน DOM ตลอด ไม่โดน re-render ทิ้ง) จึง bind ครั้งเดียวพอ
+document.getElementById('voteCommentInput').addEventListener('input', (e)=>{
+  document.getElementById('voteCommentCounter').textContent = `${e.target.value.length}/300`;
+});
+
+function handleVoteClick(topicId, side, btnEl){
+  if(!isLoggedIn()){
+    STATE.pendingVote = { topicId, side };
+    openLoginModal('redirect');
+    return;
+  }
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+
+  pendingVoteConfirm = { topicId, side, btnEl };
+
+  document.getElementById('voteConfirmText').textContent = t18n('voteConfirmMsg').replace('{side}', side === 'A' ? joinCaption(t||{}) : leaveCaption(t||{}));
+
+  const commentInput = document.getElementById('voteCommentInput');
+  const commentLabel = document.getElementById('voteCommentLabel');
+  commentInput.value = '';
+  commentLabel.innerHTML = `${t18n(side === 'A' ? 'joinMainReasonLabel' : 'leaveMainReasonLabel')} <span class="req-mark">${t18n('requiredMark')}</span>`;
+  commentInput.placeholder = t18n(side === 'A' ? 'joinMainReasonPh' : 'leaveMainReasonPh');
+  document.getElementById('voteCommentCounter').textContent = '0/300';
+  document.getElementById('voteCommentWrap').style.display = 'block';
+
+  document.getElementById('voteQuestionsWrap').innerHTML = buildVoteQuestionsHTML(side);
+  bindVoteQuestionToggles();
+
+  document.getElementById('voteConfirmActions').innerHTML =
+    `<button class="btn btn-ghost full-btn" id="voteCancelBtn">${t18n('cancelBtn')}</button>
+     <button class="btn btn-primary full-btn" id="voteConfirmBtn">${t18n('voteConfirmBtnLabel')}</button>`;
+  document.getElementById('voteCancelBtn').addEventListener('click', ()=>{
+    pendingVoteConfirm = null;
+    closeModal('voteConfirmModal');
+  });
+  document.getElementById('voteConfirmBtn').addEventListener('click', confirmVote);
+
+  openModal('voteConfirmModal');
+}
+
+// คำถามย่อย 7 ข้อ (join) / 8 ข้อ (leave) แบบ Yes/No/Unsure ทุกข้อ optional (ไม่บังคับตอบ ต่างจาก main reason ที่บังคับ)
+const JOIN_QUESTIONS = ['join_salary_good','join_benefits_good','join_brand_reputation','join_growth_opportunity','join_challenging_work','join_culture_team','join_location_flexibility'];
+const JOIN_QUESTION_LABELS = { join_salary_good:'qSalaryGood', join_benefits_good:'qBenefitsGood', join_brand_reputation:'qBrandReputation', join_growth_opportunity:'qGrowthOpportunity', join_challenging_work:'qChallengingWork', join_culture_team:'qCultureTeam', join_location_flexibility:'qLocationFlexibility' };
+const LEAVE_QUESTIONS = ['leave_salary_benefits_mismatch','leave_no_growth','leave_culture_mismatch','leave_manager_mismatch','leave_team_mismatch','leave_worklife_mismatch','leave_better_offer','leave_not_challenging'];
+const LEAVE_QUESTION_LABELS = { leave_salary_benefits_mismatch:'qSalaryMismatch', leave_no_growth:'qNoGrowth', leave_culture_mismatch:'qCultureMismatch', leave_manager_mismatch:'qManagerMismatch', leave_team_mismatch:'qTeamMismatch', leave_worklife_mismatch:'qWorklifeMismatch', leave_better_offer:'qBetterOffer', leave_not_challenging:'qNotChallenging' };
+
+function ynuRowHTML(fieldId, labelKey, prefill){
+  const v = prefill || '';
+  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:10px;">
+    <div style="font-size:13px;margin-bottom:6px;">${t18n(labelKey)}</div>
+    <div class="ynu-btns" style="display:flex;gap:6px;">
+      <button type="button" class="ynu-btn${v==='yes'?' selected':''}" data-ynu-value="yes">${t18n('yesOpt')}</button>
+      <button type="button" class="ynu-btn${v==='no'?' selected':''}" data-ynu-value="no">${t18n('noOpt')}</button>
+      <button type="button" class="ynu-btn${v==='unsure'?' selected':''}" data-ynu-value="unsure">${t18n('unsureOpt')}</button>
+    </div>
+  </div>`;
+}
+
+function buildVoteQuestionsHTML(side, prefillData){
+  prefillData = prefillData || {};
+  if(side === 'A'){
+    const rows = JOIN_QUESTIONS.map(f => ynuRowHTML(f, JOIN_QUESTION_LABELS[f], prefillData[f])).join('');
+    const score = prefillData.join_confidence_score || '';
+    const scoreBtns = [1,2,3,4,5].map(n => `<button type="button" class="score-btn${String(score)===String(n)?' selected':''}" data-score-value="${n}">${n}</button>`).join('');
+    return `${rows}
+      <div class="ynu-row" style="margin-bottom:6px;">
+        <div style="font-size:13px;margin-bottom:6px;">${t18n('confidenceScoreLabel')} <span class="field-hint">${t18n('confidenceScoreHint')}</span></div>
+        <div id="confidenceScoreBtns" style="display:flex;gap:6px;">${scoreBtns}</div>
+      </div>`;
+  }
+  const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
+  return `${rows}
+    <div class="ynu-row" style="margin-bottom:6px;">
+      <label style="display:block;font-size:13px;margin-bottom:6px;">${t18n('leaveImprovementLabel')}</label>
+      <textarea id="leaveImprovementInput" maxlength="300" rows="2" placeholder="${t18n('leaveImprovementPh')}"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
+    </div>`;
+}
+
+function bindVoteQuestionToggles(){
+  document.querySelectorAll('.ynu-row[data-ynu-field] .ynu-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const row = btn.closest('.ynu-row');
+      row.querySelectorAll('.ynu-btn').forEach(b=> b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+  document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(b=> b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+}
+
+function collectVoteQuestionAnswers(side){
+  const answers = {};
+  document.querySelectorAll('.ynu-row[data-ynu-field]').forEach(row=>{
+    const field = row.dataset.ynuField;
+    const selected = row.querySelector('.ynu-btn.selected');
+    answers[field] = selected ? selected.dataset.ynuValue : '';
+  });
+  if(side === 'A'){
+    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-btn.selected');
+    answers.join_confidence_score = scoreBtn ? scoreBtn.dataset.scoreValue : '';
+  } else {
+    const improvementEl = document.getElementById('leaveImprovementInput');
+    answers.leave_improvement_suggestion = improvementEl ? improvementEl.value.trim() : '';
+  }
+  return answers;
+}
+
+async function confirmVote(){
+  if(!pendingVoteConfirm) return;
+  const { topicId, side } = pendingVoteConfirm;
+  const mainReason = document.getElementById('voteCommentInput').value.trim();
+  const errText = document.getElementById('voteConfirmText');
+
+  if(!mainReason){
+    showInfoPopup(t18n('errMainReasonRequired'), t18n('understandBtn'));
+    return;
+  }
+
+  const confirmBtn = document.getElementById('voteConfirmBtn');
+  const cancelBtn = document.getElementById('voteCancelBtn');
+  confirmBtn.disabled = true; if(cancelBtn) cancelBtn.disabled = true;
+  confirmBtn.textContent = t18n('savingText');
+
+  const payload = Object.assign({
+    session_token: STATE.session.session_token,
+    company_id: topicId,
+    side,
+    main_reason: mainReason
+  }, collectVoteQuestionAnswers(side));
+
+  const res = await api('vote', payload, 'POST');
+
+  pendingVoteConfirm = null;
+
+  if(!res.success){
+    // เออเรอร์ก็ต้องเป็น pop up เหมือนกัน ไม่ใช่ toast
+    showInfoPopup(pickLang(res.message), t18n('understandBtn'));
+    return;
+  }
+
+  showInfoPopup(pickLang(res.message), t18n('okBtn'));
+
+  // แก้บั๊ก: เดิมเป็น loadTopics().then(loadDashboards) แต่ loadDashboards() ถูกถอดออกไปแล้วตอนทำ
+  // P0-fix lazy-load dashboard (ดูคอมเมนต์ใกล้ _buildVotesByTopic/loadDashboardFor) จุดเรียกนี้ตกหล่นไม่ได้ลบตาม
+  // ทำให้เกิด ReferenceError เงียบๆ (unhandled promise rejection) ทุกครั้งที่โหวตสำเร็จ — loadTopics() อย่างเดียวพอแล้ว
+  loadTopics();
+}
+
+/* ================= Comment Modal (public, anonymous, อ่านความคิดเห็นแยกฝั่ง A/B) =================
+ * โหลดทีละ 20 รายการ ใช้ IntersectionObserver ผูกกับ sentinel element ท้าย list ทำ infinite scroll
+ * (เบากว่า/แม่นกว่าดัก scroll event ของทั้งหน้า) ปุ่มเปิด modal นี้กดได้เสมอไม่ว่า N จะเป็น 0 หรือไม่ก็ตาม —
+ * ถ้าไม่มีคอมเมนต์เลยจะโชว์ empty state แทนที่จะปิดปุ่มหรือซ่อนไป กัน user สับสนว่าเว็บพัง */
+let CM_STATE = { topicId:null, side:null, page:0, totalPages:1, loading:false, observer:null };
+
+function formatCommentTime(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  if(isNaN(d)) return '';
+  return d.toLocaleString(getLang()==='en' ? 'en-US' : 'th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function openCommentModal(topicId, side, sideLabel){
+  if(CM_STATE.observer) CM_STATE.observer.disconnect();
+  CM_STATE = { topicId, side, page:0, totalPages:1, loading:false, observer:null };
+  document.getElementById('commentModalTitle').textContent = sideLabel;
+  document.getElementById('commentList').innerHTML = `<div class="comment-loading">${t18n('commentLoadingText')}</div>`;
+  openModal('commentModal');
+  loadMoreComments(true);
+}
+
+async function loadMoreComments(isFirst){
+  if(CM_STATE.loading) return;
+  if(!isFirst && CM_STATE.page >= CM_STATE.totalPages) return;
+  CM_STATE.loading = true;
+
+  const res = await api('getComments', {
+    company_id: CM_STATE.topicId, side: CM_STATE.side, page: CM_STATE.page + 1, page_size: 20
+  });
+
+  CM_STATE.loading = false;
+  if(!res.success){
+    if(isFirst) document.getElementById('commentList').innerHTML = `<div class="comment-empty">${t18n('apiErrorMsg')}</div>`;
+    return;
+  }
+
+  CM_STATE.page = res.page;
+  CM_STATE.totalPages = res.total_pages;
+
+  const listEl = document.getElementById('commentList');
+  if(isFirst) listEl.innerHTML = '';
+
+  if(res.comments.length === 0 && isFirst){
+    listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
+  } else {
+    listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
+      <div class="comment-item">${escapeHtml(c.comment)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
+    `).join(''));
+  }
+
+  setupCommentObserver();
+}
+
+function setupCommentObserver(){
+  if(CM_STATE.observer) CM_STATE.observer.disconnect();
+  if(CM_STATE.page >= CM_STATE.totalPages) return; // โหลดครบทุกหน้าแล้ว ไม่ต้องผูก observer ต่อ
+  const sentinel = document.getElementById('commentSentinel');
+  CM_STATE.observer = new IntersectionObserver((entries)=>{
+    if(entries[0].isIntersecting) loadMoreComments(false);
+  }, { root: document.querySelector('#commentModal .modal-box'), threshold: 0.1 });
+  CM_STATE.observer.observe(sentinel);
+}
+
+/* ---------- Share ---------- */
+let pendingShareTopicId = '';
+
+function buildShareUrl(topicId){
+  // เดิมใช้ endpoint ?share= ของ Apps Script ตรงๆ (script.google.com) แต่พบว่า in-app browser บางตัว
+  // (เช่น webview ของแอปแชท, iOS Link Preview) ค้าง URL bar ไว้ที่ script.google.com ไม่ยอมพาไปหน้าเว็บจริง
+  // ไม่ว่าจะ redirect ด้วยวิธีไหนก็ตาม เพราะเป็นพฤติกรรมของ webview นั้นเอง แก้จากฝั่ง Apps Script ไม่ได้จริงๆ
+  // -> เปลี่ยนมาใช้ Vercel serverless function (/api/share) แทน ซึ่งอยู่โดเมนเดียวกับเว็บจริง (wezide.vercel.app)
+  // เช็ค User-Agent เอง: เป็น bot ของแอปแชท/โซเชียล -> เสิร์ฟ og:tag ตรงๆ ให้ทำพรีวิว, เป็นคนจริง -> 302 redirect
+  // ตรงไปหน้าเว็บทันที ไม่มี sandbox/webview quirk ของ script.google.com มากวนใจอีกต่อไป
+  return `${CONFIG.FRONTEND_URL}/api/share?topic=${topicId}`;
+}
+
+// P0-fix (QR UX): เดิม QR code ใช้ buildShareUrl() ตัวเดียวกับปุ่ม "แชร์ลิงก์" ทำให้คนสแกน QR (เปิดเบราว์เซอร์ตรงๆ
+// ไม่ผ่าน bot ของแอปแชท) ต้องเจอหน้า interstitial ของ Google เอง ("This application was created by a Google
+// Apps Script user") ก่อนเสมอ เพราะ URL เป็น script.google.com ตรงๆ — banner นี้เป็นของแพลตฟอร์ม Google เอง
+// ซ่อน/ปิดจากโค้ดฝั่งเราไม่ได้ ทางแก้คือเลี่ยงไม่ให้ URL ที่คน "เปิดตรงๆ" ต้องผ่าน Apps Script เลย
+// QR code จึงต้องใช้ URL คนละแบบ ชี้ไปที่หน้าเว็บจริงบน Vercel ตรงๆ (ข้าม Apps Script ไปเลย) แทน
+// (ไม่กระทบ OG preview เพราะ QR ไม่ได้ผ่าน bot ดึงพรีวิวของแอปแชทอยู่แล้ว ไม่จำเป็นต้องมี og:image/title)
+function buildDirectFrontendUrl(topicId){
+  return `${CONFIG.FRONTEND_URL}/?topic=${topicId}`;
+}
+
+function openShareMenu(topicId){
+  pendingShareTopicId = topicId;
+  openModal('shareMenuModal');
+}
+
+document.getElementById('shareNowBtn').addEventListener('click', ()=>{
+  closeModal('shareMenuModal');
+  shareTopic(pendingShareTopicId);
+});
+document.getElementById('shareQrBtn').addEventListener('click', ()=>{
+  closeModal('shareMenuModal');
+  openQrModal(pendingShareTopicId);
+});
+
+function shareTopic(topicId){
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t) return;
+  const url = buildShareUrl(topicId);
+  const teaser = `${joinCaption(t)} หรือ ${leaveCaption(t)} — มาดูว่าคนที่เคยทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง 👀`;
+  // P0-fix (share order mismatch): เดิมส่ง url แยก field ให้ navigator.share() ทำให้แอปปลายทาง (เช่น LINE)
+  // เป็นคนตัดสินใจเองว่าจะเรียงข้อความ/ลิงก์ยังไงตอนแปะ (บางแอปดันลิงก์ขึ้นก่อนข้อความ) เราคุมลำดับไม่ได้เลย
+  // -> ฝังลิงก์ไว้ท้าย text เป็นก้อนเดียวกันเหมือนฝั่ง clipboard (desktop) ด้านล่าง แล้วไม่ส่ง url แยกอีกต่อไป
+  // แอปปลายทางจะเห็นเป็น string เดียว ไม่มีสิทธิ์จัดลำดับเองอีก การันตีเกริ่นมาก่อนลิงก์เสมอทุกแพลตฟอร์ม
+  const shareText = `${teaser}\n${url}`;
+
+  if(navigator.share){
+    navigator.share({ title: t.company_name, text: shareText }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(shareText);
+    showToast('Link copied — paste it anywhere to share.');
+  }
+}
+
+/* QR generate ฝั่ง client ล้วนๆ ด้วย qrcodejs (โหลดครั้งเดียวตอนเปิดเว็บ ไม่พึ่ง service ภายนอกตอน user ใช้งานจริง) */
+let qrInstance = null;
+let qrCurrentDataUrl = '';
+
+function openQrModal(topicId){
+  const t = STATE.topics.find(x=> x.company_id === topicId);
+  if(!t) return;
+  const url = buildDirectFrontendUrl(topicId); // QR ต้องเปิดตรงเข้าเว็บจริงเลย ไม่ผ่านหน้า interstitial ของ Apps Script
+
+  document.getElementById('qrModalTitle').textContent = t.company_name;
+  const container = document.getElementById('qrCodeContainer');
+  container.innerHTML = '';
+  qrCurrentDataUrl = '';
+
+  qrInstance = new QRCode(container, {
+    text: url,
+    width: 220,
+    height: 220,
+    colorDark: '#1C1329',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  // qrcodejs วาดเป็น <canvas> ในเบราว์เซอร์ส่วนใหญ่ (บาง browser เก่าจะ fallback เป็น <img>) — ดึง dataURL ไว้ใช้ตอน download/share
+  setTimeout(()=>{
+    const canvas = container.querySelector('canvas');
+    const img = container.querySelector('img');
+    qrCurrentDataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+
+    const shareBtn = document.getElementById('qrShareBtn');
+    const shareHint = document.getElementById('qrShareHint');
+    const canFileShare = !!(navigator.canShare && window.File);
+    shareBtn.style.display = canFileShare ? 'block' : 'none';
+    shareHint.style.display = canFileShare ? 'none' : 'block';
+  }, 60);
+
+  openModal('qrModal');
+}
+
+document.getElementById('qrDownloadBtn').addEventListener('click', ()=>{
+  if(!qrCurrentDataUrl){ showToast('QR Code is still loading, please wait a moment.'); return; }
+  const a = document.createElement('a');
+  a.href = qrCurrentDataUrl;
+  a.download = `wezide-qr-${pendingShareTopicId}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+
+document.getElementById('qrShareBtn').addEventListener('click', async ()=>{
+  if(!qrCurrentDataUrl){ showToast('QR Code is still loading, please wait a moment.'); return; }
+  // ใส่บริบทหัวข้อไปพร้อม QR เหมือนตอนแชร์เป็นลิงก์ ผู้รับปลายทางจะได้ไม่งงว่าสแกนไปทำไม โหวตเรื่องอะไร
+  const t = STATE.topics.find(x=> x.company_id === pendingShareTopicId);
+  const teaser = t
+    ? `${joinCaption(t)} หรือ ${leaveCaption(t)} — มาดูว่าคนที่เคยทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง สแกนเพื่อไปดูกันเลย`
+    : 'สแกนเพื่อไปโหวตหัวข้อนี้';
+  try{
+    const blob = await (await fetch(qrCurrentDataUrl)).blob();
+    const file = new File([blob], `wezide-qr-${pendingShareTopicId}.png`, { type: 'image/png' });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], title: t ? t.company_name : 'TOKBUD', text: teaser });
+    } else {
+      showToast('This device doesn\'t support file sharing — please download instead.');
+    }
+  }catch(err){
+    if(err.name !== 'AbortError') showToast('Share failed — please try downloading the image instead.');
+  }
+});
+
+/* ---------- Lightbox ---------- */
+function openLightbox(src){
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightboxClose').addEventListener('click', ()=>{
+  document.getElementById('lightbox').classList.remove('open');
+});
+document.getElementById('lightbox').addEventListener('click', (e)=>{
+  e.currentTarget.classList.remove('open'); // แตะตรงไหนในนี้ก็ปิดหมด ทั้งพื้นหลังและตัวรูปเอง (ปุ่ม X ก็ยังใช้ได้อยู่)
+});
+
+/* ---------- Hero carousel (auto-scroll + drag) — ดึงจาก tab herobanner ที่ admin ดูแลเอง ----------
+   จำนวนชุดที่ต่อซ้ำคำนวณแบบ dynamic จากความกว้างจอ + จำนวน banner จริง เพื่อให้วนลูปแบบไม่มีรอยต่อ
+   โดยไม่เห็นภาพซ้ำเต็มจอเวลามี banner น้อย (เช่น 1-2 ใบ) ------------------------------------------ */
+let heroPeriod = 0; // ความกว้างของ banner "1 ชุด" (รวม gap) หน่วยพิกเซล ใช้เป็นระยะรีเซ็ตตอนวนลูป
+let heroDragging = false, heroStartX = 0, heroStartOffset = 0, heroUserOffset = 0, heroAutoOffset = 0;
+let heroRafStarted = false, heroDragBound = false;
+
+// P0-fix (หน้าแรกโหลดช้า/error บ่อย): แยกส่วน render/init ออกจากส่วนยิง api() เหมือน renderCategoryPills()
+// ด้านบน ให้ loadHomeFeed() เอา banners ที่ได้จากคำขอ getHomeFeed คำขอเดียวมาสร้าง track ตรงนี้ซ้ำได้
+function initHeroBanners(banners){
+  STATE.heroBanners = banners || [];
+  buildHeroTrack();
+  bindHeroDrag();
+  runHeroLoop();
+
+  // จอเปลี่ยนขนาด (resize เบราว์เซอร์ / หมุนจอมือถือ) -> คำนวณจำนวนชุดใหม่ให้พอดีกับความกว้างจอปัจจุบัน
+  let resizeTimer;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(buildHeroTrack, 200);
+  });
+}
+async function loadHeroBanners(){
+  const res = await api('getHeroBanners');
+  initHeroBanners(res.success ? res.banners : []);
+}
+
+// สร้าง/คำนวณจำนวนชุดของ track ใหม่ ให้กว้างพอสำหรับวนลูปแบบไม่มีรอยต่อ ไม่ว่าจะมี banner กี่ใบ หรือจอกว้างแค่ไหน
+function buildHeroTrack(){
+  const track = document.getElementById('heroTrack');
+  const wrap = document.getElementById('heroWrap');
+  const banners = STATE.heroBanners || [];
+  if(banners.length === 0){ track.innerHTML=''; heroPeriod = 0; return; }
+
+  // เติม https:// ให้ลิงก์ที่พิมพ์แบบไม่มี protocol (เช่น "www.google.com") กัน browser ตีความเป็น path ของเว็บตัวเอง -> 404
+  // ถ้าช่อง link_url ว่าง คืนค่าว่างกลับไป เพื่อให้ renderer ด้านล่างรู้ว่าไม่ต้องทำเป็นลิงก์
+  function normalizeHeroLink(url){
+    const u = String(url || '').trim();
+    if(!u) return '';
+    if(/^(https?:|mailto:|tel:)/i.test(u)) return u;
+    return 'https://' + u;
+  }
+
+  // เปลี่ยนจาก <a href> เป็น <div data-link> แล้วสั่ง navigate เองใน bindHeroDrag() (ดูคอมเมนต์ที่นั่น)
+  // เดิมใช้ <a> ปล่อยให้ browser ยิง click event เองตามธรรมชาติ แต่เพราะ wrap.setPointerCapture() ที่ทำไว้
+  // เพื่อรองรับการลาก ทำให้บาง browser/webview บนมือถือไม่ส่ง click ต่อให้ <a> ที่อยู่ข้างใต้ pointer ที่ถูก
+  // capture ไปอย่างสม่ำเสมอ (สาเหตุของอาการ "กดไปบ้าง ไม่ไปบ้าง สะดุด") ต้องคุม navigate เองให้ชัวร์แทน
+  const oneSet = banners.map(b => {
+    const link = normalizeHeroLink(b.link_url);
+    const img = `<img src="${b.image_url}" alt="banner" style="width:100%;border-radius:10px;display:block;">`;
+    return `<div class="hero-card" data-link="${escapeHtml(link)}" style="${link ? 'cursor:pointer;' : 'cursor:default;'}">${img}</div>`;
+  }).join('');
+
+  // step 1: render 2 ชุดก่อน เพื่อวัดความกว้างจริงของ "1 ชุด" (รวม gap ระหว่างการ์ด) จาก offsetLeft จริงในเบราว์เซอร์
+  track.innerHTML = oneSet + oneSet;
+  const cards = track.querySelectorAll('.hero-card');
+  const n = banners.length;
+  let period = cards.length > n ? (cards[n].offsetLeft - cards[0].offsetLeft) : 0;
+  if(!period || period <= 0) period = track.scrollWidth / 2 || 1; // กันหารด้วย 0 เผื่อวัดไม่ได้
+
+  // step 2: ต่อซ้ำให้ความกว้างรวม >= 2 เท่าของความกว้างจอ + เผื่ออีก 1 ชุด กันเห็นรอยต่อ/โล่งตอนลากเร็วๆ
+  const wrapWidth = wrap.clientWidth || window.innerWidth;
+  const copiesNeeded = Math.max(2, Math.ceil((wrapWidth * 2) / period) + 1);
+  track.innerHTML = oneSet.repeat(copiesNeeded);
+
+  heroPeriod = period;
+  heroAutoOffset = 0; // รีเซ็ตตำแหน่งเมื่อคำนวณ layout ใหม่ (เช่นตอน resize) กันภาพกระโดด
+}
+
+function runHeroLoop(){
+  if(heroRafStarted) return; // ผูกลูป animation ครั้งเดียวพอ ไม่ต้องเริ่มซ้ำตอน resize
+  heroRafStarted = true;
+  const track = document.getElementById('heroTrack');
+  function loop(){
+    if(!heroDragging && heroPeriod > 0){
+      heroAutoOffset -= 0.4;
+      if(Math.abs(heroAutoOffset) >= heroPeriod) heroAutoOffset += heroPeriod; // วนกลับทีละ 1 คาบ ไม่ใช่รีเซ็ตเป็น 0 กันภาพกระตุก
+    }
+    // เดิม: บรรทัดนี้อยู่ใน if(!heroDragging) ด้านบน ทำให้ระหว่างลากนิ้ว/เมาส์ค้าง transform ไม่ถูกอัพเดทเลยสักเฟรม
+    // (เด้ง/สะดุดเพราะจอไม่ขยับตามนิ้วระหว่างลาก แล้วมากระโดดทีเดียวตอนปล่อยนิ้ว) ย้ายมาไว้นอก if ให้รันทุกเฟรมเสมอ
+    track.style.transform = `translateX(${heroAutoOffset + heroUserOffset}px)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// P0-fix (hero click reliability): เดิมพึ่ง native click ของ <a> ล้วนๆ แต่ wrap.setPointerCapture() ที่ต้องมี
+// เพื่อให้ลากนิ้วลื่น กลับทำให้บาง browser/webview มือถือไม่ส่ง click event ต่อให้ <a> ข้างใต้อย่างสม่ำเสมอ
+// (pointer ถูก capture ไปอยู่ที่ wrap ไม่ใช่การ์ด) -> อาการ "กดไปบ้าง ไม่ไปบ้าง สะดุด" ตามที่ Pop เจอ
+// แก้โดยเลิกพึ่ง native click ของ browser ไปเลย ตรวจเองจาก pointerdown->pointerup ว่าเป็น "แตะ" (ขยับน้อย/เร็ว)
+// หรือ "ลาก" (ขยับมาก) แล้วค่อยสั่ง navigate เองตรงๆ ด้วย window.open() ได้ผลแน่นอน 100% ทุกครั้งไม่ว่า browser ไหน
+const HERO_TAP_MOVE_PX = 8;     // ขยับไม่เกินนี้ถึงจะนับเป็น "แตะ" ไม่ใช่ "ลาก"
+const HERO_TAP_TIME_MS = 500;   // กดค้างไม่เกินนี้ถึงจะนับเป็น "แตะ" กันเคสกดค้างนิ่งๆ (long-press) โดนตีความเป็นแตะ
+
+function bindHeroDrag(){
+  if(heroDragBound) return; // ผูก event ครั้งเดียวพอ
+  heroDragBound = true;
+  const wrap = document.getElementById('heroWrap');
+  let downX = 0, downY = 0, downTime = 0, tapTarget = null;
+
+  function endDrag(e){
+    if(!heroDragging) return;
+    heroDragging = false; wrap.classList.remove('dragging');
+    heroAutoOffset += heroUserOffset;
+    heroUserOffset = 0;
+
+    // เช็คว่าเป็นแตะจริงไหมก่อนค่อย navigate — ใช้พิกัดตอนปล่อยนิ้ว (pointerup/pointercancel) เทียบกับตอนกดลง
+    if(tapTarget && e){
+      const ex = (e.clientX != null) ? e.clientX : downX;
+      const ey = (e.clientY != null) ? e.clientY : downY;
+      const moved = Math.hypot(ex - downX, ey - downY);
+      const elapsed = Date.now() - downTime;
+      if(moved <= HERO_TAP_MOVE_PX && elapsed <= HERO_TAP_TIME_MS){
+        const link = tapTarget.getAttribute('data-link');
+        if(link) window.open(link, '_blank', 'noopener');
+      }
+    }
+    tapTarget = null;
+  }
+
+  wrap.addEventListener('pointerdown', (e)=>{
+    heroDragging = true; wrap.classList.add('dragging');
+    heroStartX = e.clientX; heroStartOffset = heroUserOffset;
+    downX = e.clientX; downY = e.clientY; downTime = Date.now();
+    tapTarget = e.target.closest('.hero-card'); // จำการ์ดที่กดตอนเริ่ม ไว้ผูกกับ navigate ตอนปล่อยนิ้ว
+    try{ wrap.setPointerCapture(e.pointerId); }catch(err){} // กันเบราว์เซอร์แย่ง gesture ไปกลางคันตอนลากนิ้วเร็วๆ
+  });
+  window.addEventListener('pointermove', (e)=>{
+    if(!heroDragging) return;
+    heroUserOffset = heroStartOffset + (e.clientX - heroStartX);
+  });
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag); // กันเคสเบราว์เซอร์ยกเลิก gesture กลางทาง (ค้าง heroDragging=true ตลอดไปถ้าไม่ดัก)
+}
+
+/* ---------- Jump to top ---------- */
+window.addEventListener('scroll', ()=>{
+  document.getElementById('jumpTop').classList.toggle('show', window.scrollY > 500);
+});
+document.getElementById('jumpTop').addEventListener('click', ()=>{
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+/* ---------- Footer links ---------- */
+document.getElementById('footerCreateLink').addEventListener('click', (e)=>{ e.preventDefault(); handleCreateClick(); });
+document.getElementById('footerLoginLink').addEventListener('click', (e)=>{
+  e.preventDefault();
+  if(isLoggedIn()) logout(); else openLoginModal('direct');
+});
+
+// โหมด "focus" — แสดงแค่การ์ดหัวข้อเดียวที่ถูกแชร์มา (ดูคอมเมนต์ยาวใน init() ด้านล่างว่าทำไมเปลี่ยนมาแบบนี้)
+// ซ่อน hero banner / ช่องค้นหา+filter/sort / pagination ทิ้งไปเลยเพราะไม่เกี่ยวกับโหมดนี้ เหลือแค่การ์ดเดียว
+// ที่ขอมา + ปุ่มลิงก์กลับไปดูหัวข้ออื่นๆ ทั้งหมด (index.html เปล่าๆ ไม่มี query จะกลับไปโหมดฟีดปกติ)
+async function initFocusMode(topicId){
+  document.querySelector('.hero').style.display = 'none';
+  document.querySelector('.filter-bar').style.display = 'none';
+  document.getElementById('paginationRow').style.display = 'none';
+
+  const feed = document.getElementById('feed');
+  feed.innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading topic...</div>`;
+
+  const res = await api('getCompanyDetail', { company_id: topicId });
+  if(!res.success || !res.topic){
+    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ไม่พบหัวข้อนี้ (อาจถูกลบหรือหมดอายุไปแล้ว)<br>
+      <a class="btn btn-primary" href="index.html" style="margin-top:14px;display:inline-block;">See all topics →</a></div>`;
+    return;
+  }
+
+  // เก็บไว้ใน STATE.topics (แค่ 1 รายการ) เพราะฟังก์ชันเดิมของการ์ด (แชร์/แปลภาษา/อ่านเพิ่มเติม ฯลฯ) ทุกอันหา
+  // ข้อมูลหัวข้อจาก STATE.topics.find(...) อยู่แล้ว ทำแบบนี้จะได้ไม่ต้องแก้ฟังก์ชันพวกนั้นเลยสักตัว ใช้ต่อได้ทันที
+  STATE.topics = [res.topic];
+  feed.innerHTML = topicCardHTML(res.topic)
+    + `<div style="text-align:center;padding:24px 20px 8px;">
+        <a class="btn btn-ghost" href="index.html">See all topics →</a>
+      </div>`;
+  bindCardEvents(feed);
+  setupDescMoreButtons();
+}
+
+/* ---------- Init ---------- */
+(async function init(){
+  // P0-fix (footer flash on load) — การ์ดคู่กับ history.scrollRestoration='manual' ใน <head> ด้านบน:
+  // บาง browser/webview restore scroll position แบบ async หลัง paint ไปแล้ว ไม่ใช่ตอน parse แค่จุดเดียว
+  // กันไว้อีกชั้นตรงนี้ให้ชัวร์ว่า user เห็นบนสุดของหน้าเสมอตอนเปิดเว็บ ไม่ว่า browser จะพยายาม restore เมื่อไหร่
+  window.scrollTo(0, 0);
+  renderHeaderAuth();
+  loadCountries();
+  loadProvinces();
+  loadBirthdaySelects();
+  const sessionCheckPromise = validateSessionOnLoad(); // เช็คความถูกต้องของ session กับ server แบบไม่ block การโหลดหน้าอื่น
+
+  const params = new URLSearchParams(location.search);
+  const focusId = params.get('topic');
+
+  // P0-feature (hero banner -> การ์ดหัวข้อเดียว แม่นยำ 100%, ไอเดียของ Pop): เดิมโหลดฟีดทั้งหน้า + hero banner
+  // แล้วค่อย scrollIntoView หาการ์ดทีหลัง ต้องแข่งกับเวลาโหลดของหลายอย่างพร้อมกัน ต่อให้จูนจังหวะ (รอ hero banner
+  // + 2 rAF) ดีขึ้นแล้วก็ยังมีโอกาสสะดุด/ไม่ชัวร์ 100% อยู่ดีถ้าเน็ตช้าผิดปกติ หรือ hero banner ใช้เวลาเกิน 3 วิ
+  // -> เปลี่ยนแนวทางไปเลย: ถ้ามี ?topic=ID เข้ามาโหมด "focus" ทันที ไม่โหลดฟีดทั้งหมด/hero banner/pagination
+  // อะไรเลย ยิง getTopicDetail ดึงมาแค่หัวข้อเดียวที่ต้องการ แล้ว render การ์ดเดียวตรงนั้นด้วย topicCardHTML()
+  // (ฟังก์ชันเดิมที่ฟีดปกติใช้ ไม่ต้องเขียนใหม่) ไม่มี race condition ให้ลุ้นอีกต่อไป เร็วขึ้นด้วยเพราะยิง API
+  // แค่ 1 ครั้งแทนที่จะโหลดทั้งฟีด+hero banner+categories
+  if(focusId){
+    await initFocusMode(focusId);
+  } else {
+    // P0-fix (home โหลดช้า/ค้าง/error เป็นพักๆ): โค้ดเดิม (มีมาก่อนบทสนทนานี้แล้ว ไม่ใช่ที่เพิ่งเพิ่ม) ยิง
+    // hero banner / categories / topics พร้อมกันตั้งแต่ต้น ตอนนั้นตั้งใจไว้เพื่อให้ hero banner โหลดทันจังหวะ
+    // scrollIntoView หาการ์ดที่แชร์มา — แต่ตอนนี้ปัญหานั้นหมดไปแล้วเพราะเปลี่ยนไปใช้ initFocusMode() (ข้างบน)
+    // แทนทั้งหมด ไม่มีการ scroll-search อีกต่อไป เหตุผลเดิมที่ต้องยิงพร้อมกันเลยไม่มีความจำเป็นแล้ว
+    // ยิง 3 คำขอพร้อมกันไปที่ Apps Script (เว็บแอปเดียว, ไม่มี dedicated server) มีความเสี่ยงจริงที่ทำให้ช้าลง/error
+    // มากกว่าเดิม: Apps Script ต้องปลุก instance ใหม่ทุกครั้งที่ไม่มี instance ว่างพอ (cold start กินเวลาหลายวิ)
+    // ถ้ายิง 3 คำขอชนกันตอน cold ทั้งหมดต้องแบกต้นทุน cold-start พร้อมกันหมด แทนที่จะมีแค่คำขอแรกที่จ่ายราคานั้น
+    // แล้วคำขอถัดไปได้ใช้ instance ที่อุ่นแล้ว (เร็วกว่ามาก) -> เรียงคิวใหม่ตามลำดับความสำคัญที่ user รอดู:
+    // topics (เนื้อหาหลักที่ user จ้องรออยู่) ก่อน แล้วค่อย hero banner แล้วค่อย categories (แค่ปุ่ม filter เสริม)
+    // P0-fix (home โหลดช้า/ค้าง/error เป็นพักๆ — feedback ล่าสุดของ Pop): คอมเมนต์ด้านบน (มีมาก่อนหน้านี้) อธิบาย
+    // เหตุผลที่เปลี่ยนจากยิง 3 คำขอพร้อมกัน -> เรียงคิวทีละคำขอ (topics -> hero banner -> categories) ไปแล้ว
+    // แต่การเรียงคิวเองก็ยังมีปัญหาอยู่ดี: แต่ละคำขอเป็น HTTP round-trip แยกกันไปยัง Apps Script คนละครั้ง ต่อให้
+    // ไม่ชนกันแล้ว แต่ละคำขอก็ยังมีโอกาสต้องแบก cold-start ของตัวเองแยกกันได้อยู่ดี (Apps Script ไม่ได้การันตี
+    // ว่า container ที่เพิ่ง "อุ่น" จากคำขอก่อนหน้าจะถูกใช้ซ้ำกับคำขอถัดไปเสมอ) ยิ่งเรียงคิว 3 คำขอต่อกัน เวลารอ
+    // รวมสูงสุดยิ่งบวกกันเป็นทวีคูณ (แต่ละคำขอมี timeout 15 วิ + retry 1 ครั้ง = worst case ~30 วิ/คำขอ รวม 3
+    // คำขอ อาจถึง ~90 วิ กว่าจะเห็นหน้าแรกครบ) ตรงกับที่ Pop เจอ: โหลดค้างนาน แล้วจบด้วย error ให้ลองใหม่บ่อย
+    // -> รวม 3 endpoint เป็นคำขอเดียว (action=getHomeFeed, ดู actionGetHomeFeed ฝั่ง Apps Script) ยิงแค่ครั้งเดียว
+    // ตอนโหลดหน้าแรก ลด round-trip เหลือ 1 ครั้ง (จากเดิมสูงสุด 3 ครั้ง) โดยข้อมูลแต่ละก้อนข้างในยัง cache แยกกัน
+    // เหมือนเดิมทุกประการ ไม่กระทบความสดของข้อมูล — การ fetch topics รอบถัดๆ ไป (เปลี่ยนหน้า/หมวดหมู่/ค้นหา/
+    // เรียงลำดับ) ยังใช้ loadTopics() เดิมตามปกติ เพราะไม่ต้องโหลด banners/categories ซ้ำทุกครั้งอยู่แล้ว
+    await loadHomeFeed();
+    loadCreateFormOptions(); // เติม dropdown ของ modal สร้างหัวข้อเท่านั้น ไม่ใช่สิ่งที่เห็นตอนเปิดหน้าแรก
+  }
+
+  // มาจากปุ่ม "+ สร้างหัวข้อ" ในหน้า "หัวข้อของฉัน" (profile.html) — เปิด modal สร้างหัวข้อให้อัตโนมัติ
+  // จะได้ไม่ต้องมาเจอหน้าแรกเฉยๆ แล้วต้องกดสร้างหัวข้อเองซ้ำอีกที
+  if(params.get('create') === '1'){
+    STATE.cameFromProfile = true;
+    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
+    await sessionCheckPromise; // รอให้แน่ใจก่อนว่า session ยัง valid จริง จะได้ไม่เปิด modal แล้วเจอ error กรุณา login ทันที
+    setTimeout(()=> handleCreateClick(), 100);
+  }
+})();
+</script>
+</body>
+</html>
