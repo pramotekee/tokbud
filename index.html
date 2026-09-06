@@ -40,19 +40,19 @@
 
 <style>
   :root{
-    --primary: #1B3A6B;      /* น้ำเงินหลัก - TOKBUD theme */
-    --primary-dark: #0F2648;
-    --primary-light: #3E6099;
-    --accent: #FFC93C;       /* เหลือง */
-    --bg: #F7F8FA;           /* ขาวอมเทาอ่อนมาก */
+    --primary: #2143C8;      /* น้ำเงินฟ้าสด - ตามโทนที่ Pop กำหนด */
+    --primary-dark: #0B1D7F; /* น้ำเงินเข้ม - ใช้ hover/header/ปุ่มเข้ม */
+    --primary-light: #5B7DE8; /* โทนอ่อนกว่า primary ไว้ทำ tint/badge */
+    --accent: #F5D149;       /* เหลืองสด */
+    --bg: #F5F8FF;           /* ขาวอมฟ้าอ่อนมาก ให้ดูสดใสไม่หม่น */
     --surface: #FFFFFF;
-    --text: #14213D;
-    --text-muted: #667085;
-    --line: #E4E7EC;
-    --side-a: #1B3A6B;        /* Join because... = น้ำเงิน */
-    --side-b: #E0932C;        /* Leave because... = เหลืองเข้ม/ส้ม แยกจากปุ่มปกติชัดเจน */
+    --text: #0B1D7F;         /* ใช้โทนน้ำเงินเข้มแทนดำ ให้ฟีลแบรนด์ชัด แต่ยังคมชัดอ่านง่าย */
+    --text-muted: #5C6B9E;
+    --line: #DCE4F7;
+    --side-a: #2143C8;        /* Join because... = น้ำเงินฟ้า */
+    --side-b: #F5D149;        /* Leave because... = เหลืองสด แยกชัดเจนจากฝั่ง Join */
     --radius: 16px;
-    --shadow: 0 4px 20px rgba(20, 33, 61, 0.08);
+    --shadow: 0 4px 20px rgba(11, 29, 127, 0.12);
   }
 
   *{ box-sizing:border-box; }
@@ -99,7 +99,7 @@
   }
   .btn:active{ transform:scale(0.96); }
   .btn-primary{ background:var(--primary); color:#fff; }
-  .btn-primary:hover{ box-shadow:0 6px 16px rgba(91,42,158,0.35); }
+  .btn-primary:hover{ box-shadow:0 6px 16px rgba(33,67,200,0.35); }
   .btn-ghost{ background:var(--surface); color:var(--primary); border:1.5px solid var(--line); }
   .btn-accent{ background:var(--accent); color:var(--primary-dark); font-weight:600; }
 
@@ -352,7 +352,7 @@
   .vote-btn.side-a{ }
   .vote-btn.side-b{ }
   .vote-btn.selected.side-a{ background:var(--side-a); border-color:var(--side-a); color:#fff; }
-  .vote-btn.selected.side-b{ background:var(--side-b); border-color:var(--side-b); color:#fff; }
+  .vote-btn.selected.side-b{ background:var(--side-b); border-color:var(--side-b); color:var(--primary-dark); }
   .vote-btn:disabled{ opacity:.55; cursor:not-allowed; }
   /* --- โทนสีของการ์ดต้องไหลเข้าไปในองค์ประกอบภายในด้วย ไม่ใช่แค่ขอบ --- */
   .topic-card .vote-btn{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); border-color:color-mix(in srgb, var(--card-color, var(--primary)) 30%, white); }
@@ -441,7 +441,7 @@
     border:1px solid var(--primary); border-radius:20px; padding:3px 12px;
     flex-shrink:0; transition:background .15s ease;
   }
-  .dash-retry-btn:active{ background:rgba(91,42,158,0.08); }
+  .dash-retry-btn:active{ background:rgba(33,67,200,0.08); }
 
   /* --- gender donut chart (แทนแถบสีเดิม) --- */
   .dash-donut-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; }
@@ -607,7 +607,7 @@
     border-radius:50%; border:2px solid rgba(255,255,255,0.45); border-top-color:#fff;
     animation:spin .7s linear infinite;
   }
-  .btn-ghost .btn-spinner{ border-color:rgba(91,42,158,0.3); border-top-color:var(--primary); }
+  .btn-ghost .btn-spinner{ border-color:rgba(33,67,200,0.3); border-top-color:var(--primary); }
   /* spinner กลางพื้นที่ ใช้ตอนกำลังดึงข้อมูล เช่น เปลี่ยน pill หมวดหมู่ / พิมพ์ค้นหา / โหลด feed ครั้งแรก */
   .area-loading{ text-align:center; padding:50px 20px; color:var(--text-muted); font-size:13.5px; }
   .area-spinner{
@@ -646,7 +646,7 @@
   /* jump to top */
   .jump-top{
     position:fixed; bottom:24px; right:20px; width:46px; height:46px; border-radius:50%;
-    background:var(--primary); color:#fff; font-size:18px; box-shadow:0 8px 20px rgba(91,42,158,0.4);
+    background:var(--primary); color:#fff; font-size:18px; box-shadow:0 8px 20px rgba(33,67,200,0.4);
     display:none; align-items:center; justify-content:center; z-index:60;
   }
   .jump-top.show{ display:flex; }
@@ -2668,7 +2668,7 @@ function renderDashboard(topicId, dash, cardColor){
   const el = document.getElementById(`dash-${topicId}`);
   if(!el) return;
   el.classList.remove('dash-loading'); // ล้าง class ของ placeholder ทิ้ง กัน layout เพี้ยน (flex-center/padding ของ spinner ค้างอยู่)
-  const ageColor = cardColor || '#5B2A9E';
+  const ageColor = cardColor || '#2143C8';
 
   const genderDonutHTML = buildGenderDonutHTML(dash);
   const ageRows = AGE_BAR_ORDER.map(a => dashBarRowHTML(a, (dash.age_group_percent || {})[a] || 0, ageColor)).join('');
@@ -3141,7 +3141,7 @@ function openQrModal(topicId){
     text: url,
     width: 220,
     height: 220,
-    colorDark: '#1C1329',
+    colorDark: '#0B1D7F',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
