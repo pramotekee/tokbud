@@ -157,7 +157,6 @@
     padding:9px 16px;
   }
   .search-box input{ border:none; outline:none; flex:1; font-size:14px; background:transparent; }
-  .history-btn{ flex-shrink:0; white-space:nowrap; padding:9px 14px; font-size:13px; }
   .view-toggle{ display:flex; background:var(--surface); border:1.5px solid var(--line); border-radius:100px; padding:3px; }
   .view-toggle button{ padding:6px 12px; border-radius:100px; font-size:13px; color:var(--text-muted); }
   .view-toggle button.active{ background:var(--primary); color:#fff; }
@@ -729,7 +728,6 @@
       <span>🔍</span>
       <input type="text" id="searchInput" placeholder="ค้นหาหัวข้อ, tag..." data-i18n-ph="searchPlaceholder">
     </div>
-    <a class="btn btn-ghost history-btn" href="history.html" data-i18n="historyLink">🕓 ประวัติ</a>
   </div>
   <div class="view-toggle" id="feedSortToggle">
     <button data-sort="shuffle" class="active" data-i18n="sortShuffle">Shuffle</button>
@@ -1113,7 +1111,7 @@ const I18N = {
   th: {
     createBtn: '＋ สร้างบริษัท', createBtn2: 'สร้างบริษัท', loginBtn: 'เข้าสู่ระบบ',
     heroTitle: '<b>Find</b> the place where you shine.',
-    searchPlaceholder: 'ค้นหาบริษัท, tag...', historyLink: '🕓 ประวัติ',
+    searchPlaceholder: 'ค้นหาบริษัท, tag...',
     sortShuffle: 'สุ่ม', sortLatest: 'ล่าสุด', sortPopular: 'ยอดนิยม',
     loginTitle: 'อ่ะ! คุณลืม login', loginHint: 'กรอก 2 ช่องนี้แล้วกด login มาแชร์ความคิดเห็นกันเลย',
     loginDirectTitle: 'เข้าสู่ระบบ TOKBUD', loginDirectHint: 'กรอกเบอร์โทรและ Passcode เพื่อเข้าสู่ระบบ',
@@ -1194,7 +1192,7 @@ const I18N = {
   en: {
     createBtn: '＋ Create Company', createBtn2: 'Create Company', loginBtn: 'Log In',
     heroTitle: '<b>Find</b> the place where you shine.',
-    searchPlaceholder: 'Search companies, tags...', historyLink: '🕓 History',
+    searchPlaceholder: 'Search companies, tags...',
     sortShuffle: 'Shuffle', sortLatest: 'Latest', sortPopular: 'Popular',
     loginTitle: 'Oops! You forgot to log in', loginHint: 'Fill in these 2 fields and log in to start',
     loginDirectTitle: 'Log In to TOKBUD', loginDirectHint: 'Enter your phone number and passcode to log in',
