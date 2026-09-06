@@ -1140,7 +1140,7 @@ const I18N = {
     coverUploadPrompt: '＋ แตะเพื่อแนบโลโก้บริษัท',
     ctTitleLabel: 'ชื่อบริษัท', ctTitlePh: 'เช่น บริษัท ABC จำกัด',
     ctDescLabel: 'รายละเอียด', optionalHint2: '(ไม่บังคับ)', ctDescPh: 'อธิบายเพิ่มเติมเกี่ยวกับบริษัท...',
-    ctCategoryLabel: 'หมวดหมู่', ctCategoryChoose: 'เลือกหมวดหมู่ (เลือกได้มากกว่า 1)',
+    ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 ตัวเลือก',
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     createSubmitBtn: 'สร้างบริษัท',
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
@@ -1168,7 +1168,7 @@ const I18N = {
     deletePasscodeLabel: 'กรอก Passcode เพื่อยืนยันการขอลบ', deleteConfirmBtn: 'ส่งคำขอลบ',
     deletePendingMsg: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ',
     errTitleRequired: 'กรุณากรอกชื่อบริษัท',
-    errCategoryRequired: 'กรุณาเลือกหมวดหมู่', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
+    errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 ตัวเลือก', errCategoryMax: 'เลือกได้สูงสุด 5 ตัวเลือกเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
     errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก',
     errPasscodeRequired: 'กรุณากรอก Passcode', errDeleteReasonRequired: 'กรุณาเลือกเหตุผลและกรอกรายละเอียดให้ครบ',
@@ -1196,7 +1196,7 @@ const I18N = {
     heroTitle: '<b>Find</b> the place where you shine.',
     searchPlaceholder: 'Search companies, tags...', historyLink: '🕓 History',
     sortShuffle: 'Shuffle', sortLatest: 'Latest', sortPopular: 'Popular',
-    loginTitle: 'Oops! You forgot to log in', loginHint: 'Fill in these 2 fields and log in to start',
+    loginTitle: 'Oops! You forgot to log in', loginHint: 'Fill in these 2 fields and log in to start sharing',
     loginDirectTitle: 'Log In to TOKBUD', loginDirectHint: 'Enter your phone number and passcode to log in',
     phoneLabel: 'Phone Number',
     signupCta: 'Not a member yet? Sign up in <b>30 seconds</b> and join the fun',
@@ -1221,7 +1221,7 @@ const I18N = {
     coverUploadPrompt: '＋ Tap to attach a company logo',
     ctTitleLabel: 'Company Name', ctTitlePh: 'e.g. ABC Corporation',
     ctDescLabel: 'Description', optionalHint2: '(optional)', ctDescPh: 'Add more detail about the company...',
-    ctCategoryLabel: 'Category', ctCategoryChoose: 'Select Category (multiple allowed)',
+    ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
     joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
@@ -1249,7 +1249,7 @@ const I18N = {
     deletePasscodeLabel: 'Enter your Passcode to confirm this request', deleteConfirmBtn: 'Submit delete request',
     deletePendingMsg: 'A delete request is already pending review',
     errTitleRequired: 'Please enter a company name',
-    errCategoryRequired: 'Please select a category', errTagRequired: 'Please add at least 1 tag',
+    errCategoryRequired: 'Please select at least 1 category', errCategoryMax: 'You can select up to 5 only', errTagRequired: 'Please add at least 1 tag',
     errCoverRequired: 'Please attach a company logo before creating the company',
     errMainReasonRequired: 'Please fill in this field before saving',
     errPasscodeRequired: 'Please enter your Passcode', errDeleteReasonRequired: 'Please select a reason and fill in all required details',
@@ -2014,17 +2014,28 @@ document.getElementById('ctTitle').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter'){ e.preventDefault(); }
 });
 
+document.getElementById('ctCategory').addEventListener('change', (e)=>{
+  // จำกัดเลือกได้สูงสุด 5 ตัวเลือก — ถ้าเลือกเกิน ยกเลิกตัวที่เพิ่งกดล่าสุดทันที (ตัวเลือกเดิมที่เลือกไว้ก่อนหน้ายังอยู่ครบ)
+  const selected = Array.from(e.target.selectedOptions);
+  if(selected.length > 5){
+    selected[selected.length - 1].selected = false;
+    showToast(t('errCategoryMax'));
+  }
+});
+
 document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('createError');
   errEl.style.display = 'none';
 
   const companyName = document.getElementById('ctTitle').value.trim();
   const description = document.getElementById('ctDescription').value.trim();
-  const category = Array.from(document.getElementById('ctCategory').selectedOptions).map(o=>o.value).filter(v=>v).join(',');
+  const categoryOptions = Array.from(document.getElementById('ctCategory').selectedOptions).map(o=>o.value).filter(v=>v);
+  const category = categoryOptions.join(',');
   const tags = ['ctTag1','ctTag2','ctTag3','ctTag4','ctTag5'].map(id => document.getElementById(id).value.trim());
 
   if(!companyName){ errEl.textContent = t('errTitleRequired'); errEl.style.display = 'block'; return; }
-  if(!category){ errEl.textContent = t('errCategoryRequired'); errEl.style.display = 'block'; return; }
+  if(!categoryOptions.length){ errEl.textContent = t('errCategoryRequired'); errEl.style.display = 'block'; return; }
+  if(categoryOptions.length > 5){ errEl.textContent = t('errCategoryMax'); errEl.style.display = 'block'; return; }
   if(!tags.some(v => v)){ errEl.textContent = t('errTagRequired'); errEl.style.display = 'block'; return; }
   if(!ctCoverUrl){ errEl.textContent = t('errCoverRequired'); errEl.style.display = 'block'; return; }
 
@@ -2094,7 +2105,7 @@ function resetCreateForm(){
 async function loadTopics(){
   // ใช้ข้อความ EN ตายตัวเสมอ (ไม่ผูกกับ TH/EN toggle) ตาม decision ของ Pop เพราะเป็นแค่ spinner ชั่วคราว
   // อยากให้คนทุกชาติเข้าใจได้ทันทีโดยไม่ต้องพึ่งภาษาที่เลือกไว้
-  document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading topics...</div>`;
+  document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading companies...</div>`;
   const params = { page: STATE.page, page_size: STATE.pageSize, sort: STATE.sortMode };
   if(STATE.sortMode === 'shuffle') params.shuffle_seed = STATE.shuffleSeed;
   if(STATE.activeCategory) params.category = STATE.activeCategory;
@@ -2125,7 +2136,7 @@ async function loadTopics(){
 // ส่วนการ fetch topics รอบถัดๆ ไป (เปลี่ยนหน้า/หมวดหมู่/ค้นหา/เรียงลำดับ) ยังใช้ loadTopics() เดิมตามปกติ
 // เพราะไม่จำเป็นต้องโหลด banners/categories ซ้ำทุกครั้ง
 async function loadHomeFeed(){
-  document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading topics...</div>`;
+  document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading companies ...</div>`;
   const params = { page: STATE.page, page_size: STATE.pageSize, sort: STATE.sortMode };
   if(STATE.sortMode === 'shuffle') params.shuffle_seed = STATE.shuffleSeed;
   if(STATE.activeCategory) params.category = STATE.activeCategory;
