@@ -2233,7 +2233,7 @@ function renderFeed(){
     return;
   }
   if(STATE.topics.length === 0){
-    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ยังไม่มีหัวข้อในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ</div>`;
+    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ</div>`;
     return;
   }
   feed.innerHTML = STATE.topics.map(feedItemHTML).join('');
