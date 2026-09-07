@@ -473,16 +473,17 @@
     </div>
 
     <div class="tab-row">
-      <button class="tab-btn active" data-tab="dashboard">My Dashboard</button>
+      <button class="tab-btn" data-tab="dashboard" style="display:none;">My Dashboard</button>
+      <button class="tab-btn active" data-tab="editinfo">My Profile</button>
       <button class="tab-btn" data-tab="mytopics">My Company</button>
       <button class="tab-btn" data-tab="mycomments">My Comment</button>
-      <button class="tab-btn" data-tab="editinfo">My Profile</button>
       <button class="tab-btn" data-tab="planbilling">Plan & Billing</button>
       <button class="tab-btn" data-tab="deleteaccount">Account Deletion</button>
     </div>
 
-    <!-- ===== Tab: My Dashboard ===== -->
-    <div class="tab-panel active" id="tab-dashboard">
+    <!-- ===== Tab: My Dashboard (ซ่อนไว้ก่อนตามคำขอของ Pop — ไม่ใช่ marketing platform ไม่จำเป็นต้องมีตอนนี้
+         ไม่ลบทิ้ง เผื่ออนาคตอยากเอากลับมาโชว์ ปุ่ม tab ก็ display:none ไว้คู่กันแล้วที่ tab-row ด้านบน) ===== -->
+    <div class="tab-panel" id="tab-dashboard" style="display:none;">
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-num" id="statTopics">0</div>
@@ -518,7 +519,7 @@
     </div>
 
     <!-- ===== Tab: Edit info ===== -->
-    <div class="tab-panel" id="tab-editinfo">
+    <div class="tab-panel active" id="tab-editinfo">
       <div class="form-card">
         <h4 data-i18n="personalInfoTitle">ข้อมูลส่วนตัว</h4>
         <div class="field-avatar-row">
@@ -615,7 +616,7 @@
       </div>
 
       <div class="dash-card">
-        <h4 data-i18n="billingHistoryTitle">ประวัติการตัดเงิน</h4>
+        <h4 data-i18n="billingHistoryTitle">ประวัติการชำระเงิน</h4>
         <div id="billingHistoryList"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
       </div>
     </div>
@@ -802,11 +803,11 @@ const I18N = {
     chargeFailedBannerText: 'การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีของคุณถูกปรับเป็น FREE plan แล้ว',
     chargeFailedRetryBtn: 'จ่ายเงินอีกครั้ง',
     chargeFailedToast: 'การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีถูกปรับเป็น FREE แล้ว — ไปที่แท็บ Plan & Billing เพื่อจ่ายเงินอีกครั้ง',
-    billingHistoryTitle: 'ประวัติการตัดเงิน',
-    billingHistoryEmpty: 'ยังไม่มีประวัติการตัดเงิน',
-    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อใช้งานฟีเจอร์ที่มากกว่า ให้คุณสามารถ export data จากลูกค้าที่ร่วมมอบคำตอบให้คุณ',
-    planPitchDesc: 'เพียง 199 บาท/เดือน (นับ 30 วัน) สำหรับข้อมูลอันมีค่าต่อสินค้า, บริการ และเรื่องที่คุณกำลังสนใจ เพื่อช่วยให้เข้าใจตามต้องการลูกค้าของคุณมากยิ่งขึ้น (ยกเลิกได้ตลอดเวลา ถ้าคุณต้องการ)',
-    planPriceUsdHint: '(~$5.5 USD — ป้ายอ้างอิงเท่านั้น ไม่ใช่ค่าที่ตัดจริง)',
+    billingHistoryTitle: 'ประวัติการชำระเงิน',
+    billingHistoryEmpty: 'ยังไม่มีประวัติการชำระเงิน',
+    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อใช้งานฟีเจอร์ที่มากกว่า ให้คุณสามารถ export data จากผู้ที่มอบคำตอบให้คุณ',
+    planPitchDesc: 'เพียง 199 บาท/เดือน (นับ 30 วัน) สำหรับข้อมูลอันมีค่าต่อองค์กรของคุณ เพื่อช่วยให้เข้าใจประสบการณ์พนักงานของคุณมากยิ่งขึ้น (ยกเลิกได้ตลอดเวลา หากคุณต้องการ)',
+    planPriceUsdHint: '(~$5.5 USD — เปรียบเทียบมูลค่าโดยประมาณ)',
     upgradeToProBtn: 'อัปเกรดเป็น PRO — 199 บาท/เดือน',
     currentPlanLabel: 'แผนที่คุณใช้งานอยู่ตอนนี้',
     proActiveLabel: 'PRO', freeLabel: 'FREE',
@@ -837,6 +838,7 @@ const I18N = {
     dcErrReasonRequired: 'กรุณาเลือกเหตุผล', dcErrReasonTextRequired: 'กรุณาระบุรายละเอียดเพิ่มเติม',
     dcErrPasscodeRequired: 'กรุณากรอก Passcode เพื่อยืนยัน',
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
+    mtEmptyState: 'ยังไม่มีบริษัทที่คุณสร้าง', mcEmptyState: 'ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้',
     ecModalTitle: 'แก้ไขคอมเมนต์',
     joinMainReasonLabel: 'ปัจจัยที่คุณสมัคร/ร่วมงานกับบริษัทนี้คืออะไร?',
     leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?',
@@ -883,11 +885,11 @@ const I18N = {
     chargeFailedBannerText: 'Your last payment failed. Your account has been switched to the FREE plan.',
     chargeFailedRetryBtn: 'Pay again',
     chargeFailedToast: 'Your last payment failed and your account is now on the FREE plan — go to Plan & Billing to pay again.',
-    billingHistoryTitle: 'Billing History',
-    billingHistoryEmpty: 'No billing history yet',
+    billingHistoryTitle: 'Payment History',
+    billingHistoryEmpty: 'No payment history yet',
     planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who took part in your topics.',
-    planPitchDesc: 'Just 199 THB/month (30 days) for valuable insight into your products, services, and topics of interest — so you can better understand your audience. Cancel anytime.',
-    planPriceUsdHint: '(~$5.5 USD — reference only, not the actual charged amount)',
+    planPitchDesc: 'Just 199 THB/month (30 days) for valuable insight into your organization — so you can better understand your employees\' experience. Cancel anytime.',
+    planPriceUsdHint: '(~$5.5 USD — approximate value comparison only, not the actual charged amount)',
     upgradeToProBtn: 'Upgrade to PRO — 199 THB/month',
     currentPlanLabel: 'Your current plan',
     proActiveLabel: 'PRO', freeLabel: 'FREE',
@@ -918,6 +920,7 @@ const I18N = {
     dcErrReasonRequired: 'Please select a reason', dcErrReasonTextRequired: 'Please provide more detail',
     dcErrPasscodeRequired: 'Please enter your passcode to confirm',
     joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
+    mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
     joinMainReasonLabel: 'What made you apply to / join this company?',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?',
@@ -1420,7 +1423,7 @@ const STATUS_LABEL = { active:'กำลังเผยแพร่', inactive:'
 function renderMyTopics(){
   const el = document.getElementById('myTopicsList');
   if(STATE.myTopics.length === 0){
-    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>ยังไม่มีบริษัทที่คุณสร้าง</div>';
+    el.innerHTML = `<div class="empty-state"><div class="emoji">📭</div>${t18n('mtEmptyState')}</div>`;
     return;
   }
   const sorted = [...STATE.myTopics].sort((a,b)=>{
@@ -1667,7 +1670,7 @@ async function loadMyComments(){
 function renderMyComments(){
   const el = document.getElementById('myCommentsList');
   if(STATE.myComments.length === 0){
-    el.innerHTML = '<div class="empty-state"><div class="emoji">📭</div>ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้</div>';
+    el.innerHTML = `<div class="empty-state"><div class="emoji">📭</div>${t18n('mcEmptyState')}</div>`;
     return;
   }
   el.innerHTML = STATE.myComments.map(c=>{
