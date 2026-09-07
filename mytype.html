@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Type — TOKBUD</title>
+<meta property="og:title" content="My Type — TOKBUD">
+<meta property="og:description" content="Same Type? Same Vibe? 👀">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@100;400;700&family=Lexend:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="mytype-narrative.js"></script>
+<!-- ไฟล์แยกจาก mytype.txt ตั้งใจ (ดูคอมเมนต์ในไฟล์นั้น) — โหลดหลัง html2pdf เพราะ
+     downloadMyTypePdf() ต้องใช้ buildMyTypeNarrativePage() ที่มันประกาศไว้ -->
+
+<style>
+  :root{
+    --primary: #2143C8;      /* น้ำเงินฟ้าสด - sync กับ index.html/profile.html */
+    --primary-dark: #0B1D7F; /* น้ำเงินเข้ม - ใช้ hover/header/ปุ่มเข้ม */
+    --primary-light: #5B7DE8; /* โทนอ่อนกว่า primary ไว้ทำ tint/badge */
+    --accent: #F5D149;       /* เหลืองสด */
+    --bg: #0B1D7F;      /* พื้นหลังหน้านี้ทั้งหน้า = น้ำเงินเข้มเดียวกับ primary-dark */
+    --surface: #FFFFFF;
+    --text: #0B1D7F;         /* ใช้โทนน้ำเงินเข้มแทนดำ ให้ฟีลแบรนด์ชัด แต่ยังคมชัดอ่านง่าย */
+    --text-muted: #5C6B9E;
+    --line: #DCE4F7;
+    --danger: #D64545;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(11,29,127,0.18);
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter', sans-serif; font-weight:400; font-size:15px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  h1,h2,h3,h4, .btn{ font-family:'Lexend', sans-serif; }
+  img{ max-width:100%; display:block; }
+  button{ font-family:inherit; cursor:pointer; border:none; background:none; }
+  input, select, textarea{ font-family:inherit; }
+  a{ color:inherit; text-decoration:none; }
+
+  .app{ max-width:640px; margin:0 auto; padding:18px 16px 60px; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding:6px 4px 18px; }
+  .topbar .brand{ font-family:'Antonio',sans-serif; font-weight:700; font-size:22px; color:#fff; letter-spacing:1px; }
+  .topbar .brand a{ color:#fff; }
+  .top-actions{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .back-link{ font-size:12.5px; color:rgba(255,255,255,0.8); }
+  .back-link:hover{ color:#fff; }
+
+  .btn{ padding:10px 18px; border-radius:100px; font-size:14px; font-weight:600; transition:transform .15s ease, box-shadow .15s ease; }
+  .btn:active{ transform:scale(0.96); }
+  .btn-primary{ background:var(--primary); color:#fff; }
+  .btn-primary:hover{ box-shadow:0 6px 16px rgba(33,67,200,0.35); }
+  .btn-ghost{ background:var(--surface); color:var(--primary); border:1.5px solid var(--line); }
+  /* ปุ่ม "See My Type Summary Sheet" โดยเฉพาะ (ไม่แตะ .btn-ghost ตัวเดิม เพราะใช้ร่วมกับปุ่มอื่นอีกหลายจุด
+     เช่น Let's Play, Show Me, Cancel, Share) — พื้นเหลืองล้วน ไม่มีเส้นขอบ ตัวอักษรม่วงเดิม ให้เด่นสะดุดตากว่าปุ่มทั่วไป */
+  .btn-summary-highlight{ background:#F5D149; color:var(--primary); border:none; }
+  .btn:disabled{ opacity:.6; cursor:not-allowed; }
+  .full-btn{ width:100%; padding:13px; border-radius:12px; font-size:15px; font-weight:600; }
+  .btn-row{ display:flex; gap:10px; margin:16px 0; }
+  .btn-row .btn{ flex:1; }
+  .btn-spinner{ display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); border-top-color:#fff; animation:spin .7s linear infinite; margin-right:6px; vertical-align:-2px; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .state-box{ text-align:center; padding:70px 20px; color:#6E6680; }
+  .state-box .spinner{ width:30px; height:30px; border:3px solid rgba(33,67,200,0.15); border-top-color:#2143C8; border-radius:50%; margin:0 auto 14px; animation:spin .8s linear infinite; }
+  .state-box .msg{ font-size:14.5px; }
+
+  /* ===== การ์ดพื้นขาว (ทุกกล่องคอนเทนต์วางอยู่บนพื้นม่วง) ===== */
+  .card{ background:var(--surface); border-radius:24px; box-shadow:var(--shadow); padding:24px 20px; margin-bottom:16px; }
+
+  .profile-head{ display:flex; align-items:center; gap:16px; margin-bottom:18px; }
+  .avatar{ width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--text-muted); }
+  .avatar img{ width:100%; height:100%; object-fit:cover; }
+  .avatar.clickable{ cursor:zoom-in; }
+  .username{ font-size:22px; font-weight:800; font-family:'Lexend',sans-serif; }
+
+  .section-title{ font-size:14px; font-weight:700; margin-bottom:8px; color:var(--text); }
+  .aboutme-text{ font-size:14px; color:var(--text-muted); white-space:pre-wrap; word-break:break-word; margin-bottom:16px; }
+
+  .contact-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .contact-icon{ width:38px; height:38px; border-radius:50%; background:#1C1329; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; transition:opacity .15s; }
+  .contact-icon:hover{ opacity:.8; }
+
+  /* ===== Slider rows ===== */
+  .q-row{ padding:14px 0; border-bottom:1px solid var(--line); }
+  .q-row:last-child{ border-bottom:none; }
+  .q-label{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:12px; color:var(--text-muted); }
+  .q-label span{ transition:font-size .15s ease, font-weight .15s ease, color .15s ease; }
+  .q-label span.winning{ font-size:15.5px; font-weight:800; color:var(--text); }
+  .q-track{ position:relative; height:8px; border-radius:10px; background:linear-gradient(to right, var(--line), #EAF1FF, var(--line)); margin:0 10px; }
+  .q-track.editable{ cursor:pointer; }
+  .q-handle{ position:absolute; top:50%; width:22px; height:22px; border-radius:50%; background:var(--primary); border:3px solid #fff; box-shadow:var(--shadow); transform:translate(-50%,-50%); }
+  .q-track.editable .q-handle{ touch-action:none; cursor:grab; }
+  .q-track.editable .q-handle:active{ cursor:grabbing; background:var(--primary-dark); }
+  .q-track.readonly .q-handle{ background:var(--text-muted); }
+  .edit-hint{ text-align:left; font-size:12px; color:var(--text-muted); margin-top:-6px; margin-bottom:14px; }
+
+  /* ===== My Type guessing game (visitor view only) =====
+     วงกลม 2 สี: guess-handle (สีทองใหม่ ไม่ซ้ำระบบ) = ที่ user ทาย, actual-handle (สีม่วงเดิมของระบบ) = คำตอบจริงเจ้าของโปรไฟล์ */
+  .game-actions{ display:flex; gap:10px; margin-bottom:16px; }
+  .game-actions .btn{ flex:1; }
+  .game-row .q-track{ margin-bottom:12px; }
+  .guess-handle{ width:18px; height:18px; background:var(--accent); z-index:2; }
+  .actual-handle{ background:var(--primary); z-index:1; }
+  .game-input-row{ display:flex; gap:8px; align-items:center; margin-top:2px; }
+  .game-input-row input{ width:76px; padding:8px 10px; border-radius:10px; border:1.5px solid var(--line); font-size:14px; text-align:center; outline:none; background:var(--bg-input,#F5F8FF); }
+  .game-input-row input:focus{ border-color:var(--primary); background:#fff; }
+  .game-input-row input:disabled{ opacity:.6; }
+  .check-btn{ padding:8px 16px; font-size:12.5px; font-weight:700; border-radius:10px; background:var(--primary); color:#fff; white-space:nowrap; }
+  .check-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .game-feedback{ font-size:12.5px; font-weight:700; margin-top:7px; min-height:16px; }
+  .game-feedback.correct{ color:#218848; }
+  .game-feedback.wrong{ color:var(--danger); }
+  .bottom-showme-row{ margin-top:18px; }
+
+  /* ===== Game result popup ===== */
+  .result-emoji{ font-size:40px; text-align:center; margin-bottom:6px; }
+  .result-title{ font-size:19px; font-weight:800; text-align:center; margin-bottom:6px; font-family:'Lexend',sans-serif; }
+  .result-desc{ font-size:13.5px; color:var(--text-muted); text-align:center; margin-bottom:20px; }
+
+  /* ===== Grouping (Very Me / Kinda Me / Not Me / So Different) ===== */
+  .grouping-hint{ text-align:center; font-size:13px; color:rgba(255,255,255,0.85); margin:8px 0 12px; }
+  .match-modes{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .btn-mode{ display:flex; align-items:center; justify-content:center; gap:6px; padding:15px 8px; border-radius:14px; font-size:13.5px; font-weight:700; text-align:center; transition:background .15s, color .15s; }
+  .btn-mode[data-mode="very_me"]{ background:#FCE1EC; color:#C2266F; }
+  .btn-mode[data-mode="very_me"]:hover{ background:#F472A0; color:#fff; }
+  .btn-mode[data-mode="very_me"].active{ background:#D6266F; color:#fff; }
+  .btn-mode[data-mode="kinda_me"]{ background:#DFEEFC; color:#1C6FB0; }
+  .btn-mode[data-mode="kinda_me"]:hover{ background:#5FA8E0; color:#fff; }
+  .btn-mode[data-mode="kinda_me"].active{ background:#1C6FB0; color:#fff; }
+  .btn-mode[data-mode="not_me"]{ background:#DFF3E6; color:#218848; }
+  .btn-mode[data-mode="not_me"]:hover{ background:#5FC585; color:#fff; }
+  .btn-mode[data-mode="not_me"].active{ background:#218848; color:#fff; }
+  .btn-mode[data-mode="so_different"]{ background:#DCE4F7; color:#0B1D7F; }
+  .btn-mode[data-mode="so_different"]:hover{ background:#5B7DE8; color:#fff; }
+  .btn-mode[data-mode="so_different"].active{ background:#0B1D7F; color:#fff; }
+
+  .search-box{ display:flex; align-items:center; gap:8px; background:var(--surface); border-radius:100px; padding:10px 16px; margin-top:14px; box-shadow:var(--shadow); }
+  .search-box input{ flex:1; border:none; outline:none; font-size:14px; background:transparent; }
+  .search-results{ background:var(--surface); border-radius:16px; box-shadow:var(--shadow); margin-top:8px; overflow:hidden; }
+  .search-result-item{ display:flex; align-items:center; gap:12px; padding:10px 14px; }
+  .search-spinner-row{ color:var(--text-muted); font-size:13px; }
+  .mini-spinner{ display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--primary); animation:spin .7s linear infinite; margin-right:4px; vertical-align:-2px; }
+  .search-result-item:hover{ background:var(--bg-hover, #F7F5FB); }
+  .search-result-item .avatar{ width:36px; height:36px; font-size:14px; }
+  .search-result-item .name{ font-size:13.5px; font-weight:600; }
+
+  .match-count{ text-align:center; font-size:14px; font-weight:600; color:#fff; margin:16px 0 10px; }
+  .match-count b{ color:var(--accent); }
+  .wall-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(76px, 1fr)); gap:16px; }
+  .wall-item{ display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+  .wall-item .avatar{ width:64px; height:64px; font-size:22px; }
+  .wall-item .name{ font-size:11px; margin-top:6px; text-align:center; font-weight:600; color:var(--text); max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* ===== Modal (login / person card) ===== */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(28,19,41,0.6); backdrop-filter:blur(3px); display:none; align-items:flex-end; justify-content:center; z-index:200; }
+  .modal-overlay.open{ display:flex; }
+  @media(min-width:520px){ .modal-overlay{ align-items:center; } }
+  .modal-box{ background:var(--surface); width:100%; max-width:420px; border-radius:20px 20px 0 0; padding:24px 22px 28px; max-height:88vh; overflow-y:auto; animation:slideUp .25s ease; position:relative; }
+  @media(min-width:520px){ .modal-box{ border-radius:20px; } }
+  @keyframes slideUp{ from{ transform:translateY(30px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+  .modal-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .modal-head h3{ margin:0; font-size:17px; font-weight:700; }
+  .modal-close{ font-size:20px; color:var(--text-muted); width:30px; height:30px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px; font-weight:500; }
+  .field input, .field textarea{ width:100%; padding:11px 14px; border-radius:12px; border:1.5px solid var(--line); font-size:14px; outline:none; background:var(--bg-input,#F5F8FF); }
+  .field input:focus, .field textarea:focus{ border-color:var(--primary); background:#fff; }
+  .field textarea{ resize:vertical; min-height:90px; font-family:inherit; }
+  .field-error{ color:var(--danger); font-size:12px; margin-top:-6px; margin-bottom:12px; display:none; }
+  .passcode-wrap{ position:relative; }
+  .passcode-wrap input{ padding-right:42px; }
+  .passcode-wrap input:not(.pc-visible){ -webkit-text-security:disc; }
+  .passcode-toggle{ position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:16px; padding:6px; }
+  .divider-note{ text-align:center; font-size:12.5px; color:var(--text-muted); margin-top:14px; }
+  .char-count{ text-align:right; font-size:11.5px; color:var(--text-muted); margin-top:-10px; margin-bottom:12px; }
+
+  /* ===== person card modal (กดจากรูปใน wall/search) ===== */
+
+  /* ===== Image Zoom Modal (กดรูปโปรไฟล์ใน profile-head เพื่อดูรูปขยาย) ===== */
+  .image-zoom-overlay{ align-items:center !important; justify-content:center; padding:24px; }
+  .image-zoom-close{ position:absolute; top:18px; right:18px; width:38px; height:38px; border-radius:50%; background:rgba(0,0,0,0.55); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; z-index:210; }
+  .image-zoom-overlay img{ max-width:100%; max-height:85vh; border-radius:14px; object-fit:contain; }
+
+  /* Toast แบบสี่เหลี่ยมมุมโค้งเล็ก ไม่ใช่ pill ยักษ์ที่บวมเป็นวงกลมเบี้ยวเวลาข้อความยาว — และให้ wrap
+     เป็นพารากราฟแทนการตัดข้อความทิ้งด้วย ... กลางประโยค (เดิม white-space:nowrap ทำให้ข้อความยาวโดนตัดขาด) */
+  #toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--text); color:#fff; padding:13px 20px; border-radius:12px; font-size:13.5px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:300; max-width:min(92vw, 380px); width:max-content; text-align:left; line-height:1.5; box-shadow:var(--shadow); }
+  #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ===== My Type PDF export sheet (mte- prefix, on-screen render target for html2pdf.js — isolated from rest of app CSS)
+     หมายเหตุ: ห้ามใช้ left:-9999px / display:none / visibility:hidden ซ่อน element นี้ เพราะ html2canvas
+     capture element เหล่านี้ไม่ได้ (ได้ canvas เปล่า/หน้าขาว) — ใช้วิธีวางไว้ในจอจริงแต่บังด้วย overlay แทน
+     P0-fix (PDF cropped/ตกขอบ): เดิมใช้ position:fixed ซึ่งเป็นบั๊กที่มีคนรายงานไว้เยอะฝั่ง html2canvas เอง
+     (รากคือ WebKit bug เก่า — ธาตุ position:fixed ที่อยู่ใน stacking context ที่มี overflow จะถูกคำนวณ
+     ตำแหน่ง/ขอบเขต crop ผิดพลาด) เมื่อผสมกับ windowWidth ที่ตั้งไว้ไม่ตรงกับความกว้างจริงของ element (620 vs 560)
+     ยิ่งทำให้ capture หลุด offset ไปตัดภาพซ้าย-ขวาเท่าๆ กันแบบที่เจอ -> เปลี่ยนเป็น position:absolute แทน
+     ยังคง "อยู่บนจอจริง ไม่ซ่อน" เหมือนเดิม (html2canvas capture ได้ปกติ) แค่ไม่ใช่ fixed พ้นบั๊กกลุ่มนี้ไปเลย
+     ส่วนการบังไม่ให้ user เห็นตอน render ยังทำงานเหมือนเดิมเพราะ overlay (z-index:9500) คลุมเต็มจออยู่แล้ว */
+  #myTypeExportPrint{ position:absolute; top:0; left:0; width:560px; z-index:9000; background:#fff; }
+  #myTypeExportOverlay{ display:none; position:fixed; inset:0; background:var(--bg); z-index:9500; align-items:center; justify-content:center; flex-direction:column; gap:14px; color:#fff; }
+  #myTypeExportOverlay.show{ display:flex; }
+  /* ===== My Type PDF in-page preview (แทนที่การเปิด blob: เต็มหน้า/แท็บใหม่ — ดูคอมเมนต์ยาวใน downloadMyTypePdf) =====
+     .mte-preview-wrap วาง position:absolute เทียบกับ overlay (ตัวมันเอง position:fixed) ตั้งใจไม่พึ่ง flex
+     centering ของ overlay parent (align-items/justify-content:center) เพราะอันนั้นจะบีบให้ wrap หดเหลือขนาด
+     เนื้อหาแทนที่จะเต็มจอ — abs positioning ทำให้ไม่ต้องข้องเกี่ยวกับ flex layout ของ parent เลย */
+  .mte-preview-wrap{ position:absolute; inset:0; display:flex; flex-direction:column; }
+  .mte-preview-topbar{ display:flex; justify-content:flex-end; padding:10px 14px; flex-shrink:0; }
+  .mte-preview-close{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.15); color:#fff; font-size:15px; display:flex; align-items:center; justify-content:center; }
+  .mte-preview-frame{ flex:1; width:100%; border:none; background:#525659; }
+  .mte-preview-actions{ flex-shrink:0; padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px)); background:var(--bg); }
+  .mte-preview-actions .btn{ display:block; width:100%; box-sizing:border-box; text-align:center; }
+  .mte-page{
+    font-family:'Inter',Arial,sans-serif; color:#1C1329; background:#fff; padding:15px 26px; box-sizing:border-box;
+    /* P0-fix (ตัวจริงของปัญหาตัดขอบขวา): html2pdf.js clone element นี้ไปใส่ container ของมันเอง (กว้าง 190mm ~718px
+       ตามขนาดกระดาษ, ดู toContainer() ใน src/worker.js) โดยไม่ติด #myTypeExportPrint (พ่อเดิมที่เคยให้ width:560px)
+       ไปด้วย — เดิม .mte-page ไม่มี width เป็นของตัวเอง (ได้ 560px มาจากพ่อเฉยๆ) พอถูก clone ไปอยู่ผิดที่ก็ยืดเต็ม
+       718px ทันที แต่เรายังสั่ง capture แค่ 560px จาก x:0 (วัดตอนอยู่ในหน้าเว็บจริงก่อน clone) เลยโดนตัดขวา ~158px
+       ทิ้งไปทุกรอบ -> ใส่ width ให้ตัวเองตรงนี้เลย ไม่ต้องพึ่งพ่อ จะได้ขนาดคงที่ไม่ว่าโดน clone ไปไว้ที่ไหนก็ตาม */
+    width:560px;
+  }
+  /* trim ระยะห่าง (ไม่ใช่ font size — 9.5px ของแถวคำถามเล็กสุดที่ยังอ่านออกอยู่แล้ว ลดต่ออีกจะอ่านยาก)
+     กันแถวที่ 50 โดนตัดตอนท้ายหน้า: เทสจริงพบว่า capture แยกหน้า (pdf-lib merge) วัดความสูงตึงกว่า
+     ตอน capture รวม container เดิมเล็กน้อย เผื่อ margin ไว้ ~30px */
+  .mte-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; border-bottom:1px solid #E6E2EF; padding-bottom:6px; margin-bottom:7px; }
+  .mte-brand{ font-family:'Antonio',sans-serif; font-weight:700; font-size:16px; color:#2143C8; letter-spacing:0.5px; }
+  .mte-desc{ font-size:8px; color:#6E6680; max-width:420px; margin-top:4px; line-height:1.4; }
+  .mte-head-right{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+  .mte-date{ font-size:10px; color:#6E6680; white-space:nowrap; }
+  .mte-qr{ width:40px; height:40px; }
+  .mte-identity{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
+  .mte-identity-left{ display:flex; align-items:center; gap:12px; }
+  .mte-powered{ font-size:9px; color:#6E6680; white-space:nowrap; }
+  .mte-avatar{ width:44px; height:44px; border-radius:50%; object-fit:cover; }
+  .mte-avatar-fallback{ background:#2143C8; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; }
+  .mte-name{ font-size:17px; font-weight:700; }
+  .mte-toppick{ background:#FFF6D9; border:1px solid #F5D149; border-radius:8px; padding:6px 12px; margin-bottom:6px; }
+  .mte-toppick-head{ display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+  .mte-toppick-label{ font-size:12.5px; font-weight:700; color:#7A5C0C; letter-spacing:0.2px; white-space:nowrap; }
+  .mte-toppick-desc{ font-size:9.5px; color:#6E6680; line-height:1.3; }
+  .mte-toppick-pills{ display:flex; flex-wrap:wrap; gap:5px; }
+  .mte-pill{ background:#fff; border:1px solid #F5D149; color:#1C1329; font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; }
+  .mte-grid{ display:flex; gap:20px; }
+  .mte-col{ flex:1; }
+  /* P0-fix (ล้นไปหน้า 2): เดิม padding:4px 0 ต่อแถว x 25 แถว กินพื้นที่ไปเยอะ ลดเหลือ 2px 0 ประหยัดได้ ~100px
+     รวม (2px x 2 x 25) — เลือกทางนี้แทนการลด font-size ตามที่ Pop เสนอ (option B) เพราะลด font 30% จะทำให้
+     ตัวเลข/คำที่ 9.5px อยู่แล้วอ่านแทบไม่ออกเวลาพิมพ์จริง ส่วนการลด padding แถวแทบไม่กระทบสายตาเลย */
+  .mte-row{ display:flex; align-items:center; gap:6px; font-size:9.5px; padding:1px 0; border-bottom:1px solid #EAF1FF; }
+  .mte-num{ width:16px; flex-shrink:0; color:#B4ACC7; font-size:8.5px; }
+  .mte-a{ flex:1; text-align:right; color:#6E6680; }
+  .mte-b{ flex:1; color:#6E6680; }
+  .mte-a.mte-win, .mte-b.mte-win{ font-weight:700; color:#1C1329; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><a href="index.html">TOKBUD</a></div>
+    <div class="top-actions">
+      <a class="back-link" href="index.html" data-i18n="backHome">← กลับหน้าแรก</a>
+      <a class="back-link" href="#" id="backMyTypeLink" data-i18n="backMyType" style="display:none;">← กลับไปหน้า My Type ของฉัน</a>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="state-box"><div class="spinner"></div><div class="msg" data-i18n="loadingText">กำลังโหลด...</div></div>
+  </div>
+</div>
+
+<!-- ===== Login Modal (login เท่านั้น สมัครสมาชิกใหม่ให้ไปที่หน้าแรก) ===== -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="loginModalTitle" data-i18n="loginTitle">เข้าสู่ระบบก่อน เพื่อดูช่องทางติดต่อของคนนี้</h3>
+      <button class="modal-close" data-close="loginModal">✕</button>
+    </div>
+    <div class="field">
+      <label data-i18n="phoneLabel">เบอร์โทรศัพท์</label>
+      <input type="tel" id="loginPhone" placeholder="08xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Passcode</label>
+      <div class="passcode-wrap">
+        <input type="text" id="loginPasscode" placeholder="Passcode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="loginPasscode">👁️</button>
+      </div>
+    </div>
+    <div class="field-error" id="loginError"></div>
+    <button class="btn btn-primary full-btn" id="loginSubmitBtn" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+    <div class="divider-note">
+      <span data-i18n="noAccountText">ยังไม่มีบัญชี?</span>
+      <a href="index.html" class="btn-ghost" style="display:inline-block;padding:4px 12px;border-radius:100px;font-size:12.5px;margin-top:8px;" data-i18n="goSignupLink">สมัครสมาชิกที่หน้าแรก</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Image Zoom Modal (กดรูปโปรไฟล์เพื่อดูขยาย) ===== -->
+<div class="modal-overlay image-zoom-overlay" id="imageZoomModal">
+  <button class="image-zoom-close" data-close="imageZoomModal">✕</button>
+  <img id="imageZoomImg" src="" alt="">
+</div>
+
+<!-- ===== Show Me Confirm Modal (เช็คก่อนเผยคำตอบจริงทุกข้อ) — EN only ไม่ผูก TH/EN toggle เหมือน shareProfileLink() ===== -->
+<div class="modal-overlay" id="showMeConfirmModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Show me now?</h3>
+      <button class="modal-close" data-close="showMeConfirmModal">✕</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 20px;">This reveals every real answer right away — any guesses in progress will be cleared.</p>
+    <div class="btn-row" style="margin:0;">
+      <button class="btn btn-ghost" data-close="showMeConfirmModal">Cancel</button>
+      <button class="btn btn-primary" id="confirmShowMeBtn">Yes, Show Me</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Game Result Modal (สรุปผลหลังเช็คครบ 50 ข้อ) — EN only ===== -->
+<div class="modal-overlay" id="gameResultModal">
+  <div class="modal-box" style="text-align:center;">
+    <button class="modal-close" data-close="gameResultModal" style="margin-left:auto;display:block;">✕</button>
+    <div id="gameResultBody"></div>
+    <div class="btn-row" style="margin:0;">
+      <button class="btn btn-primary full-btn" onclick="replayGame()">🔁 Replay</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== My Type Summary Sheet Modal (เปิดก่อน generate PDF จริงเสมอ — copy ล็อกตาม brief, EN only) ===== -->
+<div class="modal-overlay" id="myTypeSummaryModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>My Type Summary Sheet</h3>
+      <button class="modal-close" data-close="myTypeSummaryModal">✕</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 12px;">A snapshot of your lifestyle, how you tend to think, work, and connect with others.</p>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 20px;">My Type Summary Sheet helps you see what makes you <em>you</em>. Use for your Resume, job applications, team building, 1-on-1 conversations, getting to know your boss or teammates, or simply share it with friends and have fun comparing your types.</p>
+    <div class="btn-row" style="margin:0;">
+      <button class="btn btn-primary full-btn" id="myTypeSummaryDownloadBtn" onclick="closeModal('myTypeSummaryModal'); downloadMyTypePdf(this)">Download</button>
+    </div>
+  </div>
+</div>
+
+<div id="myTypeExportPrint"></div>
+<div id="myTypeExportOverlay"><div class="state-box"><div class="spinner"></div><div class="msg">Preparing your PDF...</div></div></div>
+
+<div id="toast"></div>
+
+<script>
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbwH_KorLbUReFtJ0q3uxLBcc802Crm451rlc31PlOeBZCL2oL9bUu-Jlb3bJnMBQnlbgw/exec',
+  FRONTEND_URL: 'https://tokbud.vercel.app'
+};
+// ซ่อน Grouping/Match (Very Me/Kinda Me/Not Me/So Different + Search by username) ออกจาก UI ชั่วคราว
+// ตามคำสั่ง Pop — โค้ด renderGroupingSection()/bindGroupingEvents() และ backend action
+// getMyTypeMatch/searchMyType ยังอยู่ครบ แค่ไม่ถูกเรียกใช้ตอนนี้ เผื่ออนาคตเปิดกลับมาแค่สลับ flag นี้เป็น true
+const MYTYPE_SHOW_GROUPING = false;
+
+/* ================= I18N ================= */
+const LANG_KEY = 'wz_lang';
+const I18N = {
+  th: {
+    backHome: '← กลับหน้าแรก', backMyType: '← กลับไปหน้า My Type ของฉัน', loadingText: 'กำลังโหลด...',
+    notFoundMsg: 'ไม่พบผู้ใช้นี้ กรุณาตรวจสอบลิงก์อีกครั้ง',
+    aboutMeTitle: 'About Me',
+    emptyOwnerMsg: 'คุณยังไม่ได้ตั้งค่า My Type ของตัวเองเลย ลองเริ่มเลยไหม?',
+    emptyVisitorMsg: 'คนนี้ยังไม่ได้ตั้งค่า My Type เลย',
+    setupBtn: '✏️ เริ่มตั้งค่า My Type',
+    shareBtn: '🔗 Share', editBtn: '✏️ Edit', saveBtn: '💾 บันทึก', cancelBtn: 'ยกเลิก',
+    savingText: 'กำลังบันทึก...',
+    editHeaderHint: 'แตะค้างแล้วลากไปตามตำแหน่งที่ใช่ที่สุด',
+    aboutMeEditLabel: 'About Me (สูงสุด 500 ตัวอักษร)',
+    contactMeEditTitle: 'Contact Me',
+    saveSuccessToast: 'บันทึก My Type เรียบร้อยแล้ว',
+    saveFailToast: 'บันทึกไม่สำเร็จ',
+    copiedToast: '✅ คัดลอกลิงก์แล้ว',
+    groupingHint: '🔥 มีใครที่คล้าย หรือต่างจากเราบ้างนะ',
+    modeVeryMe: 'Very Me', modeKindaMe: 'Kinda Me', modeNotMe: 'Not Me', modeSoDifferent: 'So Different',
+    searchPlaceholder: 'ค้นหาจาก username...',
+    searchingText: 'กำลังค้นหา...',
+    searchNoResults: 'ไม่พบ username นี้',
+    matchLoadingText: 'กำลังหากลุ่ม...',
+    matchCountText: 'พบ {n} คน',
+    matchEmptyMsg: 'ยังไม่เจอใครในกลุ่มนี้เลย ลองโหมดอื่นดูนะ',
+    needOwnTypeMsg: 'กรุณาตั้งค่า My Type ของตัวเองก่อน ถึงจะใช้ฟีเจอร์นี้ได้',
+    loginTitle: 'เข้าสู่ระบบก่อน เพื่อดูช่องทางติดต่อของคนนี้',
+    phoneLabel: 'เบอร์โทรศัพท์', loginBtn: 'เข้าสู่ระบบ', loggingInText: 'กำลังเข้าสู่ระบบ...',
+    noAccountText: 'ยังไม่มีบัญชี?', goSignupLink: 'สมัครสมาชิกที่หน้าแรก',
+    loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ',
+    charCount: '{n}/500 ตัวอักษร'
+  },
+  en: {
+    backHome: '← Back to Home', backMyType: '← Back to My Type', loadingText: 'Loading...',
+    notFoundMsg: 'User not found. Please check the link again.',
+    aboutMeTitle: 'About Me',
+    emptyOwnerMsg: 'You haven\'t set up your My Type yet. Want to start now?',
+    emptyVisitorMsg: 'This person hasn\'t set up My Type yet.',
+    setupBtn: '✏️ Set Up My Type',
+    shareBtn: '🔗 Share', editBtn: '✏️ Edit', saveBtn: '💾 Save', cancelBtn: 'Cancel',
+    savingText: 'Saving...',
+    editHeaderHint: 'Press and drag to the spot that fits you best',
+    aboutMeEditLabel: 'About Me (up to 500 characters)',
+    contactMeEditTitle: 'Contact Me',
+    saveSuccessToast: 'My Type saved successfully',
+    saveFailToast: 'Failed to save',
+    copiedToast: '✅ Link copied',
+    groupingHint: '🔥 See who\'s similar to or different from you',
+    modeVeryMe: 'Very Me', modeKindaMe: 'Kinda Me', modeNotMe: 'Not Me', modeSoDifferent: 'So Different',
+    searchPlaceholder: 'Search by username...',
+    searchingText: 'Searching...',
+    searchNoResults: 'No matching username found',
+    matchLoadingText: 'Finding your group...',
+    matchCountText: '{n} people found',
+    matchEmptyMsg: 'No one in this group yet. Try another mode.',
+    needOwnTypeMsg: 'Please set up your own My Type first to use this feature.',
+    loginTitle: 'Log in to view this person\'s contact info',
+    phoneLabel: 'Phone Number', loginBtn: 'Log In', loggingInText: 'Logging in...',
+    noAccountText: 'Don\'t have an account?', goSignupLink: 'Sign up on the home page',
+    loginErrorRequired: 'Please enter both your phone number and Passcode',
+    charCount: '{n}/500 characters'
+  }
+};
+function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
+function t(key, vars){
+  let s = (I18N[getLang()][key] !== undefined) ? I18N[getLang()][key] : key;
+  if(vars) Object.keys(vars).forEach(k => { s = s.replace('{' + k + '}', vars[k]); });
+  return s;
+}
+function applyLang(lang){
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.documentElement.lang = lang;
+}
+function setLang(lang){
+  localStorage.setItem(LANG_KEY, lang);
+  applyLang(lang);
+  if(currentProfile) renderView(currentProfile); // re-render เนื้อหา dynamic (ไม่ผ่าน [data-i18n] loop) ตอนสลับภาษา
+}
+
+/* ================= MY TYPE QUESTIONS (50 ข้อ, A/B, ไม่มี emoji/รูปนำหน้า) =================
+ * แก้คำถามที่นี่ได้เลยตรงๆ (แก้ a/b ของแต่ละ key) ไม่ต้องยุ่งกับ Google Sheet หรือ backend เลย
+ * เพราะชีทเก็บแค่ค่าตัวเลข 0-100 ต่อ key เท่านั้น ไม่ได้ผูกกับคำใดคำหนึ่งตายตัว */
+const MYTYPE_QUESTIONS = [
+  { key:'q01', a:'Sunrise', b:'Nightlife' },
+  { key:'q02', a:'Introvert', b:'Extrovert' },
+  { key:'q03', a:'Home Addict', b:'Traveller' },
+  { key:'q04', a:'Coffee', b:'Tea' },
+  { key:'q05', a:'Save Money', b:'Spend on Experience' },
+  { key:'q06', a:'Minimalist', b:'Maximizer' },
+  { key:'q07', a:'Walk Everywhere', b:'Drive Everywhere' },
+  { key:'q08', a:'Park Person', b:'Mall Person' },
+  { key:'q09', a:'Work From Café', b:'Office Person' },
+  { key:'q10', a:'Beach Escape', b:'Mountain Escape' },
+  { key:'q11', a:'Desk Person', b:'Field Person' },
+  { key:'q12', a:'Take Photos', b:'Live the Moment' },
+  { key:'q13', a:'Small Talk', b:'Deep Talk' },
+  { key:'q14', a:'Plan Everything', b:'Go With the Flow' },
+  { key:'q15', a:'Take Selfie', b:'Take Scenery' },
+  { key:'q16', a:'Love Rain', b:'Love Sunshine' },
+  { key:'q17', a:'Logic', b:'Emotion' },
+  { key:'q18', a:'Clean Desk', b:'Creative Mess' },
+  { key:'q19', a:'Do It Alone', b:'Do It Together' },
+  { key:'q20', a:'Win First', b:'Team First' },
+  { key:'q21', a:'Live for Today', b:'Plan for Tomorrow' },
+  { key:'q22', a:'Embrace Uncertainty', b:'Choose Stability' },
+  { key:'q23', a:'Stand Out', b:'Fit In' },
+  { key:'q24', a:'Money First', b:'Purpose First' },
+  { key:'q25', a:'Specialist', b:'Generalist' },
+  { key:'q26', a:'Corporate', b:'Startup' },
+  { key:'q27', a:'Done is Better', b:'Perfect is Great' },
+  { key:'q28', a:'Stay Curious', b:'Stay Comfortable' },
+  { key:'q29', a:'Challenge Me', b:'Keep It Easy' },
+  { key:'q30', a:'Detail Obsessed', b:'Big Picture' },
+  { key:'q31', a:'Doer', b:'Dreamer' },
+  { key:'q32', a:'Move Fast', b:'Slow But Sure' },
+  { key:'q33', a:'Goal Driven', b:'Journey Driven' },
+  { key:'q34', a:'Build From Zero', b:'Improve From Existing' },
+  { key:'q35', a:'Speak My Mind', b:'Listen First' },
+  { key:'q36', a:'Reach The Point', b:'Read The Room' },
+  { key:'q37', a:'No Pain, No Gain', b:'No Stress, Just Progress' },
+  { key:'q38', a:'Commitment', b:'Freedom' },
+  { key:'q39', a:'Serious Relationship', b:'Keep It Casual' },
+  { key:'q40', a:'Work as a Team', b:'Work as a Family' },
+  { key:'q41', a:'Party Animal', b:'Give Me A Zone' },
+  { key:'q42', a:'Like Me', b:'Surprise Me' },
+  { key:'q43', a:'On stage', b:'Back Stage' },
+  { key:'q44', a:'Fine Dining', b:'Street Food' },
+  { key:'q45', a:'Marriage Minded', b:'Happy Being Single' },
+  { key:'q46', a:'Love at First Sight', b:'Love Takes Time' },
+  { key:'q47', a:'Say It With Words', b:'Show It With Actions' },
+  { key:'q48', a:'Say It Straight', b:'Keep the Peace' },
+  { key:'q49', a:'Chemistry First', b:'Compatibility First' },
+  { key:'q50', a:'Touchy-Feely', b:'Give Me Space' }
+];
+function questionByKey(key){ return MYTYPE_QUESTIONS.find(q => q.key === key); }
+
+// ไอคอนแบรนด์จริงของแต่ละแพลตฟอร์ม (SVG มินิมอล เส้น/พื้นสีขาวบนวงกลมดำ) แทนตัวย่อ FB/IG/TT ที่คนอ่านไม่ออก
+const CONTACT_ICONS = {
+  fb: `<svg viewBox="0 0 24 24" width="17" height="17" fill="#fff"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5 3.66 9.15 8.44 9.94v-7.03H7.9v-2.91h2.54V9.85c0-2.51 1.49-3.9 3.77-3.9 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.89h2.78l-.44 2.91h-2.34v7.03C18.34 21.21 22 17.06 22 12.06z"/></svg>`,
+  ig: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8"><rect x="2.5" y="2.5" width="19" height="19" rx="5"/><circle cx="12" cy="12" r="4.3"/><circle cx="17.2" cy="6.8" r="1.1" fill="#fff" stroke="none"/></svg>`,
+  yt: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="2" y="5.5" width="20" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.7"/><path d="M10 9.2v5.6l5-2.8-5-2.8z" fill="#fff"/></svg>`,
+  tt: `<svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M16.6 2c.3 2.1 1.7 3.9 3.7 4.6v3a7.4 7.4 0 0 1-3.7-1.1v6.9c0 3.3-2.6 5.9-5.9 5.9S4.8 18.7 4.8 15.4c0-3.2 2.5-5.7 5.6-5.9v3a2.9 2.9 0 0 0-1.9.7 2.9 2.9 0 0 0-1 2.2c0 1.6 1.3 2.9 2.9 2.9s2.9-1.3 2.9-2.9V2h3.3z"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M4 4l16 16M20 4L4 20"/></svg>`,
+  website: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.7"><circle cx="12" cy="12" r="9.3"/><path d="M2.7 12h18.6M12 2.7c2.6 2.5 2.6 16.1 0 18.6M12 2.7c-2.6 2.5-2.6 16.1 0 18.6"/></svg>`
+};
+
+let STATE = { session: JSON.parse(localStorage.getItem('wz_session') || 'null') };
+let currentProfile = null;   // response ล่าสุดจาก getMyType สำหรับ id ใน URL
+let editMode = false;
+let editTouched = {};        // เก็บ key ของคำถามที่ "แตะ/ลากแล้วจริง" ระหว่าง session แก้ไขนี้ (ตัดสินว่าจะส่งไป save มั้ย)
+let editValues = {};         // ค่าปัจจุบันของทุกสไลเดอร์ระหว่างแก้ไข (q01..q50 -> number)
+let currentMatchMode = null;
+let searchDebounceTimer = null;
+
+const params = new URLSearchParams(location.search);
+const profileId = params.get('id');
+
+function isLoggedIn(){ return !!(STATE.session && STATE.session.session_token); }
+function isOwnerOfCurrentPage(){ return isLoggedIn() && STATE.session.user_id === profileId; }
+
+/* ---------- API helper ----------
+ * timeout ลดเหลือ 15 วิ/ครั้ง (รวม retry แล้ว worst-case 30 วิ แทนที่จะเป็น 60 วิ) + retry อัตโนมัติ
+ * แบบเงียบๆ 1 ครั้งก่อนฟ้อง error จริง — ปล่อยให้รอนานเกินไปต่อคำขอทำให้หน้าเว็บดูค้างจนคนกดรีเฟรชซ้ำๆ เอง */
+async function api(action, params = {}, method = 'GET', _isRetry = false){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=> controller.abort(), 15000);
+  const withSession = Object.assign({}, params);
+  if(isLoggedIn() && withSession.session_token === undefined) withSession.session_token = STATE.session.session_token;
+  try{
+    let res;
+    if(method === 'GET'){
+      const qs = new URLSearchParams(Object.assign({action}, withSession)).toString();
+      res = await fetch(`${CONFIG.API_URL}?${qs}`, { signal: controller.signal });
+    } else {
+      res = await fetch(CONFIG.API_URL, { method:'POST', body: JSON.stringify(Object.assign({action}, withSession)), signal: controller.signal });
+    }
+    return await res.json();
+  }catch(err){
+    if(!_isRetry) return api(action, params, method, true); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
+    return { success:false, message: 'Oops! Something went wrong. Please try refreshing and try again.', _networkError:true };
+  }finally{ clearTimeout(timeoutId); }
+}
+
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=> el.classList.remove('show'), 2600);
+}
+function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', ()=> closeModal(btn.dataset.close)));
+document.querySelectorAll('.modal-overlay').forEach(ov => ov.addEventListener('click', (e)=>{ if(e.target === ov) ov.classList.remove('open'); }));
+
+/* กดรูปโปรไฟล์หลัก (ใน profile-head) เพื่อดูรูปขยาย — ใช้ event delegation เพราะ #content ถูก re-render บ่อย
+   จำกัดขอบเขตแค่ .profile-head เพื่อไม่ให้ไปกระทบ avatar เล็กๆ ใน search/wall grid ที่ไม่ได้อยู่ในสโคปนี้ */
+document.addEventListener('click', (e)=>{
+  const av = e.target.closest('.profile-head .avatar.clickable');
+  if(av && av.dataset.img) openImageZoom(av.dataset.img);
+});
+function openImageZoom(url){
+  if(!url) return;
+  document.getElementById('imageZoomImg').src = url;
+  openModal('imageZoomModal');
+}
+
+/* ================= LOAD & RENDER ================= */
+async function loadProfile(){
+  if(!profileId){ renderFatal(t('notFoundMsg')); return; }
+  const res = await api('getMyType', { id: profileId });
+  if(!res.success){ renderFatal(res.message || t('notFoundMsg')); return; }
+  currentProfile = res;
+  renderView(res);
+}
+
+function renderFatal(msg){
+  document.getElementById('content').innerHTML = `<div class="state-box"><div class="msg">${escapeHtml(msg)}</div></div>`;
+}
+
+function avatarHtml(user, sizeClass){
+  const initial = user.username ? user.username.charAt(0).toUpperCase() : '?';
+  const hasImg = !!user.profile_image_url;
+  const clickable = hasImg ? 'clickable' : '';
+  const img = hasImg
+    ? `<img src="${escapeHtml(user.profile_image_url)}" alt="">`
+    : initial;
+  const dataImg = hasImg ? ` data-img="${escapeHtml(user.profile_image_url)}"` : '';
+  return `<div class="avatar ${clickable} ${sizeClass||''}"${dataImg}>${img}</div>`;
+}
+
+function contactRowHtml(channels, links, gated){
+  if(!channels || !channels.length) return '';
+  const items = channels.map(ch => {
+    const icon = CONTACT_ICONS[ch] || ch.toUpperCase();
+    return `<button class="contact-icon" onclick="handleContactClick('${ch}', ${JSON.stringify(links[ch]||'').replace(/"/g,'&quot;')})" title="${ch}">${icon}</button>`;
+  }).join('');
+  return `<div class="contact-row">${items}</div>`;
+}
+
+function handleContactClick(channel, url){
+  if(!isLoggedIn()){ openLoginModal(); return; }
+  if(!url){ showToast(getLang()==='th' ? 'กำลังโหลดข้อมูล กรุณาลองใหม่อีกครั้ง' : 'Still loading, please try again.'); return; }
+  window.open(url, '_blank', 'noopener');
+}
+
+function sliderRowHtml(q, value, editable){
+  const v = (value != null) ? value : 50;
+  return `
+    <div class="q-row">
+      <div class="q-label"><span class="q-left">${escapeHtml(q.a)}</span><span class="q-right">${escapeHtml(q.b)}</span></div>
+      <div class="q-track ${editable ? 'editable' : 'readonly'}" data-key="${q.key}" data-value="${v}">
+        <div class="q-handle"></div>
+      </div>
+    </div>`;
+}
+
+function positionHandle(track){
+  const val = parseFloat(track.dataset.value) || 0;
+  const handle = track.querySelector('.q-handle');
+  handle.style.left = val + '%';
+  const row = track.closest('.q-row');
+  const leftEl = row.querySelector('.q-left');
+  const rightEl = row.querySelector('.q-right');
+  // เกินครึ่งไปทางไหน ให้ font ฝั่งนั้นใหญ่/หนาขึ้น (ตาม spec) — พอดีตรงกลางเป๊ะ ไม่มีฝั่งไหนชนะ
+  leftEl.classList.toggle('winning', val < 50);
+  rightEl.classList.toggle('winning', val > 50);
+}
+
+function renderAnswerSliders(answers, editable){
+  const keys = editable ? MYTYPE_QUESTIONS.map(q=>q.key) : Object.keys(answers).sort();
+  if(!editable && keys.length === 0) return '';
+  return keys.map(k => sliderRowHtml(questionByKey(k), answers[k], editable)).join('');
+}
+
+/* ================= MY TYPE GUESSING GAME (visitor only, EN-only copy, no backend/persistence) =================
+   3 โหมด: 'initial' (ยังไม่กดอะไร ไม่เห็นจุดเลย) -> 'playing' (กด Let's Play แล้ว กรอกเลขทายทีละข้อ)
+   -> 'revealed' (กด Show Me + confirm แล้ว เห็นจุดจริงหมด). กด Let's Play ซ้ำจาก revealed ก็กลับเข้า playing ใหม่ได้
+   (เคส "จำไว้ก่อนแล้วมาเล่นทายตัวเอง" ตามที่ Pop ต้องการ) */
+let gameMode = 'initial';
+let gameState = { checked:{}, correct:{} }; // checked[key]=true หลังกด Check this ของข้อนั้น, correct[key]=true/false
+
+const GAME_CORRECT_PHRASES = ['🔥 You got me!', '🎯 Spot on!', '✨ You know me!', '👏 Right on!'];
+const GAME_WRONG_PHRASES = ['😂 You missed me!', '🙃 Nice try!', '🤔 Not quite!', '🫠 Way off!'];
+const GAME_MATCH_TOLERANCE = 5; // ทายถูกถ้าห่างจากคำตอบจริงไม่เกิน ±5 จุด (รัศมีรวม 10 จุด)
+
+// สร้าง HTML ทั้งการ์ดเกม (ปุ่มด้านบน + 50 แถว + ปุ่ม Show Me ด้านล่างตอน playing) ตาม mode ปัจจุบัน
+function gameSectionInnerHtml(mode){
+  if(mode === 'revealed'){
+    return `
+      <div class="game-actions"><button class="btn btn-ghost full-btn" onclick="startGuessGame()">🎮 Let's Play</button></div>
+      ${renderAnswerSliders(currentProfile.answers, false)}
+      <div class="btn-row" style="margin-top:16px;margin-bottom:0;"><button class="btn btn-ghost btn-summary-highlight full-btn" onclick="openModal('myTypeSummaryModal')">📄 See My Type Summary Sheet</button></div>
+    `;
+  }
+  if(mode === 'playing'){
+    const rows = MYTYPE_QUESTIONS.map(q => gameRowHtml(q)).join('');
+    return `
+      ${rows}
+      <div class="bottom-showme-row"><button class="btn btn-ghost full-btn" onclick="confirmShowMe()">👀 Show Me</button></div>
+    `;
+  }
+  // initial
+  return `
+    <div class="game-actions">
+      <button class="btn btn-ghost" onclick="startGuessGame()">🎮 Let's Play</button>
+      <button class="btn btn-ghost" onclick="confirmShowMe()">👀 Show Me</button>
+    </div>
+    ${MYTYPE_QUESTIONS.map(q => `
+      <div class="q-row">
+        <div class="q-label"><span class="q-left">${escapeHtml(q.a)}</span><span class="q-right">${escapeHtml(q.b)}</span></div>
+        <div class="q-track"><div class="q-handle" style="display:none;"></div></div>
+      </div>`).join('')}
+  `;
+}
+
+// แถวคำถามระหว่างเล่นเกม — มี handle 2 อัน (guess/actual) ซ่อนไว้ก่อน + ช่องกรอกเลข + ปุ่ม Check this + ข้อความเฉลย
+function gameRowHtml(q){
+  return `
+    <div class="q-row game-row" data-key="${q.key}">
+      <div class="q-label"><span class="q-left">${escapeHtml(q.a)}</span><span class="q-right">${escapeHtml(q.b)}</span></div>
+      <div class="q-track game-track" data-key="${q.key}">
+        <div class="q-handle guess-handle" style="display:none;"></div>
+        <div class="q-handle actual-handle" style="display:none;"></div>
+      </div>
+      <div class="game-input-row">
+        <input type="number" min="0" max="100" step="1" class="guess-input" placeholder="0–100" aria-label="Your guess, 0 to 100">
+        <button class="btn check-btn" disabled>Check this</button>
+      </div>
+      <div class="game-feedback"></div>
+    </div>`;
+}
+
+function startGuessGame(){
+  gameMode = 'playing';
+  gameState = { checked:{}, correct:{} };
+  document.getElementById('myTypeGameCard').innerHTML = gameSectionInnerHtml('playing');
+  bindGameRowEvents();
+}
+
+function confirmShowMe(){ openModal('showMeConfirmModal'); }
+document.getElementById('confirmShowMeBtn').addEventListener('click', ()=>{
+  closeModal('showMeConfirmModal');
+  gameMode = 'revealed';
+  gameState = { checked:{}, correct:{} };
+  document.getElementById('myTypeGameCard').innerHTML = gameSectionInnerHtml('revealed');
+  document.querySelectorAll('#myTypeGameCard .q-track').forEach(tr => positionHandle(tr));
+});
+
+function replayGame(){
+  closeModal('gameResultModal');
+  startGuessGame();
+}
+
+// ผูก event ให้ทุกแถวเกมที่กำลังแสดงอยู่ (เรียกซ้ำได้ปลอดภัยทุกครั้งที่ innerHTML ของการ์ดเกมถูกวาดใหม่)
+function bindGameRowEvents(){
+  document.querySelectorAll('#myTypeGameCard .game-row').forEach(row => {
+    const key = row.dataset.key;
+    const track = row.querySelector('.game-track');
+    const guessHandle = row.querySelector('.guess-handle');
+    const input = row.querySelector('.guess-input');
+    const checkBtn = row.querySelector('.check-btn');
+
+    input.addEventListener('input', ()=>{
+      let v = parseFloat(input.value);
+      const valid = !isNaN(v) && input.value.trim() !== '';
+      if(valid){
+        v = Math.max(0, Math.min(100, v));
+        guessHandle.style.left = v + '%';
+        guessHandle.style.display = 'block';
+      } else {
+        guessHandle.style.display = 'none';
+      }
+      checkBtn.disabled = !valid;
+    });
+
+    checkBtn.addEventListener('click', ()=> checkOneAnswer(key, track, guessHandle, input, checkBtn, row));
+  });
+}
+
+function checkOneAnswer(key, track, guessHandle, input, checkBtn, row){
+  if(gameState.checked[key]) return; // เช็คแล้วล็อกไว้ กันแก้เลขย้อนหลังหลังเห็นเฉลย
+  const guess = Math.max(0, Math.min(100, parseFloat(input.value)));
+  const actual = currentProfile.answers[key];
+  const actualHandle = track.querySelector('.actual-handle');
+  actualHandle.style.left = actual + '%';
+  actualHandle.style.display = 'block';
+
+  const correct = Math.abs(guess - actual) <= GAME_MATCH_TOLERANCE;
+  gameState.checked[key] = true;
+  gameState.correct[key] = correct;
+
+  input.disabled = true;
+  checkBtn.disabled = true;
+  const pool = correct ? GAME_CORRECT_PHRASES : GAME_WRONG_PHRASES;
+  const feedback = row.querySelector('.game-feedback');
+  feedback.textContent = pool[Math.floor(Math.random() * pool.length)];
+  feedback.classList.add(correct ? 'correct' : 'wrong');
+
+  const checkedCount = Object.keys(gameState.checked).length;
+  if(checkedCount >= MYTYPE_QUESTIONS.length) showGameResultPopup();
+}
+
+function showGameResultPopup(){
+  const correctCount = Object.values(gameState.correct).filter(Boolean).length;
+  const pct = Math.round((correctCount / MYTYPE_QUESTIONS.length) * 100);
+  let emoji, title, desc;
+  if(pct >= 80){ emoji='🏆'; title='SOULMATE'; desc='You know what I\u2019m thinking.'; }
+  else if(pct >= 60){ emoji='😎'; title='You Know Me Pretty Well'; desc='Okay, you definitely know me.'; }
+  else if(pct >= 30){ emoji='👀'; title='Getting to Know Me'; desc='You know some of me. Time to know the rest.'; }
+  else { emoji='😂'; title='Do You Even Know Me?'; desc='We clearly need to spend more time together.'; }
+
+  document.getElementById('gameResultBody').innerHTML = `
+    <div class="result-emoji">${emoji}</div>
+    <div class="result-title">${escapeHtml(title)}</div>
+    <div class="result-desc">${escapeHtml(desc)}<br>${correctCount}/${MYTYPE_QUESTIONS.length} correct (${pct}%)</div>
+  `;
+  openModal('gameResultModal');
+}
+
+function renderView(data){
+  document.getElementById('content').innerHTML = ''; // clear ก่อน (กัน id ซ้ำตอน re-render สลับภาษา)
+
+  if(!data.exists){
+    renderEmptyState(data);
+    return;
+  }
+
+  const isOwner = data.is_owner;
+  const answerKeys = Object.keys(data.answers || {});
+  let slidersHtml = '';
+  if(answerKeys.length){
+    if(isOwner){
+      // เจ้าของโปรไฟล์เห็นคำตอบตัวเองปกติ ไม่ต้องเล่นเกมทาย
+      slidersHtml = `<div class="card"><div class="section-title">My Type</div>${renderAnswerSliders(data.answers, false)}
+        <div class="btn-row" style="margin-top:16px;margin-bottom:0;"><button class="btn btn-ghost btn-summary-highlight full-btn" onclick="openModal('myTypeSummaryModal')">📄 See My Type Summary Sheet</button></div>
+      </div>`;
+    } else {
+      // ผู้เยี่ยมชม (เช่นเพื่อนที่กด share link มา) เจอโหมดเกมทายแทน — ไม่เห็นตำแหน่งจุดจริงจนกว่าจะเล่น/กด Show Me
+      // EN only ตาม Pop กำหนด (ไม่ผูก TH/EN toggle เหมือน shareProfileLink())
+      // renderView ทุกครั้งเริ่มที่ 'initial' เสมอ (เช่น re-render หลัง login กลางเกม) เลย sync state ให้ตรงกันไว้ด้วย
+      gameMode = 'initial';
+      gameState = { checked:{}, correct:{} };
+      slidersHtml = `<div class="card">
+        <div class="section-title">My Type</div>
+        <div class="edit-hint">Same type as you or totally different?</div>
+        <div id="myTypeGameCard">${gameSectionInnerHtml('initial')}</div>
+      </div>`;
+    }
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="profile-head">
+        ${avatarHtml(data.user)}
+        <div class="username">${escapeHtml(data.user.username)}</div>
+      </div>
+      ${data.aboutme ? `<div class="section-title">${t('aboutMeTitle')}</div><div class="aboutme-text">${escapeHtml(data.aboutme)}</div>` : ''}
+      ${contactRowHtml(data.contact_channels, data.contact_links)}
+    </div>
+    ${slidersHtml}
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="shareProfileLink()">${t('shareBtn')}</button>
+      ${isOwner ? `<button class="btn btn-primary" onclick="enterEditMode()">${t('editBtn')}</button>` : ''}
+    </div>
+    ${(isOwner && MYTYPE_SHOW_GROUPING) ? renderGroupingSection() : ''}
+  `;
+  document.querySelectorAll('#content .q-track:not(.game-track)').forEach(tr => positionHandle(tr));
+  if(!isOwner && answerKeys.length) bindGameRowEvents();
+  if(isOwner && MYTYPE_SHOW_GROUPING) bindGroupingEvents();
+}
+
+function renderEmptyState(data){
+  const isOwner = data.is_owner;
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="profile-head">
+        ${avatarHtml(data.user)}
+        <div class="username">${escapeHtml(data.user.username)}</div>
+      </div>
+    </div>
+    <div class="state-box" style="padding:36px 20px;">
+      <div class="msg" style="color:rgba(255,255,255,0.85);">${isOwner ? t('emptyOwnerMsg') : t('emptyVisitorMsg')}</div>
+    </div>
+    ${isOwner ? `<div class="btn-row"><button class="btn btn-primary full-btn" onclick="enterEditMode()">${t('setupBtn')}</button></div>` : ''}
+  `;
+}
+
+/* ================= EDIT MODE ================= */
+function enterEditMode(){
+  editMode = true;
+  editTouched = {};
+  editValues = {};
+  const existingAnswers = (currentProfile && currentProfile.answers) || {};
+  Object.keys(existingAnswers).forEach(k => { editTouched[k] = true; editValues[k] = existingAnswers[k]; });
+  MYTYPE_QUESTIONS.forEach(q => { if(editValues[q.key] === undefined) editValues[q.key] = 50; });
+
+  const user = (currentProfile && currentProfile.user) || { username:'', profile_image_url:'' };
+  const aboutme = (currentProfile && currentProfile.aboutme) || '';
+  const links = (currentProfile && currentProfile.contact_links) || {};
+
+  document.getElementById('content').innerHTML = `
+    <div class="card">
+      <div class="profile-head">
+        ${avatarHtml(user)}
+        <div class="username">${escapeHtml(user.username)}</div>
+      </div>
+      <div class="field">
+        <label>${t('aboutMeEditLabel')}</label>
+        <textarea id="editAboutme" maxlength="500">${escapeHtml(aboutme)}</textarea>
+        <div class="char-count" id="aboutmeCount">${t('charCount', {n: aboutme.length})}</div>
+      </div>
+      <div class="section-title">${t('contactMeEditTitle')}</div>
+      <div class="field"><label>Facebook</label><input type="text" id="editFb" value="${escapeHtml(links.fb||'')}" placeholder="https://facebook.com/..."></div>
+      <div class="field"><label>Instagram</label><input type="text" id="editIg" value="${escapeHtml(links.ig||'')}" placeholder="https://instagram.com/..."></div>
+      <div class="field"><label>YouTube</label><input type="text" id="editYt" value="${escapeHtml(links.yt||'')}" placeholder="https://youtube.com/..."></div>
+      <div class="field"><label>TikTok</label><input type="text" id="editTt" value="${escapeHtml(links.tt||'')}" placeholder="https://tiktok.com/@..."></div>
+      <div class="field"><label>X</label><input type="text" id="editX" value="${escapeHtml(links.x||'')}" placeholder="https://x.com/..."></div>
+      <div class="field"><label>Website</label><input type="text" id="editWebsite" value="${escapeHtml(links.website||'')}" placeholder="https://..."></div>
+    </div>
+    <div class="card">
+      <div class="section-title">My Type</div>
+      <div class="edit-hint">${t('editHeaderHint')}</div>
+      ${renderAnswerSliders(editValues, true)}
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="exitEditMode()">${t('cancelBtn')}</button>
+      <button class="btn btn-primary" id="saveMyTypeBtn" onclick="saveMyType()">${t('saveBtn')}</button>
+    </div>
+  `;
+  document.querySelectorAll('#content .q-track.editable').forEach(track => {
+    positionHandle(track);
+    bindDrag(track);
+  });
+  const aboutTa = document.getElementById('editAboutme');
+  aboutTa.addEventListener('input', ()=>{
+    document.getElementById('aboutmeCount').textContent = t('charCount', {n: aboutTa.value.length});
+  });
+}
+
+function exitEditMode(){
+  editMode = false;
+  if(currentProfile) renderView(currentProfile);
+}
+
+function bindDrag(track){
+  const handle = track.querySelector('.q-handle');
+  const key = track.dataset.key;
+
+  function setFromClientX(clientX){
+    const rect = track.getBoundingClientRect();
+    let pct = ((clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    track.dataset.value = pct.toFixed(2);
+    editValues[key] = parseFloat(track.dataset.value);
+    editTouched[key] = true;
+    positionHandle(track);
+  }
+  function onDown(e){ e.preventDefault(); setFromClientX(e.clientX); document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); }
+  function onMove(e){ setFromClientX(e.clientX); }
+  function onUp(){ document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); }
+
+  // เฉพาะ handle เท่านั้นที่เริ่มลากได้ (ไม่ผูกกับทั้ง track) กันนิ้วที่ปาดสกอลผ่านแนว track โดนตีความเป็นลาก
+  handle.addEventListener('pointerdown', onDown);
+}
+
+async function saveMyType(){
+  const btn = document.getElementById('saveMyTypeBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="btn-spinner"></span>${t('savingText')}`;
+
+  const payload = {
+    aboutme: document.getElementById('editAboutme').value,
+    fb: document.getElementById('editFb').value,
+    ig: document.getElementById('editIg').value,
+    yt: document.getElementById('editYt').value,
+    tt: document.getElementById('editTt').value,
+    x: document.getElementById('editX').value,
+    website: document.getElementById('editWebsite').value
+  };
+  // ส่งเฉพาะคำถามที่ "แตะจริง" ระหว่าง session แก้ไขนี้ (รวมข้อที่เคยตอบไว้ก่อนแล้วด้วย เพราะถือว่า touched ตั้งแต่โหลดมา)
+  Object.keys(editTouched).forEach(k => { payload[k] = editValues[k]; });
+
+  const res = await api('saveMyType', payload, 'POST');
+  btn.disabled = false;
+  btn.innerHTML = originalHtml;
+
+  if(!res.success){ showToast(res.message || t('saveFailToast')); return; }
+  showToast(t('saveSuccessToast'));
+  editMode = false;
+  await loadProfile();
+}
+
+/* ================= SHARE ================= */
+function shareProfileLink(){
+  // P0-fix (script.google.com UX): เดิมชี้ตรงไป Apps Script /exec (?mytype_share=) ทำให้คนกดลิงก์เจอ
+  // interstitial ของ Google เอง ("This application was created by a Google Apps Script user") หรือค้างที่
+  // script.google.com ในบาง in-app browser (ปัญหาเดียวกับที่หัวข้อโหวตเจอมาก่อน) -> เปลี่ยนมาใช้ Vercel
+  // serverless function /api/share (share.js) แบบเดียวกับ buildShareUrl() ของหัวข้อโหวตใน index.html แทน
+  // share.js อ่าน user id จาก query param ชื่อ "mytype" (ดู getQueryParam(req,'mytype') ในไฟล์นั้น) แล้วเช็ค
+  // user-agent เอง: บอทของแอปแชท/โซเชียล -> เสิร์ฟ og:tag ให้ทำพรีวิว, คนจริง -> 302 ตรงเข้า mytype.html ทันที
+  const url = `${CONFIG.FRONTEND_URL}/api/share?mytype=${profileId}`;
+  const name = (currentProfile && currentProfile.user && currentProfile.user.username) || '';
+  // hardcode EN ตายตัวตาม copy ที่ Pop กำหนด (ไม่ผูก TH/EN toggle เหมือนข้อความ system อื่นๆ ในโปรเจกต์นี้)
+  const shareText = `This is ${name}'s My Type. How much are we alike? Tap and see. 😏\n${url}`;
+
+  if(navigator.share){
+    navigator.share({ text: shareText }).catch(()=>{});
+    return;
+  }
+  navigator.clipboard.writeText(shareText).then(()=> showToast(t('copiedToast'))).catch(()=>{
+    const tmp = document.createElement('textarea');
+    tmp.value = shareText; document.body.appendChild(tmp); tmp.select();
+    document.execCommand('copy'); document.body.removeChild(tmp);
+    showToast(t('copiedToast'));
+  });
+}
+
+/* ================= LOGIN MODAL ================= */
+function openLoginModal(){
+  document.getElementById('loginError').style.display = 'none';
+  openModal('loginModal');
+}
+document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
+  const phone = document.getElementById('loginPhone').value.trim();
+  const passcode = document.getElementById('loginPasscode').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  if(!phone || !passcode){ errEl.textContent = t('loginErrorRequired'); errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('loginSubmitBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="btn-spinner"></span>${t('loggingInText')}`;
+  const res = await api('login', { phone, passcode }, 'POST');
+  btn.disabled = false;
+  btn.innerHTML = originalHtml;
+
+  if(!res.success){ errEl.textContent = res.message; errEl.style.display = 'block'; return; }
+  STATE.session = res;
+  localStorage.setItem('wz_session', JSON.stringify(res));
+  closeModal('loginModal');
+  await loadProfile(); // โหลดใหม่ทั้งหน้า จะได้ contact_links / is_owner / grouping ที่ถูกต้องตามสิทธิ์ใหม่
+});
+document.querySelectorAll('.passcode-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const input = document.getElementById(btn.dataset.target);
+    const visible = input.classList.toggle('pc-visible');
+    btn.textContent = visible ? '🙈' : '👁️';
+  });
+});
+
+/* ================= GROUPING (Very Me / Kinda Me / Not Me / So Different) ================= */
+function renderGroupingSection(){
+  return `
+    <div class="grouping-hint">${t('groupingHint')}</div>
+    <div class="match-modes">
+      <button class="btn-mode" data-mode="very_me">🔥 ${t('modeVeryMe')}</button>
+      <button class="btn-mode" data-mode="kinda_me">👥 ${t('modeKindaMe')}</button>
+      <button class="btn-mode" data-mode="not_me">🔄 ${t('modeNotMe')}</button>
+      <button class="btn-mode" data-mode="so_different">🌍 ${t('modeSoDifferent')}</button>
+    </div>
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="myTypeSearchInput" placeholder="${t('searchPlaceholder')}">
+    </div>
+    <div id="myTypeSearchResults"></div>
+    <div id="matchArea"></div>
+  `;
+}
+
+function bindGroupingEvents(){
+  document.querySelectorAll('#content .btn-mode').forEach(btn => {
+    btn.addEventListener('click', ()=> runMatch(btn.dataset.mode));
+  });
+  const searchInput = document.getElementById('myTypeSearchInput');
+  searchInput.addEventListener('input', ()=>{
+    clearTimeout(searchDebounceTimer);
+    const q = searchInput.value.trim();
+    const resultsEl = document.getElementById('myTypeSearchResults');
+    if(!q){ resultsEl.innerHTML = ''; return; }
+    // โชว์ spinner ทันทีตอนเริ่มรอ debounce เพื่อให้คนเห็นว่าระบบกำลังทำงาน ไม่ได้ค้าง
+    resultsEl.innerHTML = `<div class="search-results"><div class="search-result-item search-spinner-row"><span class="mini-spinner"></span>${t('searchingText')}</div></div>`;
+    searchDebounceTimer = setTimeout(()=> runSearch(q), 350);
+  });
+}
+
+async function runSearch(query){
+  const resultsEl = document.getElementById('myTypeSearchResults');
+  const res = await api('searchMyType', { query }, 'POST');
+  if(!res.success){ resultsEl.innerHTML = ''; return; }
+  if(!res.results.length){
+    resultsEl.innerHTML = `<div class="search-results"><div class="search-result-item">${t('searchNoResults')}</div></div>`;
+    return;
+  }
+  resultsEl.innerHTML = `<div class="search-results">${res.results.map(u => `
+    <div class="search-result-item" onclick="location.href='mytype.html?id=${u.user_id}'">
+      ${avatarHtml(u)}
+      <div class="name">${escapeHtml(u.username)}</div>
+    </div>`).join('')}</div>`;
+}
+
+async function runMatch(mode){
+  currentMatchMode = mode;
+  document.querySelectorAll('#content .btn-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+  const area = document.getElementById('matchArea');
+  area.innerHTML = `<div class="state-box"><div class="spinner"></div><div class="msg">${t('matchLoadingText')}</div></div>`;
+  area.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  const res = await api('getMyTypeMatch', { mode }, 'POST');
+  if(!res.success){
+    area.innerHTML = `<div class="state-box"><div class="msg" style="color:rgba(255,255,255,0.85);">${escapeHtml(res.message || t('needOwnTypeMsg'))}</div></div>`;
+    return;
+  }
+  renderMatchWall(res.results, mode);
+}
+
+function renderMatchWall(results, mode){
+  const area = document.getElementById('matchArea');
+  if(!results.length){
+    area.innerHTML = `<div class="state-box"><div class="msg" style="color:rgba(255,255,255,0.85);">${t('matchEmptyMsg')}</div></div>`;
+    return;
+  }
+  const items = results.map(r => `
+    <div class="wall-item" onclick="location.href='mytype.html?id=${r.user_id}'">
+      ${avatarHtml(r)}
+      <div class="name">${escapeHtml(r.username)}</div>
+    </div>`).join('');
+  area.innerHTML = `<div class="match-count">${t('matchCountText', {n: results.length})}</div><div class="card"><div class="wall-grid">${items}</div></div>`;
+}
+
+/* ================= MY TYPE PDF EXPORT (mte-, print-only, self-contained — does not touch any existing render/game logic) ================= */
+async function myTypeExportHtml(){
+  const user = (currentProfile && currentProfile.user) || {};
+  const answers = (currentProfile && currentProfile.answers) || {};
+  const name = user.username || '';
+  const initial = name ? name.charAt(0).toUpperCase() : '?';
+  const dateStr = new Date().toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+  const profileUrl = `${CONFIG.FRONTEND_URL}/mytype.html?id=${profileId}`;
+
+  // lh3.googleusercontent.com และ api.qrserver.com ไม่ส่ง CORS header ที่ครบพอให้ html2canvas วาดลง canvas ได้เสถียร
+  // (เจอปัญหานี้ชัดกว่าบนมือถือ) ต้อง proxy ผ่าน backend แปลงเป็น base64 data URI ทั้งคู่ ถ้า proxy พลาดก็ไม่ใส่ img เลย ไม่ปล่อยไอคอนรูปหักโชว์
+  async function proxyImg(url, label){
+    try{
+      const res = await api('proxyImage', { url });
+      if(res && res.success) return res.dataUri;
+      console.warn(`[myTypeExport] proxyImage(${label}) failed:`, res && res.message);
+    }catch(e){
+      console.warn(`[myTypeExport] proxyImage(${label}) threw:`, e);
+    }
+    return '';
+  }
+
+  let avatarSrc = '';
+  if(user.profile_image_url) avatarSrc = await proxyImg(user.profile_image_url, 'avatar');
+
+  const qrRawSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(profileUrl)}`;
+  const qrSrc = await proxyImg(qrRawSrc, 'qr');
+
+  const topPicks = [];
+  MYTYPE_QUESTIONS.forEach(q => {
+    const v = answers[q.key];
+    if(v == null) return;
+    if(v <= 15) topPicks.push(q.a);
+    else if(v >= 85) topPicks.push(q.b);
+  });
+
+  function rowHtml(q, idx){
+    const v = answers[q.key];
+    const av = (v != null) ? v : 50;
+    const aWin = av < 50, bWin = av > 50;
+    return `
+      <div class="mte-row">
+        <span class="mte-num">${idx}</span>
+        <span class="mte-a ${aWin ? 'mte-win' : ''}">${escapeHtml(q.a)}</span>
+        <span class="mte-b ${bWin ? 'mte-win' : ''}">${escapeHtml(q.b)}</span>
+      </div>`;
+  }
+
+  const col1 = MYTYPE_QUESTIONS.slice(0, 25).map((q,i) => rowHtml(q, i+1)).join('');
+  const col2 = MYTYPE_QUESTIONS.slice(25).map((q,i) => rowHtml(q, i+26)).join('');
+
+  const topPickHtml = topPicks.length ? `
+    <div class="mte-toppick">
+      <div class="mte-toppick-head">
+        <span class="mte-toppick-label">The Strongest Picks</span>
+        <span class="mte-toppick-desc">The choices I feel most strongly about.</span>
+      </div>
+      <div class="mte-toppick-pills">${topPicks.map(w => `<span class="mte-pill">${escapeHtml(w)}</span>`).join('')}</div>
+    </div>` : '';
+
+  return `
+    <div class="mte-page">
+      <div class="mte-head">
+        <div>
+          <div class="mte-brand">TOKBUD — My Type Summary Sheet</div>
+          <div class="mte-desc">A snapshot of my mindset, working style, and relationships. No right or wrong — just a clearer way to understand each other and get along better.</div>
+        </div>
+        <div class="mte-head-right">
+          <div class="mte-date">Updated ${dateStr}</div>
+          ${qrSrc ? `<img class="mte-qr" src="${qrSrc}">` : ''}
+        </div>
+      </div>
+      <div class="mte-identity">
+        <div class="mte-identity-left">
+          ${avatarSrc ? `<img class="mte-avatar" src="${avatarSrc}">` : `<div class="mte-avatar mte-avatar-fallback">${initial}</div>`}
+          <div class="mte-name">${escapeHtml(name)}</div>
+        </div>
+        <span class="mte-powered">Powered by tokbud.vercel.app</span>
+      </div>
+      ${topPickHtml}
+      <div class="mte-grid">
+        <div class="mte-col">${col1}</div>
+        <div class="mte-col">${col2}</div>
+      </div>
+    </div>`;
+}
+
+async function downloadMyTypePdf(btn){
+  const originalHtml = btn.innerHTML;
+  const overlay = document.getElementById('myTypeExportOverlay');
+  const resetOverlay = () => {
+    overlay.innerHTML = '<div class="state-box"><div class="spinner"></div><div class="msg">Preparing your PDF...</div></div>';
+  };
+  resetOverlay();
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-spinner"></span>Preparing...';
+  overlay.classList.add('show');
+
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  let blobUrl = null;
+
+  // บั๊กที่รู้จักกันดีของ html2canvas: capture element ที่เป็น position:fixed ผิดพลาด (ได้ภาพเปล่า)
+  // ถ้าหน้าเว็บถูก scroll ลงมาตอนกดปุ่ม — บังคับกลับไปบนสุดก่อน capture (ปลอดภัยเพราะ overlay คลุมเต็มจอบังอยู่แล้ว)
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60)); // เผื่อเวลาให้ browser reflow/paint ก่อนเริ่ม capture
+  try{
+    const container = document.getElementById('myTypeExportPrint');
+
+    // หน้า 1 (เดิม, ไม่แตะ) + หน้า 2 (narrative, มาจาก mytype-narrative.txt — ไฟล์แยก
+    // ตั้งใจ อนาคตจะตัด/ผูก paywall เฉพาะหน้า 2 ได้โดยไม่แตะโค้ดหน้า 1 เลย)
+    const page1Html = await myTypeExportHtml();
+    const narrativeName = (currentProfile && currentProfile.user && currentProfile.user.username) || '';
+    const narrativeAnswers = (currentProfile && currentProfile.answers) || {};
+    // กันทั้ง 2 เคส: ไฟล์ mytype-narrative โหลดไม่สำเร็จเลย (ไม่มีฟังก์ชันนี้) กับ
+    // เคสที่ไฟล์โหลดมาได้แต่ตัวฟังก์ชัน error ตอนรัน (เช่น ข้อมูลผิดปกติ) — ทั้งสองเคส
+    // ต้อง "บอกผู้ใช้ตรงๆ" ไม่ใช่ปล่อยให้ได้ PDF แค่หน้า 1 แบบเงียบๆ โดยไม่รู้ตัว
+    let page2Html = '';
+    let page2Failed = false;
+    if (typeof buildMyTypeNarrativePage === 'function') {
+      try {
+        page2Html = buildMyTypeNarrativePage(narrativeName, narrativeAnswers);
+      } catch (e) {
+        console.warn('[downloadMyTypePdf] buildMyTypeNarrativePage threw:', e);
+        page2Failed = true;
+      }
+    } else {
+      page2Failed = true;
+    }
+    if (page2Failed) {
+      showToast('Summary Sheet page 2 could not be added this time — you got page 1 only. Please try again in a moment.');
+    }
+    container.innerHTML = page1Html + page2Html;
+
+    const rawName = (currentProfile && currentProfile.user && currentProfile.user.username) || 'profile';
+    const safeName = rawName.replace(/[^a-zA-Z0-9_-]+/g, '-');
+    const filename = `TOKBUD-MyType-${safeName}.pdf`;
+
+    // บังคับตัดหน้าหลังหน้า 1 (เดิม: ใช้ class html2pdf__page-break + pagebreak mode css/legacy
+    // ให้ html2pdf ตัด canvas เดียวเป็น 2 หน้าเอง) -> เทสจริงแล้วพัง: มีช่องว่างเกินมาระหว่างหน้า 1-2
+    // และเนื้อหาหน้า 2 ถูกตัดก่อนจบ (ไม่มี footer) เช็คใน GitHub ของ html2pdf.js เจอ issue
+    // รายงานอาการเดียวกันเป๊ะ (blank page แทรกเข้ามา + ตัดเนื้อหาหาย) ค้างมาหลายปีไม่มีคนแก้ —
+    // เป็นบั๊กของกลไก pagebreak เอง ไม่ใช่ปัญหาระยะ/ความสูงที่เราคำนวณ
+    // -> เลิกพึ่งกลไกนี้ทั้งหมด: capture ทีละหน้าแยกเป็น PDF คนละไฟล์ (วิธีเดียวกับที่หน้า 1
+    // เดี่ยวๆ ทำงานถูกต้องอยู่แล้ว ไม่มีอะไรใหม่ที่เสี่ยง) แล้วต่อไฟล์ PDF เข้าด้วยกันด้วย pdf-lib
+    // (ทำงานระดับไฟล์ PDF ตรงๆ ไม่ผ่านการตัด canvas เลย)
+    async function captureMtePageToPdfBytes(pageEl){
+      // +10px buffer กันเหนียว (ลดจาก 28px รอบก่อน — 28px มากเกินไปจนดันเนื้อหาที่พอดีอยู่แล้วให้
+      // เกินขอบ 1 หน้าไป เกิดหน้าเปล่าที่ 3 ตามที่เจอ, บวกกับตัด padding แถวคำถามลง 1px/แถว
+      // ด้านบนแล้วด้วย ทำให้มีที่ว่างจริงเหลือเผื่อพอสมควรแล้ว ไม่ต้อง buffer เยอะเท่าเดิม):
+      // ถ้า scrollHeight วัดได้น้อยกว่าเนื้อหาจริงที่เรนเดอร์ (เช่น margin ของ child ตัวสุดท้ายยุบตัว
+      // ออกนอก parent -- CSS margin-collapse) canvas ที่สั่ง capture จะเล็กกว่าเนื้อหาจริงแล้ว "ตัดทิ้ง"
+      // ส่วนท้ายไปเงียบๆ โดยไม่มี error ให้เห็นเลย
+      const w = pageEl.scrollWidth, h = pageEl.scrollHeight + 10;
+      return await html2pdf().set({
+        margin: 10,
+        image: { type: 'jpeg', quality: 0.95 },
+        // safety net: ถ้าเนื้อหาสูงเกิน 1 หน้า A4 จริงๆ (เช่น username ยาวจนตัด wrap เพิ่มบรรทัด, หรือ
+        // อนาคตมีคนเพิ่มเนื้อหา) ให้ไหลต่อเป็นหน้าเพิ่มอัตโนมัติแทนที่จะ "ตัดทิ้งเงียบๆ" แบบที่เจอรอบนี้ —
+        // legacy mode คือโหมดเดียวที่แบ่งหน้าอัตโนมัติตามความสูงเกิน ไม่ต้องพึ่ง marker/class ใดๆ
+        pagebreak: { mode: ['legacy'] },
+        html2canvas: {
+          scale: 2, useCORS: true,
+          scrollX: 0, scrollY: 0,
+          windowWidth: w, windowHeight: h,
+          width: w, height: h,
+          x: 0, y: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(pageEl).outputPdf('arraybuffer');
+    }
+
+    // รอให้ font (Antonio, Inter) โหลดเสร็จสมบูรณ์ก่อน capture — ถ้า capture เร็วเกินไปตอน font ยังโหลดไม่เสร็จ
+    // (โดยเฉพาะเน็ตมือถือช้า) browser จะ fallback ไปใช้ font สำรองชั่วคราวแทน แล้วภาพที่ capture ออกมาจะติด font ผิด
+    // แบบถาวรในไฟล์ (สาเหตุของอาการตัวหนังสือเว้นวรรคแปลก/ขนาดดูเพี้ยนที่เจอ) — มี timeout กันไว้เผื่อ font โหลดไม่สำเร็จเลย
+    try{
+      await Promise.race([ document.fonts.ready, new Promise(r => setTimeout(r, 2000)) ]);
+    }catch(e){ /* เบราว์เซอร์เก่าบางตัวไม่มี document.fonts — ข้ามไปเลย ไม่ทำให้ทั้งฟังก์ชันพัง */ }
+
+    const pageEls = Array.from(container.querySelectorAll('.mte-page'));
+    const pdfBuffers = [];
+    for(const el of pageEls){ pdfBuffers.push(await captureMtePageToPdfBytes(el)); }
+
+    let pdfBlob;
+    if(pdfBuffers.length > 1 && typeof PDFLib !== 'undefined'){
+      const merged = await PDFLib.PDFDocument.create();
+      for(const buf of pdfBuffers){
+        const src = await PDFLib.PDFDocument.load(buf);
+        const copiedPages = await merged.copyPages(src, src.getPageIndices());
+        copiedPages.forEach(p => merged.addPage(p));
+      }
+      const mergedBytes = await merged.save();
+      pdfBlob = new Blob([mergedBytes], { type: 'application/pdf' });
+    } else {
+      // มีแค่หน้าเดียว หรือ pdf-lib โหลดไม่สำเร็จ (เผื่อไว้ — ยังได้อย่างน้อยหน้า 1 ไม่พังทั้งฟังก์ชัน)
+      pdfBlob = new Blob([pdfBuffers[0]], { type: 'application/pdf' });
+      if(pdfBuffers.length > 1) showToast('Could not combine the pages this time — you got page 1 only. Please try again.');
+    }
+
+    blobUrl = URL.createObjectURL(pdfBlob);
+
+    if(isMobile){
+      // P1-fix (blob:... text + "Unknown.pdf" ที่ยังหลุดออกไปได้ แม้ navigator.share({files}) เองถูกต้องอยู่แล้ว):
+      // ต้นตอจริงไม่ใช่ navigator.share — แต่เป็นเพราะรอบก่อน "นำทั้งหน้า/แท็บไปที่ blobUrl ตรงๆ" เพื่อเปิด preview
+      // (pendingTab.location.href / window.location.href) พอทำแบบนั้น browser จะโชว์ blob: อยู่ที่ address bar ของ
+      // แท็บนั้นเอง แล้ว user (เข้าใจว่าปุ่ม Tap to Share ในแอปหายไปเพราะสลับแท็บ/หน้าไปแล้ว) ไปกดปุ่ม share ของตัว
+      // browser เอง (ไม่ใช่ปุ่มในแอป) ซึ่งแชร์ "ที่อยู่หน้านั้น" เป็นข้อความ blob: ดิบๆ บวกไฟล์ที่ไม่มี metadata ชื่อ
+      // (=Unknown.pdf) — ไม่เกี่ยวกับ navigator.share({files}) ในแอปเลยสักบรรทัด แก้ที่คำบรรยายปุ่มไม่ได้จริงๆ
+      // -> ทางแก้เด็ดขาดคือห้าม navigate ทั้งหน้า/เปิดแท็บไปที่ blob: อีกเลย ให้ preview ด้วย <iframe> ฝังอยู่ใน
+      // overlay เดิมแทน (address bar ของแอปไม่เปลี่ยนเป็น blob: เลย ไม่มีปุ่ม share ของ browser เองให้กดผิดอีก)
+      // ปุ่ม Share/Download ตัวจริงอยู่ใน overlay นี้เท่านั้น กด 1 ครั้งจบ ไม่ต้องมี "รอบสอง" ที่ปุ่มเดิมอีกต่อไป
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+      const canShareFile = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
+
+      overlay.innerHTML = `
+        <div class="mte-preview-wrap">
+          <div class="mte-preview-topbar"><button class="mte-preview-close" id="myTypePreviewClose" type="button">✕</button></div>
+          <iframe class="mte-preview-frame" src="${blobUrl}" title="${filename}"></iframe>
+          <div class="mte-preview-actions">
+            ${canShareFile
+              ? `<button class="btn btn-primary full-btn" id="myTypePreviewShareBtn" type="button">📤 Tap to Share</button>`
+              : `<a class="btn btn-primary full-btn" id="myTypePreviewDownloadLink" href="${blobUrl}" download="${filename}">⬇️ Download PDF</a>`}
+          </div>
+        </div>`;
+
+      const cleanup = () => {
+        overlay.classList.remove('show');
+        resetOverlay();
+        if(blobUrl){ URL.revokeObjectURL(blobUrl); blobUrl = null; }
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      };
+      document.getElementById('myTypePreviewClose').onclick = cleanup;
+
+      if(canShareFile){
+        document.getElementById('myTypePreviewShareBtn').onclick = async (ev) => {
+          const shareBtn = ev.currentTarget;
+          shareBtn.disabled = true;
+          shareBtn.innerHTML = '<span class="btn-spinner"></span>Sharing...';
+          try{
+            await navigator.share({ files: [file], title: filename });
+          }catch(e){ /* user กด Cancel เอง หรือ share ไม่สำเร็จ — ไม่ใช่ error ที่ต้อง toast ฟ้อง */ }
+          cleanup();
+        };
+      } else {
+        // browser เก่าไม่รองรับ Web Share API แบบไฟล์เลย — ให้กด download ตรงๆ จาก preview นี้แทน แล้วปิด overlay
+        // หลังจากปล่อยให้ browser เริ่ม download ไปก่อน (ไม่ revoke blob ทันทีจนโหลดยังไม่ทันเสร็จ)
+        document.getElementById('myTypePreviewDownloadLink').addEventListener('click', () => setTimeout(cleanup, 300));
+      }
+    } else {
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(()=> URL.revokeObjectURL(blobUrl), 60000);
+      overlay.classList.remove('show');
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }catch(err){
+    if(blobUrl) URL.revokeObjectURL(blobUrl);
+    overlay.classList.remove('show');
+    showToast('Could not create the PDF. Please try again.');
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }finally{
+    document.getElementById('myTypeExportPrint').innerHTML = '';
+  }
+}
+
+/* ================= INIT ================= */
+applyLang(getLang());
+loadProfile();
+
+// UX-fix: เดิมกด "Back to Home" อย่างเดียว ทำให้คนที่กำลังไล่ดูโปรไฟล์เพื่อนทีละคน (จาก search/match wall)
+// ต้องอ้อมกลับเข้า account -> กด My Type ใหม่ทุกครั้งเพื่อไปหน้า search ต่อ — เลยเพิ่มปุ่มลัดกลับไปหน้า
+// My Type ของตัวเอง (มี search/match tools) โชว์เฉพาะตอน login อยู่ และกำลังดูโปรไฟล์ "คนอื่น" ไม่ใช่ของตัวเอง
+if(isLoggedIn() && !isOwnerOfCurrentPage()){
+  const link = document.getElementById('backMyTypeLink');
+  link.href = `mytype.html?id=${STATE.session.user_id}`;
+  link.style.display = 'inline-block';
+}
+</script>
+</body>
+</html>
