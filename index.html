@@ -1186,6 +1186,7 @@ const I18N = {
     deletePendingMsg: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ',
     errTitleRequired: 'กรุณากรอกชื่อบริษัท',
     errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 หมวด', errCategoryMax: 'เลือกได้สูงสุด 5 หมวดเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
+    feedEmptyState: 'ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
     errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก',
     errPasscodeRequired: 'กรุณากรอก Passcode', errDeleteReasonRequired: 'กรุณาเลือกเหตุผลและกรอกรายละเอียดให้ครบ',
@@ -1267,6 +1268,7 @@ const I18N = {
     deletePendingMsg: 'A delete request is already pending review',
     errTitleRequired: 'Please enter a company name',
     errCategoryRequired: 'Please select at least 1 category', errCategoryMax: 'You can select up to 5 only', errTagRequired: 'Please add at least 1 tag',
+    feedEmptyState: "No results yet<br>Try a different category or search term",
     errCoverRequired: 'Please attach a company logo before creating the company',
     errMainReasonRequired: 'Please fill in this field before saving',
     errPasscodeRequired: 'Please enter your Passcode', errDeleteReasonRequired: 'Please select a reason and fill in all required details',
@@ -2025,7 +2027,7 @@ async function loadCreateFormOptions(){
       ctSelectedColor = c.hex;
       document.getElementById('createModal').style.setProperty('--card-color', c.hex);
     });
-    wrap.appendChild(sw);
+    wrap2.appendChild(sw);
   });
   if(STATE.cardColors[DEFAULT_IDX]) ctSelectedColor = STATE.cardColors[DEFAULT_IDX].hex;
   if(ctSelectedColor) document.getElementById('createModal').style.setProperty('--card-color', ctSelectedColor);
@@ -2276,7 +2278,7 @@ function renderFeed(){
     return;
   }
   if(STATE.topics.length === 0){
-    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ยังไม่มีหัวข้อในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ</div>`;
+    feed.innerHTML = `<div class="empty-state">${t18n('feedEmptyState')}</div>`;
     return;
   }
   feed.innerHTML = STATE.topics.map(feedItemHTML).join('');
