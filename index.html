@@ -907,14 +907,14 @@
     <button class="modal-close" data-close="welcomeModal" style="margin-left:auto;display:block;">✕</button>
     <div class="welcome-check">✓</div>
     <h3 style="margin:0 0 10px;"><span data-i18n="welcomeTitlePre">ยินดีต้อนรับคุณ</span> <span id="welcomeUsername" style="color:var(--primary)"></span> <span data-i18n="welcomeTitlePost">เข้าสู่ TOKBUD</span></h3>
-    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;" data-i18n="welcomeDesc">การตั้งคำถามและความขี้สงสัย คือทักษะที่สำคัญของคนยุคใหม่</p>
+    <p style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;" data-i18n="welcomeDesc">ประสบการณ์การทำงานของคุณ มีค่ามากสำหรับคนที่กำลังตัดสินใจสมัครเข้าทำงานที่บริษัทนี้</p>
     <!-- กรณีสมัครจาก pendingVote (กดโหวตตอนยังไม่ login มาก่อน): แสดง 2 ปุ่ม กลับไปโหวต / สร้างหัวข้อ -->
     <div style="display:flex;gap:10px;" id="welcomeActionsVote">
       <button class="btn btn-primary full-btn" id="welcomeVoteBtn" data-i18n="welcomeVoteBtn">กลับไปโหวต</button>
       <button class="btn btn-ghost full-btn" id="welcomeCreateBtn" data-i18n="welcomeCreateBtn">สร้างคำถาม</button>
     </div>
     <!-- กรณีสมัครตรงๆ ไม่ได้มาจากการกดโหวต: เหลือปุ่มเดียว ชวนสร้างหัวข้อแรก -->
-    <button class="btn btn-primary full-btn" id="welcomeCreateFirstBtn" data-i18n="welcomeCreateFirstBtn" style="display:none;">มาสร้างหัวข้อแรกของคุณกันเลย! 🚀</button>
+    <button class="btn btn-primary full-btn" id="welcomeCreateFirstBtn" data-i18n="welcomeCreateFirstBtn" style="display:none;">เริ่มแบ่งปันความคิดเห็นของคุณได้เลย! 🚀</button>
   </div>
 </div>
 
@@ -928,8 +928,12 @@
 
     <div class="field" id="coverField">
       <label><span data-i18n="coverImageLabel">โลโก้บริษัท (สัดส่วน 9:16)</span> <span class="field-hint" data-i18n="coverImageHint">— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด</span></label>
-      <div class="cover-upload" id="coverPreview" onclick="document.getElementById('coverFile').click()">
-        <span data-i18n="coverUploadPrompt">＋ แตะเพื่อแนบโลโก้บริษัท</span>
+      <div class="preview-3col">
+        <div class="preview-vote-btn" data-i18n="joinBtnLabel">ทำงานที่นี่เพราะ...</div>
+        <div class="cover-upload" id="coverPreview" onclick="document.getElementById('coverFile').click()">
+          <span data-i18n="coverUploadPrompt">＋ แตะเพื่อแนบโลโก้บริษัท</span>
+        </div>
+        <div class="preview-vote-btn" data-i18n="leaveBtnLabel">ลาออกไปเพราะ...</div>
       </div>
       <input type="file" accept="image/*" id="coverFile" style="display:none;">
     </div>
@@ -939,7 +943,7 @@
 
     <div class="field">
       <label><span data-i18n="ctCategoryLabel">หมวดหมู่</span> <span class="req-mark" data-i18n="requiredMark">*</span></label>
-      <select id="ctCategory" multiple><option value="" data-i18n="ctCategoryChoose">เลือกหมวดหมู่ (เลือกได้มากกว่า 1)</option></select>
+      <button type="button" class="cat-picker-btn" id="ctCategoryBtn" data-i18n="ctCategoryChoose">เลือกได้สูงสุด 5 หมวด</button>
     </div>
 
     <div class="field">
@@ -960,6 +964,21 @@
 
     <div class="field-error" id="createError"></div>
     <button class="btn btn-primary full-btn" id="createSubmitBtn" data-i18n="createSubmitBtn">สร้างบริษัท</button>
+  </div>
+</div>
+
+<!-- ===== Category Picker Modal — custom checklist (native <select multiple> ไม่สามารถบล็อกการติ๊กตัวที่ 6
+     ได้จริง เพราะ browser render sheet เองทั้งหมด JS ไปดักจับตอนกดแต่ละตัวไม่ได้ ต้องสร้าง checklist เองแทน
+     ถึงจะบล็อกได้จริงตามที่ Pop ต้องการ — ใช้ CSS pattern เดียวกับ .target-checklist ที่มีอยู่แล้วในไฟล์นี้) ===== -->
+<div class="modal-overlay" id="categoryPickerModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="ctCategoryLabel">หมวดหมู่</h3>
+      <button class="modal-close" data-close="categoryPickerModal">✕</button>
+    </div>
+    <p class="field-hint" style="margin:-8px 0 14px;" data-i18n="ctCategoryChoose">เลือกได้สูงสุด 5 หมวด</p>
+    <div class="target-checklist" id="categoryChecklist"></div>
+    <button class="btn btn-primary full-btn" data-close="categoryPickerModal" style="margin-top:16px;" data-i18n="doneBtn">เสร็จสิ้น</button>
   </div>
 </div>
 
@@ -1126,8 +1145,8 @@ const I18N = {
     suDotProfile: 'โปรไฟล์', suDotContact: 'ติดต่อ', suDotSecurity: 'รหัสผ่าน', suDotPersonal: 'ส่วนตัว', suDotLocation: 'ที่อยู่',
     suPasscodeNote: 'อย่าลืมนะ! โปรดจดจำหรือจัดเก็บ Passcode นี้ไว้ให้ดี เพราะต้องใช้คู่กับเบอร์โทรศัพท์ทุกครั้งที่เข้าสู่ระบบ',
     welcomeTitlePre: 'ยินดีต้อนรับคุณ', welcomeTitlePost: 'เข้าสู่ TOKBUD',
-    welcomeDesc: 'ทุกประสบการณ์การทำงานของคุณ มีค่าสำหรับคนที่กำลังตัดสินใจ',
-    welcomeCreateBtn: 'สร้างบริษัท', homeBtn: 'กลับหน้าแรก', welcomeVoteBtn: 'กลับไปแชร์ความคิดเห็น', welcomeCreateFirstBtn: 'มาสร้างบริษัทแรกของคุณกันเลย! 🚀',
+    welcomeDesc: 'ประสบการณ์การทำงานของคุณ มีค่ามากสำหรับคนที่กำลังตัดสินใจสมัครเข้าทำงานที่บริษัทนี้',
+    welcomeCreateBtn: 'สร้างบริษัท', homeBtn: 'กลับหน้าแรก', welcomeVoteBtn: 'กลับไปแชร์ความคิดเห็น', welcomeCreateFirstBtn: 'เริ่มแบ่งปันความคิดเห็นของคุณได้เลย! 🚀',
     createSuccessTitle: 'สร้างบริษัทสำเร็จ และเผยแพร่แล้ว',
     createSuccessDesc: 'บริษัทของคุณถูกเผยแพร่ขึ้นหน้าแรกเรียบร้อยแล้ว ไปดูกันเลย!',
     createSuccessCreateBtn: 'สร้างบริษัทเพิ่ม', homeToMyTopicsBtn: 'กลับไปหน้าบริษัทของฉัน',
@@ -1138,7 +1157,7 @@ const I18N = {
     coverUploadPrompt: '＋ แตะเพื่อแนบโลโก้บริษัท',
     ctTitleLabel: 'ชื่อบริษัท', ctTitlePh: 'เช่น บริษัท ABC จำกัด',
     ctDescLabel: 'รายละเอียด', optionalHint2: '(ไม่บังคับ)', ctDescPh: 'อธิบายเพิ่มเติมเกี่ยวกับบริษัท...',
-    ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 ตัวเลือก',
+    ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 หมวด', doneBtn: 'เสร็จสิ้น',
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     createSubmitBtn: 'สร้างบริษัท',
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
@@ -1166,7 +1185,7 @@ const I18N = {
     deletePasscodeLabel: 'กรอก Passcode เพื่อยืนยันการขอลบ', deleteConfirmBtn: 'ส่งคำขอลบ',
     deletePendingMsg: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ',
     errTitleRequired: 'กรุณากรอกชื่อบริษัท',
-    errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 ตัวเลือก', errCategoryMax: 'เลือกได้สูงสุด 5 ตัวเลือกเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
+    errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 หมวด', errCategoryMax: 'เลือกได้สูงสุด 5 หมวดเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
     errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก',
     errPasscodeRequired: 'กรุณากรอก Passcode', errDeleteReasonRequired: 'กรุณาเลือกเหตุผลและกรอกรายละเอียดให้ครบ',
@@ -1207,8 +1226,8 @@ const I18N = {
     suDotProfile: 'Profile', suDotContact: 'Contact', suDotSecurity: 'Security', suDotPersonal: 'Personal', suDotLocation: 'Location',
     suPasscodeNote: "Don't forget! Please remember or save this Passcode — you'll need it together with your phone number every time you log in.",
     welcomeTitlePre: 'Welcome', welcomeTitlePost: 'to TOKBUD',
-    welcomeDesc: 'Your work experience is valuable to someone trying to decide',
-    welcomeCreateBtn: 'Create a Company', homeBtn: 'Back to Home', welcomeVoteBtn: 'Back to Sharing', welcomeCreateFirstBtn: "Let's create your first company! 🚀",
+    welcomeDesc: 'Your work experience is valuable to someone deciding whether to join this company.',
+    welcomeCreateBtn: 'Create a Company', homeBtn: 'Back to Home', welcomeVoteBtn: 'Back to Sharing', welcomeCreateFirstBtn: "Start sharing your feedback! 🚀",
     createSuccessTitle: 'Your company was created and published',
     createSuccessDesc: 'Your company is now live on the homepage. Go check it out!',
     createSuccessCreateBtn: 'Create Another', homeToMyTopicsBtn: 'Back to My Company',
@@ -1219,7 +1238,7 @@ const I18N = {
     coverUploadPrompt: '＋ Tap to attach a company logo',
     ctTitleLabel: 'Company Name', ctTitlePh: 'e.g. ABC Corporation',
     ctDescLabel: 'Description', optionalHint2: '(optional)', ctDescPh: 'Add more detail about the company...',
-    ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5',
+    ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
     joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
@@ -1297,6 +1316,9 @@ function setLang(lang){
   // label ในการ์ด mini-dash (เพศ/ช่วงอายุ) เป็น dynamic HTML ที่ generate ผ่าน t() ตอน render
   // ไม่ผ่าน [data-i18n] loop ของ applyLang() จึงต้อง re-render ใหม่ทุกครั้งที่สลับภาษา — ใช้ cache ไม่ยิง API ใหม่
   rerenderLoadedDashboards();
+  // ปุ่มเลือกหมวดหมู่โชว์ "N หมวดที่เลือก" แบบ dynamic ไม่ใช่ค่าคงที่จาก dict เฉยๆ — ถ้าไม่ re-apply ตรงนี้
+  // สลับภาษาแล้ว data-i18n loop ด้านบนจะเขียนทับกลับเป็น placeholder เดิม ทั้งที่ user เลือกหมวดไว้แล้ว
+  if(document.getElementById('ctCategoryBtn')) updateCategoryBtnLabel();
   // เดือนใน birthday select ก็เป็นชื่อภาษาเหมือนกัน ไม่ผ่าน [data-i18n] เพราะ generate ด้วย JS ตอน loadBirthdaySelects()
   // ต้อง rebuild ใหม่ทุกครั้งที่สลับภาษาด้วย ไม่งั้นจะค้างเป็นภาษาตอนโหลดหน้าครั้งแรก (บั๊กที่เจอ)
   if(document.getElementById('suBirthMonth')) populateBirthMonths();
@@ -1951,19 +1973,45 @@ document.getElementById('feedSortToggle').addEventListener('click', (e)=>{
 /* ---------- Create Topic form ---------- */
 let ctSelectedColor = '';
 let ctCoverUrl = '';
+let ctSelectedCategories = [];
+
+function updateCategoryBtnLabel(){
+  const btn = document.getElementById('ctCategoryBtn');
+  btn.textContent = ctSelectedCategories.length === 0
+    ? t18n('ctCategoryChoose')
+    : `${ctSelectedCategories.length} ${getLang() === 'th' ? 'หมวดที่เลือก' : (ctSelectedCategories.length === 1 ? 'category selected' : 'categories selected')}`;
+}
 
 async function loadCreateFormOptions(){
   // หมวดหมู่ใช้ list เดียวกับ filter บนหน้าแรก (STATE.categories โหลดไว้แล้วตอน init)
-  const catSel = document.getElementById('ctCategory');
+  // ใช้ checklist ที่คุมเองแทน native <select multiple> เพราะ browser render sheet เองทั้งหมด
+  // JS ดักจับตอนกดแต่ละตัวไม่ได้ จึงบล็อกตัวที่ 6 แบบ real-time ไม่ได้ถ้าใช้ native select
+  const wrap = document.getElementById('categoryChecklist');
   STATE.categories.forEach(cat=>{
-    const opt = document.createElement('option');
-    opt.value = cat; opt.textContent = cat;
-    catSel.appendChild(opt);
+    const row = document.createElement('label');
+    row.className = 'check-row';
+    row.innerHTML = `<input type="checkbox" value="${escapeHtml(cat)}"><span class="check-box"></span>${escapeHtml(cat)}`;
+    wrap.appendChild(row);
+  });
+  wrap.addEventListener('change', (e)=>{
+    if(e.target.type !== 'checkbox') return;
+    const val = e.target.value;
+    if(e.target.checked){
+      if(ctSelectedCategories.length >= 5){
+        e.target.checked = false; // บล็อกตัวที่ 6 ทันที ไม่ปล่อยให้ติ๊กแล้วค่อยไปหักออกทีหลัง
+        showToast(t18n('errCategoryMax'));
+        return;
+      }
+      ctSelectedCategories.push(val);
+    } else {
+      ctSelectedCategories = ctSelectedCategories.filter(c => c !== val);
+    }
+    updateCategoryBtnLabel();
   });
 
   const res = await api('getCardColors');
   STATE.cardColors = res.success ? res.colors : [];
-  const wrap = document.getElementById('colorSwatches');
+  const wrap2 = document.getElementById('colorSwatches');
   const DEFAULT_IDX = 8; // ม่วง — ตรงกับ default ฝั่ง backend
   STATE.cardColors.forEach((c, i)=>{
     const sw = document.createElement('button');
@@ -2012,14 +2060,7 @@ document.getElementById('ctTitle').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter'){ e.preventDefault(); }
 });
 
-document.getElementById('ctCategory').addEventListener('change', (e)=>{
-  // จำกัดเลือกได้สูงสุด 5 ตัวเลือก — ถ้าเลือกเกิน ยกเลิกตัวที่เพิ่งกดล่าสุดทันที (ตัวเลือกเดิมที่เลือกไว้ก่อนหน้ายังอยู่ครบ)
-  const selected = Array.from(e.target.selectedOptions);
-  if(selected.length > 5){
-    selected[selected.length - 1].selected = false;
-    showToast(t('errCategoryMax'));
-  }
-});
+document.getElementById('ctCategoryBtn').addEventListener('click', ()=> openModal('categoryPickerModal'));
 
 document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('createError');
@@ -2027,7 +2068,7 @@ document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
 
   const companyName = document.getElementById('ctTitle').value.trim();
   const description = document.getElementById('ctDescription').value.trim();
-  const categoryOptions = Array.from(document.getElementById('ctCategory').selectedOptions).map(o=>o.value).filter(v=>v);
+  const categoryOptions = ctSelectedCategories;
   const category = categoryOptions.join(',');
   const tags = ['ctTag1','ctTag2','ctTag3','ctTag4','ctTag5'].map(id => document.getElementById(id).value.trim());
 
@@ -2086,7 +2127,9 @@ function resetCreateForm(){
   document.getElementById('ctTitle').value = '';
   document.getElementById('ctTitle').style.height = 'auto';
   document.getElementById('ctDescription').value = '';
-  document.getElementById('ctCategory').selectedIndex = -1;
+  ctSelectedCategories = [];
+  document.querySelectorAll('#categoryChecklist input:checked').forEach(cb => cb.checked = false);
+  updateCategoryBtnLabel();
   ['ctTag1','ctTag2','ctTag3','ctTag4','ctTag5'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('createError').style.display = 'none';
   ctCoverUrl = '';
@@ -2233,7 +2276,7 @@ function renderFeed(){
     return;
   }
   if(STATE.topics.length === 0){
-    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ</div>`;
+    feed.innerHTML = `<div class="empty-state"><div class="emoji">🌫️</div>ยังไม่มีหัวข้อในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ</div>`;
     return;
   }
   feed.innerHTML = STATE.topics.map(feedItemHTML).join('');
