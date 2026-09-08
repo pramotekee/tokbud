@@ -331,6 +331,14 @@
   .ynu-btn.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
   .score-btn{ width:34px; height:34px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
   .score-btn.selected{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); font-weight:700; }
+  .ynu-question-label{ font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .ynu-row.ynu-missing{ border:1.5px solid #E5484D; border-radius:10px; padding:8px; margin-left:-8px; margin-right:-8px; }
+  .ynu-missing-hint{ display:block; font-size:11.5px; color:#E5484D; font-weight:600; margin-top:5px; }
+  .score-vertical-row{ display:flex; align-items:center; gap:10px; padding:9px 10px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:7px; cursor:pointer; background:var(--surface); text-align:left; width:100%; }
+  .score-vertical-row .score-num{ flex:0 0 30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; border:1.5px solid var(--line); color:var(--text); background:var(--bg); }
+  .score-vertical-row .score-desc{ font-size:12.5px; color:var(--text); line-height:1.4; }
+  .score-vertical-row.selected{ border-color:var(--accent); background:rgba(245,209,73,0.12); }
+  .score-vertical-row.selected .score-num{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); }
   .dob-row{ display:flex; gap:8px; }
   .dob-row select{ flex:1; }
   .passcode-wrap{ position:relative; }
@@ -443,6 +451,11 @@
 </header>
 
 <div class="wrap">
+
+  <!-- ===== แสดงระหว่างรอ getMyProfile ตอนเปิดหน้าครั้งแรก (ก่อนหน้านี้ไม่มี state นี้ ทำให้เห็นพื้นหลังว่างเปล่าเฉยๆ ระหว่างรอ) ===== -->
+  <div class="area-loading" id="pageInitLoading">
+    <div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span>
+  </div>
 
   <!-- ===== แสดงเมื่อยังไม่ login ===== -->
   <div class="locked-state" id="lockedState" style="display:none;">
@@ -671,7 +684,7 @@
     </div>
     <div class="field">
       <label id="ecMainReasonLabel"></label>
-      <textarea id="ecMainReasonInput" rows="3" maxlength="500"></textarea>
+      <textarea id="ecMainReasonInput" rows="3" maxlength="5000"></textarea>
     </div>
     <div id="ecQuestionsWrap"></div>
     <div class="field-error" id="ecError"></div>
@@ -746,7 +759,7 @@
       <input type="file" accept="image/*" id="etCoverFile" style="display:none;">
     </div>
 
-    <div class="field"><label data-i18n="etNameLabel">ชื่อบริษัท</label><input type="text" id="etTitle" placeholder="เช่น Lineman Company Limited"></div>
+    <div class="field"><label data-i18n="etNameLabel">ชื่อบริษัท</label> <span class="field-hint" data-i18n="ctTitleHint">(English only)</span><input type="text" id="etTitle" placeholder="e.g. ABC Corporation"></div>
 
     <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 14px;line-height:1.6;" data-i18n="etNote">
       หมายเหตุ: การแก้ไขแล้วบันทึก บริษัทจะยังคงสถานะเดิม (เผยแพร่/ซ่อน) และคอมเมนต์เดิมทั้งหมดจะยังอยู่ครบ ไม่ถูกล้าง
@@ -831,6 +844,7 @@ const I18N = {
     etLogoUploadPh: '＋ แตะเพื่อแนบโลโก้บริษัท', etNameLabel: 'ชื่อบริษัท',
     etNote: 'หมายเหตุ: การแก้ไขแล้วบันทึก บริษัทจะยังคงสถานะเดิม (เผยแพร่/ซ่อน) และคอมเมนต์เดิมทั้งหมดจะยังอยู่ครบ ไม่ถูกล้าง',
     etSaveBtn: 'บันทึกการแก้ไข', errCompanyNameRequired: 'กรุณากรอกชื่อบริษัท',
+    ctTitleHint: '(ภาษาอังกฤษเท่านั้น)', errTitleEnglishOnly: 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น',
     uploadFailToast: 'อัพโหลดรูปไม่สำเร็จ', savingText: 'กำลังบันทึก...',
     dcTitle: 'ขอลบบริษัท', dcDesc: 'คำขอของคุณจะถูกส่งให้ทีมงานตรวจสอบก่อนดำเนินการลบจริง คอมเมนต์และข้อมูลทั้งหมดจะยังอยู่ครบจนกว่าจะได้รับการอนุมัติ',
     dcReasonLabel: 'เหตุผลในการขอลบ', dcReasonDuplicate: 'สร้างซ้ำกับบริษัทที่มีอยู่แล้ว',
@@ -844,10 +858,13 @@ const I18N = {
     joinMainReasonLabel: 'ปัจจัยที่คุณสมัคร/ร่วมงานกับบริษัทนี้คืออะไร?',
     leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?',
     requiredMark: '*', yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
-    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการดี', qBrandReputation: 'ชื่อเสียงบริษัท/แบรนด์',
-    qGrowthOpportunity: 'โอกาสเติบโต/เรียนรู้', qChallengingWork: 'งานท้าทาย/ได้ใช้ทักษะ',
-    qCultureTeam: 'วัฒนธรรมองค์กรดี/ทีมดี', qLocationFlexibility: 'Location/remote flexibility',
-    confidenceScoreLabel: 'ตอนนี้คุณยังคิดว่าตัดสินใจถูกไหม?', confidenceScoreHint: '(1=กำลังหางานใหม่ ... 5=ฉันรักที่นี่มาก)',
+    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการและสิทธิประโยชน์ที่ได้รับดี', qBrandReputation: 'ทำงานที่นี่เพราะชื่อเสียงของบริษัท',
+    qGrowthOpportunity: 'ได้เรียนรู้ พัฒนาตัวเอง และมีโอกาสเติบโต', qChallengingWork: 'ได้ใช้ความรู้ ความสามารถ และทักษะอย่างเต็มที่',
+    qCultureTeam: 'ได้อยู่ในวัฒนธรรมองค์กรและสภาพแวดล้อมที่ดี', qLocationFlexibility: 'มีความยืดหยุ่นเรื่องรูปแบบและวิธีการทำงาน',
+    confidenceScoreLabel: 'มองย้อนกลับไปแล้ว ยังคิดว่าการเลือกมาทำงานที่นี่เป็นการตัดสินใจที่ถูกต้องไหม',
+    scoreDesc1: 'ไม่ใช่แล้ว ตอนนี้กำลังหางานใหม่อยู่', scoreDesc2: 'เริ่มมีข้อสงสัยแล้ว',
+    scoreDesc3: 'ก็โอเคนะ ยังคิดอยู่', scoreDesc4: 'ใช่ ตัดสินใจถูกแน่นอน',
+    scoreDesc5: 'ใช่แน่นอน ยังรักการทำงานที่นี่มาก', errAnswerRequired: 'กรุณาตอบข้อนี้',
     qSalaryMismatch: 'เงินเดือน/สวัสดิการไม่ตรงคาดหวัง', qNoGrowth: 'ไม่มีโอกาสเติบโต',
     qCultureMismatch: 'วัฒนธรรมองค์กรไม่เหมาะกับฉัน', qManagerMismatch: 'หัวหน้างานไม่เหมาะกับฉัน',
     qTeamMismatch: 'ทีมงาน/เพื่อนร่วมงานไม่เหมาะกับฉัน', qWorklifeMismatch: 'Work-life balance ไม่เหมาะกับฉัน',
@@ -914,6 +931,7 @@ const I18N = {
     etLogoUploadPh: '＋ Tap to attach company logo', etNameLabel: 'Company name',
     etNote: 'Note: saving your edit keeps the company\'s current status (published/hidden) and all existing comments stay intact.',
     etSaveBtn: 'Save Changes', errCompanyNameRequired: 'Please enter a company name',
+    ctTitleHint: '(English only)', errTitleEnglishOnly: 'Company name must be in English only',
     uploadFailToast: 'Upload failed', savingText: 'Saving...',
     dcTitle: 'Request Company Deletion', dcDesc: 'Your request will be sent to our team for review before the company is actually deleted. All comments and data stay intact until the request is approved.',
     dcReasonLabel: 'Reason for deletion', dcReasonDuplicate: 'Duplicate of an existing company',
@@ -927,10 +945,13 @@ const I18N = {
     joinMainReasonLabel: 'What made you apply to / join this company?',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?',
     requiredMark: '*', yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
-    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits', qBrandReputation: 'Company/brand reputation',
-    qGrowthOpportunity: 'Growth/learning opportunity', qChallengingWork: 'Challenging work / uses my skills',
-    qCultureTeam: 'Good culture / good team', qLocationFlexibility: 'Location/remote flexibility',
-    confidenceScoreLabel: 'Do you still think it was the right choice?', confidenceScoreHint: '(1=job hunting now ... 5=absolutely yes!)',
+    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits & employee perks', qBrandReputation: 'Company reputation',
+    qGrowthOpportunity: 'Growth & learning opportunities', qChallengingWork: 'I can use my skills to the fullest',
+    qCultureTeam: 'Good culture & people', qLocationFlexibility: 'Flexible ways of working',
+    confidenceScoreLabel: 'Was joining this company the right choice for you?',
+    scoreDesc1: "Not anymore. I'm looking for a new job.", scoreDesc2: "I'm starting to have doubts.",
+    scoreDesc3: "It's okay. I'm still figuring it out.", scoreDesc4: 'Yes, definitely.',
+    scoreDesc5: "Absolutely. I still love working here.", errAnswerRequired: 'Please answer this question',
     qSalaryMismatch: 'Salary/benefits didn\'t meet expectations', qNoGrowth: 'No growth opportunity',
     qCultureMismatch: 'Culture didn\'t fit me', qManagerMismatch: 'Manager didn\'t fit me',
     qTeamMismatch: 'Team/colleagues didn\'t fit me', qWorklifeMismatch: 'Work-life balance didn\'t fit me',
@@ -1042,6 +1063,15 @@ function showToast(msg){
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+// เช็คฝั่ง client ก่อนยิง API — ต้อง sync กับ isEnglishOnlyName() ฝั่ง appscript.txt และ index.txt เป๊ะๆ
+function isEnglishOnlyName(str){
+  const s = String(str || '').trim();
+  if(!s) return false;
+  if(!/^[a-zA-Z0-9 &,.\-'()]+$/.test(s)) return false;
+  if(!/[a-zA-Z0-9]/.test(s)) return false;
+  return true;
 }
 
 function setBtnLoading(btn, loading, loadingLabel){
@@ -1623,14 +1653,21 @@ const LEAVE_QUESTION_LABELS = { leave_salary_benefits_mismatch:'qSalaryMismatch'
 
 function ynuRowHTML(fieldId, labelKey, prefill){
   const v = prefill || '';
-  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:10px;">
-    <div style="font-size:13px;margin-bottom:6px;">${t18n(labelKey)}</div>
+  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:14px;">
+    <div class="ynu-question-label">${t18n(labelKey)}</div>
     <div class="ynu-btns" style="display:flex;gap:6px;">
       <button type="button" class="ynu-btn${v==='yes'?' selected':''}" data-ynu-value="yes">${t18n('yesOpt')}</button>
       <button type="button" class="ynu-btn${v==='no'?' selected':''}" data-ynu-value="no">${t18n('noOpt')}</button>
       <button type="button" class="ynu-btn${v==='unsure'?' selected':''}" data-ynu-value="unsure">${t18n('unsureOpt')}</button>
     </div>
+    <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
   </div>`;
+}
+
+function scoreRowHTML(n, score){
+  return `<button type="button" class="score-vertical-row${String(score)===String(n)?' selected':''}" data-score-value="${n}">
+    <span class="score-num">${n}</span><span class="score-desc">${t18n('scoreDesc'+n)}</span>
+  </button>`;
 }
 
 function buildVoteQuestionsHTML(side, prefillData){
@@ -1638,20 +1675,27 @@ function buildVoteQuestionsHTML(side, prefillData){
   if(side === 'A'){
     const rows = JOIN_QUESTIONS.map(f => ynuRowHTML(f, JOIN_QUESTION_LABELS[f], prefillData[f])).join('');
     const score = prefillData.join_confidence_score || '';
-    const scoreBtns = [1,2,3,4,5].map(n => `<button type="button" class="score-btn${String(score)===String(n)?' selected':''}" data-score-value="${n}">${n}</button>`).join('');
+    const scoreRows = [1,2,3,4,5].map(n => scoreRowHTML(n, score)).join('');
     return `${rows}
-      <div class="ynu-row" style="margin-bottom:6px;">
-        <div style="font-size:13px;margin-bottom:6px;">${t18n('confidenceScoreLabel')} <span class="field-hint">${t18n('confidenceScoreHint')}</span></div>
-        <div id="confidenceScoreBtns" style="display:flex;gap:6px;">${scoreBtns}</div>
+      <div class="ynu-row" data-ynu-field="join_confidence_score" style="margin-bottom:6px;">
+        <div class="ynu-question-label">${t18n('confidenceScoreLabel')}</div>
+        <div id="confidenceScoreBtns">${scoreRows}</div>
+        <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
       </div>`;
   }
   const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
   return `${rows}
     <div class="ynu-row" style="margin-bottom:6px;">
       <label style="display:block;font-size:13px;margin-bottom:6px;">${t18n('leaveImprovementLabel')}</label>
-      <textarea id="leaveImprovementInput" maxlength="300" rows="2" placeholder="${t18n('leaveImprovementPh')}"
+      <textarea id="leaveImprovementInput" maxlength="5000" rows="2" placeholder="${t18n('leaveImprovementPh')}"
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
     </div>`;
+}
+
+function clearYnuMissing(row){
+  row.classList.remove('ynu-missing');
+  const hint = row.querySelector('.ynu-missing-hint');
+  if(hint) hint.style.display = 'none';
 }
 
 function bindVoteQuestionToggles(){
@@ -1660,12 +1704,14 @@ function bindVoteQuestionToggles(){
       const row = btn.closest('.ynu-row');
       row.querySelectorAll('.ynu-btn').forEach(b=> b.classList.remove('selected'));
       btn.classList.add('selected');
+      clearYnuMissing(row);
     });
   });
-  document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(btn=>{
+  document.querySelectorAll('#confidenceScoreBtns .score-vertical-row').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(b=> b.classList.remove('selected'));
+      document.querySelectorAll('#confidenceScoreBtns .score-vertical-row').forEach(b=> b.classList.remove('selected'));
       btn.classList.add('selected');
+      clearYnuMissing(btn.closest('.ynu-row'));
     });
   });
 }
@@ -1678,13 +1724,40 @@ function collectVoteQuestionAnswers(side){
     answers[field] = selected ? selected.dataset.ynuValue : '';
   });
   if(side === 'A'){
-    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-btn.selected');
+    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-vertical-row.selected');
     answers.join_confidence_score = scoreBtn ? scoreBtn.dataset.scoreValue : '';
   } else {
     const improvementEl = document.getElementById('leaveImprovementInput');
     answers.leave_improvement_suggestion = improvementEl ? improvementEl.value.trim() : '';
   }
   return answers;
+}
+
+// เช็คว่าทุกข้อตอบครบหรือยังก่อนอนุญาตให้เซฟ (ใช้ตอนแก้ไข My Comment เหมือนกับตอนโหวตใหม่ที่ index.html)
+function validateVoteQuestionsAnswered(scopeSelector){
+  let firstMissingRow = null;
+  document.querySelectorAll(`${scopeSelector} .ynu-row[data-ynu-field]`).forEach(row=>{
+    const field = row.dataset.ynuField;
+    let answered;
+    if(field === 'join_confidence_score'){
+      answered = !!row.querySelector('#confidenceScoreBtns .score-vertical-row.selected');
+    } else {
+      answered = !!row.querySelector('.ynu-btn.selected');
+    }
+    if(answered){
+      clearYnuMissing(row);
+    } else {
+      row.classList.add('ynu-missing');
+      const hint = row.querySelector('.ynu-missing-hint');
+      if(hint) hint.style.display = 'block';
+      if(!firstMissingRow) firstMissingRow = row;
+    }
+  });
+  if(firstMissingRow){
+    firstMissingRow.scrollIntoView({ behavior:'smooth', block:'center' });
+    return false;
+  }
+  return true;
 }
 
 async function loadMyComments(){
@@ -1742,6 +1815,7 @@ document.getElementById('ecSaveBtn').addEventListener('click', async ()=>{
 
   const mainReason = document.getElementById('ecMainReasonInput').value.trim();
   if(!mainReason){ errEl.textContent = t18n('errMainReasonRequired'); errEl.style.display = 'block'; return; }
+  if(!validateVoteQuestionsAnswered('#ecQuestionsWrap')){ return; }
 
   const payload = Object.assign({
     session_token: STATE.session.session_token,
@@ -1805,6 +1879,7 @@ document.getElementById('etSaveBtn').addEventListener('click', async ()=>{
 
   const companyName = document.getElementById('etTitle').value.trim();
   if(!companyName){ errEl.textContent = t18n('errCompanyNameRequired'); errEl.style.display = 'block'; return; }
+  if(!isEnglishOnlyName(companyName)){ errEl.textContent = t18n('errTitleEnglishOnly'); errEl.style.display = 'block'; return; }
 
   const payload = {
     session_token: STATE.session.session_token,
@@ -2293,7 +2368,9 @@ async function doCancelSubscription(){
 
 /* ---------- Init ---------- */
 async function initProfilePage(){
+  const initLoader = document.getElementById('pageInitLoading');
   if(!isLoggedIn()){
+    initLoader.style.display = 'none';
     document.getElementById('lockedState').style.display = 'block';
     return;
   }
@@ -2303,6 +2380,7 @@ async function initProfilePage(){
   fillBirthdaySelects();
 
   const res = await api('getMyProfile', { session_token: STATE.session.session_token });
+  initLoader.style.display = 'none';
   if(!res.success){
     // บั๊กที่เจอ: เดิม logout() + ล็อกหน้าทันทีทุกครั้งที่ res.success===false — แต่ api() เองก็คืน
     // success:false เหมือนกันตอนเน็ต/Apps Script สะดุดจนคำขอไม่สำเร็จ (ไม่ใช่ backend ตอบมาว่า session ไม่ถูกต้องจริง)
@@ -2313,6 +2391,7 @@ async function initProfilePage(){
       document.getElementById('loadErrorState').style.display = 'block';
       document.getElementById('loadErrorRetryBtn').addEventListener('click', ()=>{
         document.getElementById('loadErrorState').style.display = 'none';
+        initLoader.style.display = 'block';
         initProfilePage();
       }, { once:true });
       return;
