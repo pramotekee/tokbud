@@ -3269,7 +3269,7 @@ function shareTopic(topicId){
   const t = STATE.topics.find(x=> x.company_id === topicId);
   if(!t) return;
   const url = buildShareUrl(topicId);
-  const teaser = `${joinCaption(t)} หรือ ${leaveCaption(t)} — มาดูว่าคนที่เคยทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง 👀`;
+  const teaser = `${joinCaption(t)} หรือ ${leaveCaption(t)} — มาดูว่าคนที่มีประสบการณ์ทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง 👀`;
   // P0-fix (share order mismatch): เดิมส่ง url แยก field ให้ navigator.share() ทำให้แอปปลายทาง (เช่น LINE)
   // เป็นคนตัดสินใจเองว่าจะเรียงข้อความ/ลิงก์ยังไงตอนแปะ (บางแอปดันลิงก์ขึ้นก่อนข้อความ) เราคุมลำดับไม่ได้เลย
   // -> ฝังลิงก์ไว้ท้าย text เป็นก้อนเดียวกันเหมือนฝั่ง clipboard (desktop) ด้านล่าง แล้วไม่ส่ง url แยกอีกต่อไป
