@@ -777,6 +777,7 @@ const I18N = {
     lockedDesc: 'เข้าสู่ระบบที่หน้าแรกเพื่อจัดการโปรไฟล์ของคุณ', goHomeBtn: 'ไปหน้าแรก',
     loadErrorTitle: 'โหลดโปรไฟล์ไม่สำเร็จ', loadErrorDesc: 'อาจเป็นเพราะเน็ตหรือเซิร์ฟเวอร์สะดุดชั่วคราว ลองใหม่อีกครั้งได้เลย',
     statTopicsLabel: 'หัวข้อที่สร้างทั้งหมด', statVotersLabel: 'คนร่วมโหวตทั้งหมด',
+    statusActive: 'กำลังเผยแพร่', statusInactive: 'ซ่อนอยู่', mvTotalLabel: 'ความคิดเห็น',
     dashOverviewTitle: 'ภาพรวมคนที่มาร่วมโหวตหัวข้อของคุณ', loadingText: 'กำลังโหลด...',
     myTypeLinkText: '✨ My Type — ดูตัวตนของฉัน',
     createBtn: '＋ สร้างบริษัท', sortLatest: 'ล่าสุด', sortPopular: 'ยอดนิยม',
@@ -859,6 +860,7 @@ const I18N = {
     lockedDesc: 'Log in on the home page to manage your profile.', goHomeBtn: 'Go to Home',
     loadErrorTitle: 'Couldn\'t load profile', loadErrorDesc: 'This may be a temporary network or server hiccup. Please try again.',
     statTopicsLabel: 'Topics Created', statVotersLabel: 'Total Voters',
+    statusActive: 'Published', statusInactive: 'Hidden', mvTotalLabel: 'comments',
     dashOverviewTitle: 'Overview of people voting on your topics', loadingText: 'Loading...',
     myTypeLinkText: '✨ My Type — See who I am',
     createBtn: '＋ Create Company', sortLatest: 'Latest', sortPopular: 'Popular',
@@ -978,6 +980,9 @@ function setLang(lang){
     renderChargeFailedBanner();
     renderBillingHistory(STATE.billingHistory || []);
   }
+  // เดียวกัน: การ์ด My Company (สถานะ/label ความคิดเห็น) เป็น dynamic HTML ผ่าน t18n() เหมือนกัน
+  // แต่เดิมไม่ได้ re-render ตรงนี้ เลยค้างภาษาเดิมตอนสลับ TH/EN (บั๊กที่ Pop เจอ — แก้ต้นตอตรงนี้)
+  if(STATE.myTopics && STATE.myTopics.length) renderMyTopics();
 }
 document.querySelectorAll('.lang-toggle button').forEach(b=>{
   b.addEventListener('click', ()=> setLang(b.dataset.lang));
@@ -1432,7 +1437,11 @@ document.getElementById('sortToggle').addEventListener('click', (e)=>{
 
 // TOKBUD: บริษัทมีแค่ 2 สถานะ (active/inactive) ไม่มี pending/scheduled/expired เหมือน WEZIDE เดิม
 // เพราะสร้างบริษัทแล้วเผยแพร่ทันที ไม่มีขั้นตอนตรวจสอบ/กำหนดวันเริ่ม-สิ้นสุดเผยแพร่
-const STATUS_LABEL = { active:'กำลังเผยแพร่', inactive:'ซ่อนอยู่' };
+// เป็นฟังก์ชัน ไม่ใช่ const object แบบเดิม เพราะต้องอ่านภาษาปัจจุบัน ณ ตอน render (ไม่ใช่ตอนไฟล์โหลดครั้งแรก)
+// ถึงจะสลับ TH/EN แล้วขึ้นถูกภาษาทันที (ดูจุดที่เรียก renderMyTopics() ใหม่ใน setLang() ด้านล่าง)
+function getStatusLabel(status){
+  return status === 'active' ? t18n('statusActive') : t18n('statusInactive');
+}
 
 function renderMyTopics(){
   const el = document.getElementById('myTopicsList');
@@ -1451,13 +1460,19 @@ function renderMyTopics(){
     return new Date(b.created_at) - new Date(a.created_at);
   });
   el.innerHTML = sorted.map(t=>{
-    const statusClass = STATUS_LABEL[t.status] ? t.status : 'inactive';
-    const statusText = STATUS_LABEL[t.status] || t.status;
+    const statusClass = (t.status === 'active' || t.status === 'inactive') ? t.status : 'inactive';
+    const statusText = getStatusLabel(statusClass);
     const toggleBtn = t.status === 'inactive'
       ? `<button class="mt-action-btn publish" data-action="publish" data-topic="${t.company_id}">Publish</button>`
       : `<button class="mt-action-btn hide" data-action="hide" data-topic="${t.company_id}">Hide</button>`;
     const joinPct = t.total_votes > 0 ? Math.round(t.join_count / t.total_votes * 100) : 0;
     const leavePct = t.total_votes > 0 ? 100 - joinPct : 0;
+    // category เก็บเป็น string comma-separated เดียว (multi-select, ดู data model ใน handoff) — แยกเป็น
+    // เม็ด pill ทีละหมวดตอนแสดงผล ไม่ใช่ยัดทั้งก้อนสตริงลง pill เดียวเหมือนก่อนหน้านี้ (อ่านยาก/ดูรก)
+    const catPillsHtml = t.category
+      ? t.category.split(',').map(c => c.trim()).filter(Boolean)
+          .map(c => `<span class="cat-tag">${escapeHtml(c)}</span>`).join('')
+      : '';
     return `
       <div class="my-topic-card" style="--card-color:${t.card_color || 'var(--primary)'}">
         <a class="mt-link" href="index.html?topic=${t.company_id}">
@@ -1465,15 +1480,13 @@ function renderMyTopics(){
             <div class="mt-title">${escapeHtml(t.company_name)}</div>
             <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
           </div>
-          <div class="mt-meta">
-            ${t.category ? `<span class="cat-tag">${escapeHtml(t.category)}</span>` : ''}
-          </div>
+          <div class="mt-meta">${catPillsHtml}</div>
           <div class="mt-bar">
             <span class="a" style="width:${joinPct}%"></span>
             <span class="b" style="width:${leavePct}%"></span>
           </div>
           <div class="mt-votes">
-            <span class="mv-total">${t.total_votes} โหวต (100%)</span>
+            <span class="mv-total">${t.total_votes} ${escapeHtml(t18n('mvTotalLabel'))} (100%)</span>
             <span class="mv-row"><i class="mv-dot" style="background:var(--side-a)"></i>${escapeHtml(t18n('joinBtnLabel'))} (${joinPct}%)</span>
             <span class="mv-row"><i class="mv-dot" style="background:var(--side-b)"></i>${escapeHtml(t18n('leaveBtnLabel'))} (${leavePct}%)</span>
           </div>
