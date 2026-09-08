@@ -590,8 +590,9 @@ function avatarHtml(user, sizeClass){
   const initial = user.username ? user.username.charAt(0).toUpperCase() : '?';
   const hasImg = !!user.profile_image_url;
   const clickable = hasImg ? 'clickable' : '';
+  // เผื่อรูปโหลดพลาดชั่วคราว (เน็ต/Drive สะดุด) ให้ swap กลับไปเป็นตัวอักษรย่อแทนที่จะเห็น broken-image icon ค้าง
   const img = hasImg
-    ? `<img src="${escapeHtml(user.profile_image_url)}" alt="">`
+    ? `<img src="${escapeHtml(user.profile_image_url)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${escapeHtml(initial)}'}))">`
     : initial;
   const dataImg = hasImg ? ` data-img="${escapeHtml(user.profile_image_url)}"` : '';
   return `<div class="avatar ${clickable} ${sizeClass||''}"${dataImg}>${img}</div>`;
