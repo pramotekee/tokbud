@@ -337,6 +337,17 @@
   .ynu-btn.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
   .score-btn{ width:34px; height:34px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
   .score-btn.selected{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); font-weight:700; }
+  /* หัวข้อคำถาม Yes/No/Not sure ทั้ง 8 ข้อ (ทั้งฝั่ง Join/Leave) ให้ตัวหนา+สีเข้ม เหมือนกับ "I work here because" */
+  .ynu-question-label{ font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  /* กรอบแดงล้อมข้อที่ยังไม่ได้ตอบ เวลากด Confirm แล้วตอบไม่ครบ */
+  .ynu-row.ynu-missing{ border:1.5px solid #E5484D; border-radius:10px; padding:8px; margin-left:-8px; margin-right:-8px; }
+  .ynu-missing-hint{ display:block; font-size:11.5px; color:#E5484D; font-weight:600; margin-top:5px; }
+  /* scale 1-5 แนวดิ่ง: เลขวงกลม + คำอธิบายในแถวเดียวกัน */
+  .score-vertical-row{ display:flex; align-items:center; gap:10px; padding:9px 10px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:7px; cursor:pointer; background:var(--surface); text-align:left; width:100%; }
+  .score-vertical-row .score-num{ flex:0 0 30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; border:1.5px solid var(--line); color:var(--text); background:var(--bg); }
+  .score-vertical-row .score-desc{ font-size:12.5px; color:var(--text); line-height:1.4; }
+  .score-vertical-row.selected{ border-color:var(--accent); background:rgba(245,209,73,0.12); }
+  .score-vertical-row.selected .score-num{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); }
   .topic-card .cat-tag{ background:var(--card-color, var(--primary)); }
   .topic-card .tag-chip{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); color:var(--text-muted); }
 
@@ -938,7 +949,7 @@
       <input type="file" accept="image/*" id="coverFile" style="display:none;">
     </div>
 
-    <div class="field"><label><span data-i18n="ctTitleLabel">ชื่อบริษัท</span> <span class="req-mark" data-i18n="requiredMark">*</span></label><textarea id="ctTitle" rows="1" placeholder="เช่น บริษัท ABC จำกัด" data-i18n-ph="ctTitlePh"></textarea></div>
+    <div class="field"><label><span data-i18n="ctTitleLabel">ชื่อบริษัท</span> <span class="req-mark" data-i18n="requiredMark">*</span> <span class="field-hint" data-i18n="ctTitleHint">(English only)</span></label><textarea id="ctTitle" rows="1" placeholder="e.g. ABC Corporation" data-i18n-ph="ctTitlePh"></textarea></div>
     <div class="field"><label><span data-i18n="ctDescLabel">รายละเอียด</span> <span class="field-hint" data-i18n="optionalHint2">(ไม่บังคับ)</span></label><textarea id="ctDescription" rows="3" placeholder="อธิบายเพิ่มเติมเกี่ยวกับบริษัท..." data-i18n-ph="ctDescPh"></textarea></div>
 
     <div class="field">
@@ -998,15 +1009,16 @@
 
 <!-- ===== Vote Confirm Modal (ยืนยันก่อนโหวตจริง แทนการโหวตทันทีที่กด) ===== -->
 <div class="modal-overlay" id="voteConfirmModal">
-  <div class="modal-box" style="text-align:center;">
+  <div class="modal-box" id="voteConfirmModalBox" style="text-align:center;">
     <button class="modal-close" data-close="voteConfirmModal" style="margin-left:auto;display:block;">✕</button>
     <h3 style="margin:0 0 10px;" data-i18n="voteConfirmTitle">ยืนยันการเลือก</h3>
-    <p id="voteConfirmText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 22px;line-height:1.6;"></p>
-    <div id="voteCommentWrap" style="display:none;text-align:left;margin:-10px 0 18px;">
+    <p id="voteConfirmText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.6;"></p>
+    <div id="voteAnonymityNotice" style="display:none;text-align:left;font-size:12.5px;color:var(--text-muted);line-height:1.6;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 18px;background:var(--bg);" data-i18n="voteAnonymityNotice"></div>
+    <div id="voteCommentWrap" style="display:none;text-align:left;margin:-4px 0 18px;">
       <label id="voteCommentLabel" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;"></label>
-      <textarea id="voteCommentInput" maxlength="300" rows="3" placeholder=""
+      <textarea id="voteCommentInput" maxlength="5000" rows="3" placeholder=""
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;"></textarea>
-      <div id="voteCommentCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">0/300</div>
+      <div id="voteCommentCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">0/5000</div>
     </div>
     <div id="voteQuestionsWrap" style="text-align:left;margin:0 0 18px;"></div>
     <div style="display:flex;gap:10px;" id="voteConfirmActions">
@@ -1079,7 +1091,7 @@
 <div class="modal-overlay" id="shareMenuModal">
   <div class="modal-box" style="text-align:center;">
     <button class="modal-close" data-close="shareMenuModal" style="margin-left:auto;display:block;">✕</button>
-    <h3 style="margin:0 0 18px;">Share this topic</h3>
+    <h3 style="margin:0 0 18px;">Share this company</h3>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button class="btn btn-primary full-btn" id="shareNowBtn">🔗 Share Link</button>
       <button class="btn btn-ghost full-btn" id="shareQrBtn">📱 Show QR Code</button>
@@ -1092,7 +1104,7 @@
   <div class="modal-box" style="text-align:center;">
     <button class="modal-close" data-close="qrModal" style="margin-left:auto;display:block;">✕</button>
     <h3 id="qrModalTitle" style="margin:0 0 6px;font-size:15.5px;"></h3>
-    <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 16px;">Scan to vote on this topic right away</p>
+    <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 16px;">Scan to see what people really think about working here.</p>
     <div id="qrCodeContainer" class="qr-code-box"></div>
     <div style="display:flex;gap:10px;margin-top:18px;">
       <button class="btn btn-ghost full-btn" id="qrDownloadBtn">⬇️ Download Image</button>
@@ -1115,7 +1127,7 @@ const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbwH_KorLbUReFtJ0q3uxLBcc802Crm451rlc31PlOeBZCL2oL9bUu-Jlb3bJnMBQnlbgw/exec',
   // ใช้เฉพาะตอนสร้างลิงก์ที่คนจะ "เปิดตรงๆ" เอง (เช่น QR code) ต้องตรงกับ FRONTEND_URL ฝั่ง appscript.txt เสมอ
   // ถ้าย้ายโดเมนวันหลัง ต้องแก้ 2 ที่คู่กัน (ที่นี่ + FRONTEND_URL ใน appscript.txt)
-  FRONTEND_URL: 'https://wezide.vercel.app'
+  FRONTEND_URL: 'https://tokbud.vercel.app'
 };
 
 /* ================= I18N (TH ⇄ EN toggle สำหรับข้อความระบบ/static UI) =================
@@ -1155,7 +1167,7 @@ const I18N = {
     createModalTitle: 'สร้างบริษัทใหม่',
     coverImageLabel: 'โลโก้บริษัท (สัดส่วน 9:16)', coverImageHint: '— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด',
     coverUploadPrompt: '＋ แตะเพื่อแนบโลโก้บริษัท',
-    ctTitleLabel: 'ชื่อบริษัท', ctTitlePh: 'เช่น บริษัท ABC จำกัด',
+    ctTitleLabel: 'ชื่อบริษัท', ctTitleHint: '(ภาษาอังกฤษเท่านั้น)', ctTitlePh: 'e.g. ABC Corporation',
     ctDescLabel: 'รายละเอียด', optionalHint2: '(ไม่บังคับ)', ctDescPh: 'อธิบายเพิ่มเติมเกี่ยวกับบริษัท...',
     ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 หมวด', doneBtn: 'เสร็จสิ้น',
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
@@ -1165,10 +1177,13 @@ const I18N = {
     leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?', leaveMainReasonPh: 'พิมพ์คำตอบของคุณ...',
     requiredMark: '*', requiredHint: '(บังคับตอบ)',
     yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
-    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการดี', qBrandReputation: 'ชื่อเสียงบริษัท/แบรนด์',
-    qGrowthOpportunity: 'โอกาสเติบโต/เรียนรู้', qChallengingWork: 'งานท้าทาย/ได้ใช้ทักษะ',
-    qCultureTeam: 'วัฒนธรรมองค์กรดี/ทีมดี', qLocationFlexibility: 'Location/remote flexibility',
-    confidenceScoreLabel: 'ตอนนี้คุณยังคิดว่าตัดสินใจถูกไหม?', confidenceScoreHint: '(1=กำลังหางานใหม่ ... 5=ฉันรักที่นี่มาก)',
+    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการและสิทธิประโยชน์ที่ได้รับดี', qBrandReputation: 'ทำงานที่นี่เพราะชื่อเสียงของบริษัท',
+    qGrowthOpportunity: 'ได้เรียนรู้ พัฒนาตัวเอง และมีโอกาสเติบโต', qChallengingWork: 'ได้ใช้ความรู้ ความสามารถ และทักษะอย่างเต็มที่',
+    qCultureTeam: 'ได้อยู่ในวัฒนธรรมองค์กรและสภาพแวดล้อมที่ดี', qLocationFlexibility: 'มีความยืดหยุ่นเรื่องรูปแบบและวิธีการทำงาน',
+    confidenceScoreLabel: 'มองย้อนกลับไปแล้ว ยังคิดว่าการเลือกมาทำงานที่นี่เป็นการตัดสินใจที่ถูกต้องไหม',
+    scoreDesc1: 'ไม่ใช่แล้ว ตอนนี้กำลังหางานใหม่อยู่', scoreDesc2: 'เริ่มมีข้อสงสัยแล้ว',
+    scoreDesc3: 'ก็โอเคนะ ยังคิดอยู่', scoreDesc4: 'ใช่ ตัดสินใจถูกแน่นอน',
+    scoreDesc5: 'ใช่แน่นอน ยังรักการทำงานที่นี่มาก',
     qSalaryMismatch: 'เงินเดือน/สวัสดิการไม่ตรงคาดหวัง', qNoGrowth: 'ไม่มีโอกาสเติบโต',
     qCultureMismatch: 'วัฒนธรรมองค์กรไม่เหมาะกับฉัน', qManagerMismatch: 'หัวหน้างานไม่เหมาะกับฉัน',
     qTeamMismatch: 'ทีมงาน/เพื่อนร่วมงานไม่เหมาะกับฉัน', qWorklifeMismatch: 'Work-life balance ไม่เหมาะกับฉัน',
@@ -1184,7 +1199,8 @@ const I18N = {
     deleteReasonTesting: 'สร้างเพื่อทดสอบระบบเท่านั้น', deleteReasonOther: 'อื่นๆ', deleteReasonOtherPh: 'ระบุเหตุผล...',
     deletePasscodeLabel: 'กรอก Passcode เพื่อยืนยันการขอลบ', deleteConfirmBtn: 'ส่งคำขอลบ',
     deletePendingMsg: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ',
-    errTitleRequired: 'กรุณากรอกชื่อบริษัท',
+    errTitleRequired: 'กรุณากรอกชื่อบริษัท', errTitleEnglishOnly: 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น',
+    errAnswerRequired: 'กรุณาตอบข้อนี้', voteThankYouMsg: 'ขอบคุณสำหรับความคิดเห็นอันมีค่าที่คุณมอบให้',
     errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 หมวด', errCategoryMax: 'เลือกได้สูงสุด 5 หมวดเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
     feedEmptyState: 'ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
@@ -1203,6 +1219,7 @@ const I18N = {
     okBtn: 'ตกลง', understandBtn: 'เข้าใจแล้ว', savingText: 'กำลังบันทึก...',
     sideLabelPrefix: 'ฝั่ง',
     voteConfirmMsg: 'คุณกำลังเลือก "{side}" เมื่อยืนยันแล้วคำตอบของคุณจะถูกบันทึกทันที และสามารถกลับมาแก้ไขภายหลังได้ที่หน้า "ความคิดเห็นของฉัน"',
+    voteAnonymityNotice: 'ตัวตนของคุณจะถูกเก็บเป็นความลับ คำตอบของคุณไม่ระบุตัวตน 100% เบอร์โทร อีเมล และชื่อผู้ใช้ของคุณจะไม่ถูกแสดงให้ใครเห็น คุณจึงแชร์ประสบการณ์จริงได้อย่างสบายใจ',
     apiErrorMsg: 'Oops! Something went wrong. Please try refreshing and try again.',
     dashGenderTitle: 'เพศ', dashAgeGroupTitle: 'ช่วงอายุ', dashLoadingText: 'กำลังโหลดข้อมูล...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'หากคุณมีความคิดเห็นเพิ่มเติม แบ่งปันมาได้เลย',
@@ -1237,7 +1254,7 @@ const I18N = {
     createModalTitle: 'Create New Company',
     coverImageLabel: 'Company logo (9:16 ratio)', coverImageHint: '— this preview is exactly how it will look in the feed',
     coverUploadPrompt: '＋ Tap to attach a company logo',
-    ctTitleLabel: 'Company Name', ctTitlePh: 'e.g. ABC Corporation',
+    ctTitleLabel: 'Company Name', ctTitleHint: '(English only)', ctTitlePh: 'e.g. ABC Corporation',
     ctDescLabel: 'Description', optionalHint2: '(optional)', ctDescPh: 'Add more detail about the company...',
     ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
@@ -1247,10 +1264,13 @@ const I18N = {
     leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
     requiredMark: '*', requiredHint: '(required)',
     yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
-    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits', qBrandReputation: 'Company/brand reputation',
-    qGrowthOpportunity: 'Growth/learning opportunity', qChallengingWork: 'Challenging work / uses my skills',
-    qCultureTeam: 'Good culture / good team', qLocationFlexibility: 'Location/remote flexibility',
-    confidenceScoreLabel: 'Do you still think it was the right choice?', confidenceScoreHint: '(1=job hunting now ... 5=absolutely yes!)',
+    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits & employee perks', qBrandReputation: 'Company reputation',
+    qGrowthOpportunity: 'Growth & learning opportunities', qChallengingWork: 'I can use my skills to the fullest',
+    qCultureTeam: 'Good culture & people', qLocationFlexibility: 'Flexible ways of working',
+    confidenceScoreLabel: 'Was joining this company the right choice for you?',
+    scoreDesc1: "Not anymore. I'm looking for a new job.", scoreDesc2: "I'm starting to have doubts.",
+    scoreDesc3: "It's okay. I'm still figuring it out.", scoreDesc4: 'Yes, definitely.',
+    scoreDesc5: "Absolutely. I still love working here.",
     qSalaryMismatch: 'Salary/benefits didn\'t meet expectations', qNoGrowth: 'No growth opportunity',
     qCultureMismatch: "Culture didn't fit me", qManagerMismatch: "Manager didn't fit me",
     qTeamMismatch: "Team/colleagues didn't fit me", qWorklifeMismatch: "Work-life balance didn't fit me",
@@ -1266,7 +1286,8 @@ const I18N = {
     deleteReasonTesting: 'Created for testing only', deleteReasonOther: 'Other', deleteReasonOtherPh: 'Please specify...',
     deletePasscodeLabel: 'Enter your Passcode to confirm this request', deleteConfirmBtn: 'Submit delete request',
     deletePendingMsg: 'A delete request is already pending review',
-    errTitleRequired: 'Please enter a company name',
+    errTitleRequired: 'Please enter a company name', errTitleEnglishOnly: 'Company name must be in English only',
+    errAnswerRequired: 'Please answer this question', voteThankYouMsg: 'Thank you for the valuable feedback you shared with us.',
     errCategoryRequired: 'Please select at least 1 category', errCategoryMax: 'You can select up to 5 only', errTagRequired: 'Please add at least 1 tag',
     feedEmptyState: "No results yet<br>Try a different category or search term",
     errCoverRequired: 'Please attach a company logo before creating the company',
@@ -1281,10 +1302,11 @@ const I18N = {
     errSignupProvinceRequired: 'Please select a province', myAccountFallback: 'My Account', loggedOutToast: 'Logged out',
     imageLoadFailToast: 'Failed to load image, please try uploading again', imageUploadFailToast: 'Image upload failed',
     loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
-    voteConfirmTitle: 'Confirm your choice', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
+    voteConfirmTitle: 'Give my comment', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
     okBtn: 'OK', understandBtn: 'Got it', savingText: 'Saving...',
     sideLabelPrefix: 'Side',
-    voteConfirmMsg: 'You are choosing "{side}". Once confirmed, your answer is saved immediately, and you can come back to edit it anytime from "My Comment".',
+    voteConfirmMsg: 'Once confirmed, your answer is saved immediately and you can come back to edit it anytime from "My Comment".',
+    voteAnonymityNotice: 'Your identity stays private. Your answers are 100% anonymous. Your phone number, email, and username are never shown, so you can share your honest experience freely.',
     apiErrorMsg: 'Oops! Something went wrong. Please try refreshing and try again.',
     dashGenderTitle: 'Gender', dashAgeGroupTitle: 'Age', dashLoadingText: 'Loading...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'Tell us more about your answer...',
@@ -1397,6 +1419,15 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
   }finally{
     clearTimeout(timeoutId);
   }
+}
+
+// เช็คฝั่ง client ก่อนยิง API — ต้อง sync กับ isEnglishOnlyName() ฝั่ง appscript.txt เป๊ะๆ (a-z A-Z 0-9 space & , . - ' ())
+function isEnglishOnlyName(str){
+  const s = String(str || '').trim();
+  if(!s) return false;
+  if(!/^[a-zA-Z0-9 &,.\-'()]+$/.test(s)) return false;
+  if(!/[a-zA-Z0-9]/.test(s)) return false;
+  return true;
 }
 
 function showToast(msg, durationMs){
@@ -2075,6 +2106,7 @@ document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
   const tags = ['ctTag1','ctTag2','ctTag3','ctTag4','ctTag5'].map(id => document.getElementById(id).value.trim());
 
   if(!companyName){ errEl.textContent = t('errTitleRequired'); errEl.style.display = 'block'; return; }
+  if(!isEnglishOnlyName(companyName)){ errEl.textContent = t('errTitleEnglishOnly'); errEl.style.display = 'block'; return; }
   if(!categoryOptions.length){ errEl.textContent = t('errCategoryRequired'); errEl.style.display = 'block'; return; }
   if(categoryOptions.length > 5){ errEl.textContent = t('errCategoryMax'); errEl.style.display = 'block'; return; }
   if(!tags.some(v => v)){ errEl.textContent = t('errTagRequired'); errEl.style.display = 'block'; return; }
@@ -2202,7 +2234,7 @@ async function loadHomeFeed(){
 function renderResultCount(){
   const el = document.getElementById('resultCount');
   // hardcode EN ตายตัว (ไม่ผูก TH/EN toggle) ตาม decision ของ Pop เหมือนข้อความ system อื่นๆ
-  el.innerHTML = STATE.totalCount > 0 ? `Found <b>${STATE.totalCount}</b> topics` : '';
+  el.innerHTML = STATE.totalCount > 0 ? `Found <b>${STATE.totalCount}</b> ${STATE.totalCount === 1 ? 'company' : 'companies'}` : '';
 }
 
 function renderPagination(){
@@ -2292,7 +2324,8 @@ function renderFeed(){
 // การ์ดย่อแค่รูป(หรือ text แทนรูปถ้าไม่มี) + ชื่อหัวข้อบรรทัดเล็กใต้รูป กดแล้วเปิด full card เดิม (topicCardHTML)
 // เป็น modal ลอยทับจอ — ไม่ก็อปโครงสร้างการ์ดเต็มมาเขียนซ้ำ ใช้ของเดิมตรงๆ เหมือนที่ Line view ทำ
 function carouselItemHTML(t){
-  const hasImg = t.topic_type === 'image' && t.image_url;
+  // TOKBUD ไม่มี field topic_type แล้ว (ของเดิมจาก WEZIDE ที่รองรับ topic แบบไม่มีรูป) ทุกบริษัทมีโลโก้เสมอ เช็คแค่ image_url พอ
+  const hasImg = !!t.image_url;
   const color = t.card_color || 'var(--primary)';
   const thumbHTML = hasImg
     ? `<img src="${t.image_url}" alt="${escapeHtml(t.company_name)}" loading="lazy">`
@@ -2894,19 +2927,42 @@ function pickLang(msg){
 }
 
 /* popup ข้อความเดียวปุ่มเดียว ใช้แทน toast ทุกจุดที่เกี่ยวกับการโหวต (สำเร็จ/error/ห้ามโหวตหัวข้อตัวเอง ฯลฯ) */
+// บั๊กที่แก้: เดิมฟังก์ชันนี้ล้างแค่ voteCommentWrap แต่ไม่ล้าง voteQuestionsWrap (คำถาม Yes/No/Not sure 8 ข้อ) เลย
+// พอ error/success popup โผล่มาทับ modal เดิมที่ scroll ลงไปอยู่ท้ายๆ ฟอร์มแล้ว (จากการตอบคำถาม) ข้อความ error/success
+// จริงๆ ที่อยู่บนสุดของ modal เลยหลุดจอไปเงียบๆ เห็นแต่ปุ่ม "Got it" ลอยอยู่ท้ายคำถามเดิม ดูเหมือนไม่มีอะไรเกิดขึ้น
+// -> ล้าง voteQuestionsWrap ทิ้งด้วย และ scroll modal กลับขึ้นบนสุดทุกครั้งที่โชว์ popup นี้
 function showInfoPopup(message, btnLabel){
   document.getElementById('voteConfirmText').textContent = message;
+  document.getElementById('voteAnonymityNotice').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์กล่อง anonymity
   document.getElementById('voteCommentWrap').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์ช่องคอมเมนต์
+  document.getElementById('voteQuestionsWrap').innerHTML = ''; // ล้างคำถาม 8 ข้อทิ้ง กันข้อความ popup หลุดจอเวลา modal ถูก scroll ลงไปก่อนหน้า
   document.getElementById('voteConfirmActions').innerHTML =
     `<button class="btn btn-primary full-btn" id="voteOkBtn">${btnLabel || t('okBtn')}</button>`;
   document.getElementById('voteOkBtn').addEventListener('click', ()=> closeModal('voteConfirmModal'));
   openModal('voteConfirmModal');
+  const box = document.getElementById('voteConfirmModalBox');
+  if(box) box.scrollTop = 0;
+}
+
+// popup แยกเฉพาะตอนโหวตสำเร็จจากฟีดหน้า home (index.html) — ข้อความขอบคุณตายตัว ไม่ใช้ res.message จาก backend
+// กดปุ่มแล้วแค่ปิด modal เฉยๆ พอ (อยู่หน้า home อยู่แล้ว ไม่ต้อง redirect ไปไหน)
+function showVoteSuccessPopup(){
+  document.getElementById('voteConfirmText').textContent = t18n('voteThankYouMsg');
+  document.getElementById('voteAnonymityNotice').style.display = 'none';
+  document.getElementById('voteCommentWrap').style.display = 'none';
+  document.getElementById('voteQuestionsWrap').innerHTML = '';
+  document.getElementById('voteConfirmActions').innerHTML =
+    `<button class="btn btn-primary full-btn" id="voteOkBtn">${t18n('okBtn')}</button>`;
+  document.getElementById('voteOkBtn').addEventListener('click', ()=> closeModal('voteConfirmModal'));
+  openModal('voteConfirmModal');
+  const box = document.getElementById('voteConfirmModalBox');
+  if(box) box.scrollTop = 0;
 }
 
 // นับตัวอักษรวิ่งตาม input event มุมขวาล่างของ textarea — maxlength="300" กันพิมพ์เกินตั้งแต่ client แล้ว
 // แต่ยังโชว์ตัวนับให้ user เห็นความคืบหน้า element เป็น static (อยู่ใน DOM ตลอด ไม่โดน re-render ทิ้ง) จึง bind ครั้งเดียวพอ
 document.getElementById('voteCommentInput').addEventListener('input', (e)=>{
-  document.getElementById('voteCommentCounter').textContent = `${e.target.value.length}/300`;
+  document.getElementById('voteCommentCounter').textContent = `${e.target.value.length}/5000`;
 });
 
 function handleVoteClick(topicId, side, btnEl){
@@ -2920,13 +2976,16 @@ function handleVoteClick(topicId, side, btnEl){
   pendingVoteConfirm = { topicId, side, btnEl };
 
   document.getElementById('voteConfirmText').textContent = t18n('voteConfirmMsg').replace('{side}', side === 'A' ? joinCaption(t||{}) : leaveCaption(t||{}));
+  const anonNotice = document.getElementById('voteAnonymityNotice');
+  anonNotice.textContent = t18n('voteAnonymityNotice');
+  anonNotice.style.display = 'block';
 
   const commentInput = document.getElementById('voteCommentInput');
   const commentLabel = document.getElementById('voteCommentLabel');
   commentInput.value = '';
   commentLabel.innerHTML = `${t18n(side === 'A' ? 'joinMainReasonLabel' : 'leaveMainReasonLabel')} <span class="req-mark">${t18n('requiredMark')}</span>`;
   commentInput.placeholder = t18n(side === 'A' ? 'joinMainReasonPh' : 'leaveMainReasonPh');
-  document.getElementById('voteCommentCounter').textContent = '0/300';
+  document.getElementById('voteCommentCounter').textContent = '0/5000';
   document.getElementById('voteCommentWrap').style.display = 'block';
 
   document.getElementById('voteQuestionsWrap').innerHTML = buildVoteQuestionsHTML(side);
@@ -2952,14 +3011,21 @@ const LEAVE_QUESTION_LABELS = { leave_salary_benefits_mismatch:'qSalaryMismatch'
 
 function ynuRowHTML(fieldId, labelKey, prefill){
   const v = prefill || '';
-  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:10px;">
-    <div style="font-size:13px;margin-bottom:6px;">${t18n(labelKey)}</div>
+  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:14px;">
+    <div class="ynu-question-label">${t18n(labelKey)}</div>
     <div class="ynu-btns" style="display:flex;gap:6px;">
       <button type="button" class="ynu-btn${v==='yes'?' selected':''}" data-ynu-value="yes">${t18n('yesOpt')}</button>
       <button type="button" class="ynu-btn${v==='no'?' selected':''}" data-ynu-value="no">${t18n('noOpt')}</button>
       <button type="button" class="ynu-btn${v==='unsure'?' selected':''}" data-ynu-value="unsure">${t18n('unsureOpt')}</button>
     </div>
+    <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
   </div>`;
+}
+
+function scoreRowHTML(n, score){
+  return `<button type="button" class="score-vertical-row${String(score)===String(n)?' selected':''}" data-score-value="${n}">
+    <span class="score-num">${n}</span><span class="score-desc">${t18n('scoreDesc'+n)}</span>
+  </button>`;
 }
 
 function buildVoteQuestionsHTML(side, prefillData){
@@ -2967,20 +3033,27 @@ function buildVoteQuestionsHTML(side, prefillData){
   if(side === 'A'){
     const rows = JOIN_QUESTIONS.map(f => ynuRowHTML(f, JOIN_QUESTION_LABELS[f], prefillData[f])).join('');
     const score = prefillData.join_confidence_score || '';
-    const scoreBtns = [1,2,3,4,5].map(n => `<button type="button" class="score-btn${String(score)===String(n)?' selected':''}" data-score-value="${n}">${n}</button>`).join('');
+    const scoreRows = [1,2,3,4,5].map(n => scoreRowHTML(n, score)).join('');
     return `${rows}
-      <div class="ynu-row" style="margin-bottom:6px;">
-        <div style="font-size:13px;margin-bottom:6px;">${t18n('confidenceScoreLabel')} <span class="field-hint">${t18n('confidenceScoreHint')}</span></div>
-        <div id="confidenceScoreBtns" style="display:flex;gap:6px;">${scoreBtns}</div>
+      <div class="ynu-row" data-ynu-field="join_confidence_score" style="margin-bottom:6px;">
+        <div class="ynu-question-label">${t18n('confidenceScoreLabel')}</div>
+        <div id="confidenceScoreBtns">${scoreRows}</div>
+        <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
       </div>`;
   }
   const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
   return `${rows}
     <div class="ynu-row" style="margin-bottom:6px;">
       <label style="display:block;font-size:13px;margin-bottom:6px;">${t18n('leaveImprovementLabel')}</label>
-      <textarea id="leaveImprovementInput" maxlength="300" rows="2" placeholder="${t18n('leaveImprovementPh')}"
+      <textarea id="leaveImprovementInput" maxlength="5000" rows="2" placeholder="${t18n('leaveImprovementPh')}"
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
     </div>`;
+}
+
+function clearYnuMissing(row){
+  row.classList.remove('ynu-missing');
+  const hint = row.querySelector('.ynu-missing-hint');
+  if(hint) hint.style.display = 'none';
 }
 
 function bindVoteQuestionToggles(){
@@ -2989,12 +3062,14 @@ function bindVoteQuestionToggles(){
       const row = btn.closest('.ynu-row');
       row.querySelectorAll('.ynu-btn').forEach(b=> b.classList.remove('selected'));
       btn.classList.add('selected');
+      clearYnuMissing(row);
     });
   });
-  document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(btn=>{
+  document.querySelectorAll('#confidenceScoreBtns .score-vertical-row').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('#confidenceScoreBtns .score-btn').forEach(b=> b.classList.remove('selected'));
+      document.querySelectorAll('#confidenceScoreBtns .score-vertical-row').forEach(b=> b.classList.remove('selected'));
       btn.classList.add('selected');
+      clearYnuMissing(btn.closest('.ynu-row'));
     });
   });
 }
@@ -3007,13 +3082,41 @@ function collectVoteQuestionAnswers(side){
     answers[field] = selected ? selected.dataset.ynuValue : '';
   });
   if(side === 'A'){
-    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-btn.selected');
+    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-vertical-row.selected');
     answers.join_confidence_score = scoreBtn ? scoreBtn.dataset.scoreValue : '';
   } else {
     const improvementEl = document.getElementById('leaveImprovementInput');
     answers.leave_improvement_suggestion = improvementEl ? improvementEl.value.trim() : '';
   }
   return answers;
+}
+
+// เช็คว่าทุกข้อ (YNU ทั้งหมด + คะแนนความมั่นใจฝั่ง Join) ตอบครบหรือยัง ก่อนอนุญาตให้ Confirm
+// ถ้ามีข้อไหนขาด -> ล้อมกรอบแดง + เลื่อนจอไปข้อแรกที่ขาด แล้ว return false กัน submit ไม่ให้ยิง API ไปเปล่าๆ
+function validateVoteQuestionsAnswered(){
+  let firstMissingRow = null;
+  document.querySelectorAll('#voteQuestionsWrap .ynu-row[data-ynu-field]').forEach(row=>{
+    const field = row.dataset.ynuField;
+    let answered;
+    if(field === 'join_confidence_score'){
+      answered = !!row.querySelector('#confidenceScoreBtns .score-vertical-row.selected');
+    } else {
+      answered = !!row.querySelector('.ynu-btn.selected');
+    }
+    if(answered){
+      clearYnuMissing(row);
+    } else {
+      row.classList.add('ynu-missing');
+      const hint = row.querySelector('.ynu-missing-hint');
+      if(hint) hint.style.display = 'block';
+      if(!firstMissingRow) firstMissingRow = row;
+    }
+  });
+  if(firstMissingRow){
+    firstMissingRow.scrollIntoView({ behavior:'smooth', block:'center' });
+    return false;
+  }
+  return true;
 }
 
 async function confirmVote(){
@@ -3025,6 +3128,10 @@ async function confirmVote(){
   if(!mainReason){
     showInfoPopup(t18n('errMainReasonRequired'), t18n('understandBtn'));
     return;
+  }
+
+  if(!validateVoteQuestionsAnswered()){
+    return; // มีข้อไหนยังไม่ตอบ -> ไม่ยิง API เลย กันเคสกด Confirm ทั้งที่ตอบไม่ครบแล้วนึกว่าบันทึกสำเร็จ
   }
 
   const confirmBtn = document.getElementById('voteConfirmBtn');
@@ -3049,7 +3156,7 @@ async function confirmVote(){
     return;
   }
 
-  showInfoPopup(pickLang(res.message), t18n('okBtn'));
+  showVoteSuccessPopup();
 
   // แก้บั๊ก: เดิมเป็น loadTopics().then(loadDashboards) แต่ loadDashboards() ถูกถอดออกไปแล้วตอนทำ
   // P0-fix lazy-load dashboard (ดูคอมเมนต์ใกล้ _buildVotesByTopic/loadDashboardFor) จุดเรียกนี้ตกหล่นไม่ได้ลบตาม
@@ -3231,7 +3338,7 @@ document.getElementById('qrShareBtn').addEventListener('click', async ()=>{
   // ใส่บริบทหัวข้อไปพร้อม QR เหมือนตอนแชร์เป็นลิงก์ ผู้รับปลายทางจะได้ไม่งงว่าสแกนไปทำไม โหวตเรื่องอะไร
   const t = STATE.topics.find(x=> x.company_id === pendingShareTopicId);
   const teaser = t
-    ? `${joinCaption(t)} หรือ ${leaveCaption(t)} — มาดูว่าคนที่เคยทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง สแกนเพื่อไปดูกันเลย`
+    ? `ผู้คนมีประสบการณ์ทำงานที่ "${t.company_name}" ยังไงกันบ้าง สแกนดูความคิดเห็นของพวกเขาได้เลย`
     : 'สแกนเพื่อไปโหวตหัวข้อนี้';
   try{
     const blob = await (await fetch(qrCurrentDataUrl)).blob();
