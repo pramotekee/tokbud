@@ -1011,7 +1011,7 @@
 <div class="modal-overlay" id="voteConfirmModal">
   <div class="modal-box" id="voteConfirmModalBox" style="text-align:center;">
     <button class="modal-close" data-close="voteConfirmModal" style="margin-left:auto;display:block;">✕</button>
-    <h3 style="margin:0 0 10px;" data-i18n="voteConfirmTitle">ยืนยันการเลือก</h3>
+    <h3 id="voteConfirmModalTitle" style="margin:0 0 10px;" data-i18n="voteConfirmTitle">ยืนยันการเลือก</h3>
     <p id="voteConfirmText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.6;"></p>
     <!-- FIX (feedback ของ Pop): กล่อง anonymity notice เดิมพื้นหลังกลืนกับพื้นหลัง modal (var(--bg)) มองไม่เด่น
          ทั้งที่เป็นข้อความสำคัญ (การันตีความเป็นส่วนตัว) เปลี่ยนเป็นสีเหลือง/ส้มอ่อนให้เด่นขึ้นแทน (ไม่ใช้สีแดง
@@ -1212,6 +1212,10 @@ const I18N = {
     feedEmptyState: 'ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
     errMainReasonRequired: 'กรุณากรอกคำตอบข้อนี้ก่อนบันทึก',
+    // Export self-serve (ดู handleExportClick) — โชว์บนการ์ดสาธารณะทุกใบ ใครก็กดได้ ไม่ใช่แค่เจ้าของบริษัท
+    exportBtn: 'Export', exportLoading: 'กำลัง export...', exportSuccessToast: 'Export สำเร็จ',
+    exportGateTitle: 'Export ความคิดเห็น', exportGateMsg: 'ฟีเจอร์นี้ใช้ได้เฉพาะแพลน PRO เท่านั้น อัปเกรดเป็น PRO เพื่อปลดล็อกการใช้งาน',
+    exportGateUpgradeBtn: 'อัปเกรด',
     errPasscodeRequired: 'กรุณากรอก Passcode', errDeleteReasonRequired: 'กรุณาเลือกเหตุผลและกรอกรายละเอียดให้ครบ',
     errSignupAvatarRequired: 'กรุณาอัพโหลดรูปโปรไฟล์ก่อนสมัครสมาชิก', errSignupUsernameRequired: 'กรุณากรอก Username',
     errSignupEmailRequired: 'โปรดใส่อีเมล เพื่อไม่เสียสิทธิ์ในการร่วมสนุก ลุ้นรับรางวัลต่างๆ และใช้เป็นช่องทางในการติดต่อจากทีมงานถึงคุณ',
@@ -1226,7 +1230,7 @@ const I18N = {
     okBtn: 'ตกลง', understandBtn: 'เข้าใจแล้ว', savingText: 'กำลังบันทึก...',
     sideLabelPrefix: 'ฝั่ง',
     voteConfirmMsg: 'คุณกำลังเลือก "{side}" เมื่อยืนยันแล้วคำตอบของคุณจะถูกบันทึกทันที และสามารถกลับมาแก้ไขภายหลังได้ที่หน้า "ความคิดเห็นของฉัน"',
-    voteAnonymityNotice: 'ตัวตนของคุณจะถูกเก็บเป็นความลับ คำตอบของคุณไม่ระบุตัวตน 100% เบอร์โทร อีเมล และชื่อผู้ใช้ของคุณจะไม่ถูกแสดงให้ใครเห็น คุณจึงแชร์ประสบการณ์จริงได้อย่างสบายใจ',
+    voteAnonymityNotice: 'ตัวตนของคุณจะถูกเก็บเป็นความลับ คำตอบของคุณไม่ระบุตัวตน 100% <strong><u>เบอร์โทร อีเมล และชื่อผู้ใช้ของคุณจะไม่ถูกแสดงให้ใครเห็น</u></strong> คุณจึงแชร์ประสบการณ์จริงได้อย่างสบายใจ',
     apiErrorMsg: 'Oops! Something went wrong. Please try refreshing and try again.',
     dashGenderTitle: 'เพศ', dashAgeGroupTitle: 'ช่วงอายุ', dashLoadingText: 'กำลังโหลดข้อมูล...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'หากคุณมีความคิดเห็นเพิ่มเติม แบ่งปันมาได้เลย',
@@ -1266,7 +1270,7 @@ const I18N = {
     ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
-    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT because...',
+    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT here because...',
     joinMainReasonLabel: 'I WORK here because...', joinMainReasonPh: 'Type your answer...',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
     requiredMark: '*', requiredHint: '(required)',
@@ -1299,6 +1303,9 @@ const I18N = {
     feedEmptyState: "No results yet<br>Try a different category or search term",
     errCoverRequired: 'Please attach a company logo before creating the company',
     errMainReasonRequired: 'Please fill in your answer before saving',
+    exportBtn: 'Export', exportLoading: 'Exporting...', exportSuccessToast: 'Exported successfully',
+    exportGateTitle: 'Export comments', exportGateMsg: 'This feature is available on PRO. Upgrade to PRO to unlock it.',
+    exportGateUpgradeBtn: 'Upgrade',
     errPasscodeRequired: 'Please enter your Passcode', errDeleteReasonRequired: 'Please select a reason and fill in all required details',
     errSignupAvatarRequired: 'Please upload a profile picture before signing up', errSignupUsernameRequired: 'Please enter a Username',
     errSignupEmailRequired: 'Please enter your email so you don\'t miss out on giveaways and updates from our team',
@@ -1313,7 +1320,7 @@ const I18N = {
     okBtn: 'OK', understandBtn: 'Got it', savingText: 'Saving...',
     sideLabelPrefix: 'Side',
     voteConfirmMsg: 'Once confirmed, your answer is saved immediately and you can come back to edit it anytime from "My Comment".',
-    voteAnonymityNotice: 'Your identity stays private. Your answers are 100% anonymous. Your phone number, email, and username are never shown, so you can share your honest experience freely.',
+    voteAnonymityNotice: 'Your identity stays private. Your answers are 100% anonymous. <strong><u>Your phone number, email, and username are never shown</u></strong>, so you can share your honest experience freely.',
     apiErrorMsg: 'Oops! Something went wrong. Please try refreshing and try again.',
     dashGenderTitle: 'Gender', dashAgeGroupTitle: 'Age', dashLoadingText: 'Loading...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'Tell us more about your answer...',
@@ -1384,6 +1391,7 @@ let STATE = {
   totalCount: 0,
   totalPages: 1,
   pendingVote: null, // {topicId, side} ถ้าโหวตตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ
+  pendingExport: null, // {companyId} ถ้ากด Export ตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ (ดู handleExportClick)
   // first-time (key ไม่มีเลย) = 'card' เสมอ — รองรับ 3 ค่า: 'card' | 'line' | 'carousel' (feature: View by Carousel)
   feedView: (()=>{ const v = localStorage.getItem(FEED_VIEW_KEY); return (v === 'line' || v === 'carousel') ? v : 'card'; })()
 };
@@ -1643,6 +1651,13 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
     const { topicId } = STATE.pendingVote;
     STATE.pendingVote = null;
     scrollToTopicCard(topicId);
+  }
+  // เหมือนกับ pendingVote เป๊ะๆ — ไม่ export ให้เงียบๆ หลัง login สำเร็จ แค่พา user กลับไปที่การ์ดนั้น ให้กด
+  // Export เองอีกครั้ง (ไม่มี action ใดๆ เกิดขึ้นแบบเงียบๆ โดยเฉพาะ action ที่เกี่ยวกับเงิน/plan ยิ่งต้องชัดเจน)
+  if(STATE.pendingExport){
+    const { companyId } = STATE.pendingExport;
+    STATE.pendingExport = null;
+    scrollToTopicCard(companyId);
   }
 });
 
@@ -2452,6 +2467,11 @@ function bindCardEvents(scopeEl){
   scopeEl.querySelectorAll('[data-tr-change]').forEach(btn=>{
     btn.addEventListener('click', ()=> openLangPickerFor(btn.dataset.trChange));
   });
+  // FIX (feature ที่ Pop ขอ): ปุ่ม Export บนการ์ดสาธารณะ ใครก็กดได้ไม่ใช่แค่เจ้าของบริษัท (self-serve, ดูคอมเมนต์
+  // ยาวที่ handleExportClick ด้านล่าง) — ใช้ pattern การผูก event เดียวกับปุ่มอื่นๆ ในการ์ดทุกอย่าง
+  scopeEl.querySelectorAll('[data-export-topic]').forEach(btn=>{
+    btn.addEventListener('click', ()=> handleExportClick(btn.dataset.exportTopic, btn));
+  });
 }
 
 // เปิด/ปิด voter summary ของการ์ดนั้นๆ — ปิดไว้เป็นค่าเริ่มต้นเสมอ (ดู topicCardHTML) เพื่อไม่ให้กินพื้นที่จอโดยไม่จำเป็น
@@ -2580,19 +2600,26 @@ function topicCardHTML(t){
 
 // แถวปุ่มแปลภาษา — โชว์ทุกการ์ดเสมอ ไม่เดาภาษาผู้ชม (ตามที่ตกลงกัน เพื่อความง่าย/เร็ว/ชัวร์ 100%)
 // ถ้าการ์ดนี้ถูกแปลอยู่แล้ว (t._translated) โชว์ label ภาษาที่แปลไป + ลิงก์สลับกลับต้นฉบับ + ลิงก์เปลี่ยนภาษา
+// FIX (feature ที่ Pop ขอ): เพิ่มปุ่ม Export ในแถวเดียวกัน ชิดขวา (margin-left:auto) — โชว์บนการ์ดทุกใบให้ทุกคนกด
+// ได้ (ไม่ใช่แค่เจ้าของบริษัท) เพราะอาจมี HR/นักวิจัยจากที่อื่นสนใจเอาข้อมูลไปใช้ต่อเองแบบ self-serve
 function translateRowHTML(t){
+  const exportBtnHTML = `<button type="button" class="translate-btn" style="margin-left:auto;" data-export-topic="${t.company_id}">
+    <span class="tr-icon">⬇️</span><span class="tr-label">${t18n('exportBtn')}</span>
+  </button>`;
   if(t._translated){
     const langLabel = (TRANSLATE_LANGS.find(l=>l.code===t._translatedLang)||{}).label || t._translatedLang;
     return `<div class="translate-row" data-tr-wrap="${t.company_id}">
       <span class="tr-translated-note">🌐 Translated · ${escapeHtml(langLabel)}</span>
       <button type="button" class="translate-original-link" data-tr-original="${t.company_id}">See original</button>
       <button type="button" class="translate-change-link" data-tr-change="${t.company_id}">Change language</button>
+      ${exportBtnHTML}
     </div>`;
   }
   return `<div class="translate-row" data-tr-wrap="${t.company_id}">
     <button type="button" class="translate-btn" data-tr-topic="${t.company_id}">
       <span class="tr-icon">🌐</span><span class="tr-label">Translate</span>
     </button>
+    ${exportBtnHTML}
   </div>`;
 }
 
@@ -2860,6 +2887,65 @@ function buildLangPickGrid(){
 }
 buildLangPickGrid();
 
+/* ---------- Export (feature ที่ Pop ขอ): self-serve export จากการ์ดสาธารณะ ----------
+   เดิม export ทำได้แค่ในหน้า profile.html/My Company และแค่เจ้าของบริษัทเท่านั้น — ตอนนี้เปิดให้ใครก็ได้ที่
+   เป็น PRO กดจากการ์ดสาธารณะได้เลย ไม่ต้องเป็นเจ้าของบริษัท (เช่น HR/นักวิจัยจากที่อื่นที่สนใจข้อมูล) โดยไม่
+   เช็ค plan ฝั่ง frontend เลย (index.html ไม่มี STATE.profile/plan ให้เช็คอยู่แล้ว เพราะเป็นหน้า public) ปล่อยให้
+   backend เป็นคนตัดสินชั้นเดียว (ปลอดภัยกว่าเดา — ดู actionExportCompanyVotes) แล้วโชว์ popup ชวนอัปเกรดถ้าโดนเตะกลับ */
+function handleExportClick(topicId, btn){
+  if(!isLoggedIn()){
+    STATE.pendingExport = { companyId: topicId };
+    openLoginModal('redirect');
+    return;
+  }
+  exportCompanyVotes(topicId, btn);
+}
+
+async function exportCompanyVotes(topicId, btn){
+  setBtnLoading(btn, true, t18n('exportLoading'));
+  const res = await api('exportCompanyVotes', { session_token: STATE.session.session_token, company_id: topicId }, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){
+    // ข้อความจาก backend ตอนไม่ใช่ PRO จะมีคำว่า 'PRO' ติดมาเสมอ (ดู actionExportCompanyVotes) ใช้เช็คแยก
+    // เคส "ยังไม่ใช่ PRO" ออกจากเคส error อื่นๆ (เช่น หา company ไม่เจอ) เพื่อโชว์ popup ชวนอัปเกรดแทน toast ธรรมดา
+    if(String(res.message || '').indexOf('PRO') !== -1){
+      showInfoPopup(t18n('exportGateMsg'), t18n('exportGateUpgradeBtn'), t18n('exportGateTitle'));
+      const okBtn = document.getElementById('voteOkBtn');
+      if(okBtn) okBtn.addEventListener('click', ()=>{ window.location.href = 'profile.html?tab=planbilling'; }, { once:true });
+      return;
+    }
+    showToast(res.message);
+    return;
+  }
+  await downloadCsv(res.csv, res.filename);
+  showToast(t18n('exportSuccessToast'));
+}
+
+// เหมือนกับ downloadCsv ของ profile.txt เป๊ะๆ (ดูคอมเมนต์ยาวที่นั่นสำหรับที่มาของ P0-fix เรื่อง iOS Safari
+// blob: URL หลุดติดไปกับไฟล์ตอน user กด share เอง) — คัดลอกมาเพราะ index.html/profile.html เป็นคนละหน้า
+// ไม่ได้ share ไฟล์ JS ร่วมกัน
+async function downloadCsv(csvContent, filename){
+  const safeFilename = filename || 'export.csv';
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const file = new File([blob], safeFilename, { type: 'text/csv' });
+  const canShareFile = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
+
+  if(canShareFile){
+    try{
+      await navigator.share({ files: [file] });
+      return;
+    }catch(e){
+      // user กด Cancel เอง หรือ share ไม่สำเร็จ — ไม่ใช่ error ที่ต้อง toast ฟ้อง, fallback ไปดาวน์โหลดปกติแทน
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = safeFilename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function handleTranslateClick(topicId){
   if(TR_SESSION_LANG){ runTranslate(topicId, TR_SESSION_LANG); return; }
   openLangPickerFor(topicId);
@@ -2938,7 +3024,10 @@ function pickLang(msg){
 // พอ error/success popup โผล่มาทับ modal เดิมที่ scroll ลงไปอยู่ท้ายๆ ฟอร์มแล้ว (จากการตอบคำถาม) ข้อความ error/success
 // จริงๆ ที่อยู่บนสุดของ modal เลยหลุดจอไปเงียบๆ เห็นแต่ปุ่ม "Got it" ลอยอยู่ท้ายคำถามเดิม ดูเหมือนไม่มีอะไรเกิดขึ้น
 // -> ล้าง voteQuestionsWrap ทิ้งด้วย และ scroll modal กลับขึ้นบนสุดทุกครั้งที่โชว์ popup นี้
-function showInfoPopup(message, btnLabel){
+// title: ไม่ระบุ = ใช้หัวข้อ default ("Share my comment" ตาม voteConfirmTitle) ระบุ = override ชั่วคราว
+// (ใช้กับ popup ทั่วไปที่ยืมกล่อง modal เดียวกันนี้ เช่น export gate — ไม่งั้นหัวข้อจะค้างผิดบริบท)
+function showInfoPopup(message, btnLabel, title){
+  document.getElementById('voteConfirmModalTitle').textContent = title || t18n('voteConfirmTitle');
   document.getElementById('voteConfirmText').textContent = message;
   document.getElementById('voteAnonymityNotice').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์กล่อง anonymity
   document.getElementById('voteCommentWrap').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์ช่องคอมเมนต์
@@ -2982,9 +3071,13 @@ function handleVoteClick(topicId, side, btnEl){
 
   pendingVoteConfirm = { topicId, side, btnEl };
 
+  // กัน title ค้างผิดบริบท เผื่อ modal เดียวกันนี้เพิ่งถูกยืมไปโชว์ popup อื่น (เช่น export gate) มาก่อนหน้า
+  document.getElementById('voteConfirmModalTitle').textContent = t18n('voteConfirmTitle');
   document.getElementById('voteConfirmText').textContent = t18n('voteConfirmMsg').replace('{side}', side === 'A' ? joinCaption(t||{}) : leaveCaption(t||{}));
   const anonNotice = document.getElementById('voteAnonymityNotice');
-  anonNotice.textContent = t18n('voteAnonymityNotice');
+  // FIX (feedback ของ Pop): ต้องใช้ innerHTML ไม่ใช่ textContent เพื่อให้ <strong><u> ในข้อความ dict เรนเดอร์
+  // จริงๆ (ไม่งั้นจะเห็น tag เป็นตัวหนังสือดิบ) ปลอดภัยเพราะ string มาจาก dict คงที่ในโค้ดเราเอง ไม่ใช่ user input
+  anonNotice.innerHTML = t18n('voteAnonymityNotice');
   anonNotice.style.display = 'block';
 
   const commentInput = document.getElementById('voteCommentInput');
