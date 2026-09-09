@@ -822,8 +822,8 @@ const I18N = {
     chargeFailedToast: 'การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีถูกปรับเป็น FREE แล้ว — ไปที่แท็บ Plan & Billing เพื่อจ่ายเงินอีกครั้ง',
     billingHistoryTitle: 'ประวัติการชำระเงิน',
     billingHistoryEmpty: 'ยังไม่มีประวัติการชำระเงิน',
-    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อใช้งานฟีเจอร์ที่มากกว่า ให้คุณสามารถ export data จากผู้ที่มอบคำตอบให้คุณ',
-    planPitchDesc: 'เพียง 199 บาท/เดือน (นับ 30 วัน) สำหรับข้อมูลอันมีค่าต่อองค์กรของคุณ เพื่อช่วยให้เข้าใจประสบการณ์พนักงานของคุณมากยิ่งขึ้น (ยกเลิกได้ตลอดเวลา หากคุณต้องการ)',
+    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อปลดล็อกฟีเจอร์เพิ่มเติม รวมถึงการ export ข้อมูลคำตอบจากคนที่แชร์ความคิดเห็นเกี่ยวกับบริษัทต่างๆ',
+    planPitchDesc: 'เพียง 199 บาท/เดือน (นับ 30 วัน) เพื่อนำข้อมูลไปต่อยอด วิเคราะห์ สำรวจ หรือใช้งานต่อได้ตามต้องการ ยกเลิกได้ตลอดเวลา',
     planPriceUsdHint: '(~$5.5 USD — เปรียบเทียบมูลค่าโดยประมาณ)',
     upgradeToProBtn: 'อัปเกรดเป็น PRO — 199 บาท/เดือน',
     currentPlanLabel: 'แผนที่คุณใช้งานอยู่ตอนนี้',
@@ -839,7 +839,7 @@ const I18N = {
     cancelSuccessToast: 'ยกเลิกการสมัครสมาชิกแล้ว',
     checkoutCanceledToast: 'ยกเลิกการชำระเงินแล้ว ยังไม่มีการตัดเงินใดๆ',
     pcPayLoading: 'กำลังไปหน้าชำระเงิน...',
-    exportGateMsg: 'ฟีเจอร์นี้ใช้ได้เฉพาะแพลน PRO เท่านั้น อัปเกรดเป็น PRO เพื่อปลดล็อกการใช้งาน',
+    exportGateMsg: 'ฟีเจอร์นี้ใช้ได้เฉพาะแพลน PRO เท่านั้น อัปเกรดเป็น PRO เพื่อปลดล็อกการใช้งาน', exportGateTitle: 'Export ความคิดเห็น',
     exportGateUpgradeBtn: 'อัปเกรด', exportBtn: 'Export', exportLoading: 'กำลัง export...',
     exportSuccessToast: 'Export สำเร็จ',
     billingStatusSuccess: 'สำเร็จ', billingStatusFailed: 'ไม่สำเร็จ',
@@ -918,8 +918,8 @@ const I18N = {
     chargeFailedToast: 'Your last payment failed and your account is now on the FREE plan — go to Plan & Billing to pay again.',
     billingHistoryTitle: 'Payment History',
     billingHistoryEmpty: 'No payment history yet',
-    planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who took part in your topics.',
-    planPitchDesc: 'Just 199 THB/month (30 days) for valuable insight into your organization — so you can better understand your employees\' experience. Cancel anytime.',
+    planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who shared their opinions about a company.',
+    planPitchDesc: 'Just 199 THB/month (30 days) to take the data further — analyze it, explore it, or use it for your own work. Cancel anytime.',
     planPriceUsdHint: '(~$5.5 USD — approximate value comparison only, not the actual charged amount)',
     upgradeToProBtn: 'Upgrade to PRO — 199 THB/month',
     currentPlanLabel: 'Your current plan',
@@ -935,7 +935,7 @@ const I18N = {
     cancelSuccessToast: 'Subscription canceled.',
     checkoutCanceledToast: 'Checkout canceled. You have not been charged.',
     pcPayLoading: 'Redirecting to checkout...',
-    exportGateMsg: 'This feature is available on PRO. Upgrade to PRO to unlock it.',
+    exportGateMsg: 'This feature is available on PRO. Upgrade to PRO to unlock it.', exportGateTitle: 'Export comments',
     exportGateUpgradeBtn: 'Upgrade', exportBtn: 'Export', exportLoading: 'Exporting...',
     exportSuccessToast: 'Export successful',
     billingStatusSuccess: 'Success', billingStatusFailed: 'Failed',
@@ -951,7 +951,7 @@ const I18N = {
     dcReasonTextLabel: 'Please provide more detail', dcSubmitBtn: 'Submit Delete Request',
     dcErrReasonRequired: 'Please select a reason', dcErrReasonTextRequired: 'Please provide more detail',
     dcErrPasscodeRequired: 'Please enter your passcode to confirm',
-    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT because...',
+    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT here because...',
     mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
     joinMainReasonLabel: 'I WORK here because...',
@@ -2254,8 +2254,11 @@ function goToPlanBillingTab(){
 
 // FREE user กด Export ที่การ์ดหัวข้อ -> popup นี้แทนการ export ทันที (ปุ่ม Export โชว์เสมอไม่ว่า plan ไหน
 // ตาม spec ข้อ 6) กด [อัปเกรด] พาไปแท็บ Plan & Billing ทันที ไม่กด ก็ปิดด้วย ✕ มุมขวาบนของ modal ปกติ
+// FIX x2 (feedback ของ Pop): (1) หัวข้อเดิม hardcode ภาษาอังกฤษตรงๆ ไม่ผ่าน TH/EN toggle เลย เปลี่ยนมาใช้ t()
+// (2) ตัดคำว่า "your" ออก ("Export your comments" -> "Export comments") เพราะตอนนี้ใครก็ export บริษัทไหนก็ได้
+// ไม่จำเป็นต้องเป็นเจ้าของ/คอมเมนต์ของตัวเองแล้ว คำว่า "your" เลยผิดบริบทได้ในบางเคส
 function showExportGatePopup(){
-  document.getElementById('confirmModalTitle').textContent = 'Export your comments';
+  document.getElementById('confirmModalTitle').textContent = t('exportGateTitle');
   document.getElementById('confirmModalText').textContent = t('exportGateMsg');
   document.getElementById('confirmModalActions').innerHTML =
     `<button class="btn btn-primary full-btn" id="confirmModalUpgradeBtn">${t('exportGateUpgradeBtn')}</button>`;
