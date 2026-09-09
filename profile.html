@@ -465,12 +465,16 @@
     <a class="btn btn-primary" href="index.html" style="margin-top:10px; display:inline-block;" data-i18n="goHomeBtn">ไปหน้าแรก</a>
   </div>
 
-  <!-- ===== แสดงเมื่อโหลดโปรไฟล์ไม่สำเร็จเพราะเน็ต/เซิร์ฟเวอร์สะดุด (ไม่ใช่ session หมดอายุจริง — ไม่ logout) ===== -->
+  <!-- ===== แสดงเมื่อโหลดโปรไฟล์ไม่สำเร็จเพราะเน็ต/เซิร์ฟเวอร์สะดุด (ไม่ใช่ session หมดอายุจริง — ไม่ logout) =====
+       ข้อความนี้ตายตัวเป็น EN เสมอ ไม่ผ่าน data-i18n (ตั้งใจ ตาม pattern เดียวกับข้อความ city_state ที่ EN
+       อย่างเดียวในไฟล์นี้) เพราะสาเหตุที่แท้จริงคือ Apps Script cold start (ไม่มี dedicated server คอยอุ่นเครื่อง
+       รอ) ไม่ใช่โค้ดพัง — ใช้ข้อความที่สื่อสารตรงๆ ว่าเกิดจากอะไร ให้ user เข้าใจง่ายไม่ว่าจะอยู่ประเทศไหน แถม
+       มีมุกเบาๆ กันรู้สึกว่าเว็บพังจริงจัง (ปรับ emoji จาก ⚠️ เป็น 😴 ให้เข้ากับโทนข้อความด้วย) ===== -->
   <div class="locked-state" id="loadErrorState" style="display:none;">
-    <div class="emoji">⚠️</div>
-    <h3 data-i18n="loadErrorTitle">โหลดโปรไฟล์ไม่สำเร็จ</h3>
-    <p data-i18n="loadErrorDesc">อาจเป็นเพราะเน็ตหรือเซิร์ฟเวอร์สะดุดชั่วคราว ลองใหม่อีกครั้งได้เลย</p>
-    <button class="btn btn-primary" id="loadErrorRetryBtn" style="margin-top:10px;" data-i18n="dashRetryBtn">Try again</button>
+    <div class="emoji">😴</div>
+    <h3>Oops! Looks like our server's still asleep</h3>
+    <p>This happens sometimes when it's been quiet for a bit — hit the button below to give it a nudge and wake it up.</p>
+    <button class="btn btn-primary" id="loadErrorRetryBtn" style="margin-top:10px;">Try again</button>
   </div>
 
   <!-- ===== เนื้อหาโปรไฟล์ (แสดงเมื่อ login แล้ว) ===== -->
@@ -788,7 +792,6 @@ const I18N = {
   th: {
     backHome: '← กลับหน้าแรก', lockedTitle: 'กรุณาเข้าสู่ระบบก่อน',
     lockedDesc: 'เข้าสู่ระบบที่หน้าแรกเพื่อจัดการโปรไฟล์ของคุณ', goHomeBtn: 'ไปหน้าแรก',
-    loadErrorTitle: 'โหลดโปรไฟล์ไม่สำเร็จ', loadErrorDesc: 'อาจเป็นเพราะเน็ตหรือเซิร์ฟเวอร์สะดุดชั่วคราว ลองใหม่อีกครั้งได้เลย',
     statTopicsLabel: 'หัวข้อที่สร้างทั้งหมด', statVotersLabel: 'คนร่วมโหวตทั้งหมด',
     statusActive: 'กำลังเผยแพร่', statusInactive: 'ซ่อนอยู่', mvTotalLabel: 'ความคิดเห็น',
     dashOverviewTitle: 'ภาพรวมคนที่มาร่วมโหวตหัวข้อของคุณ', loadingText: 'กำลังโหลด...',
@@ -875,12 +878,11 @@ const I18N = {
   en: {
     backHome: '← Back to Home', lockedTitle: 'Please log in first',
     lockedDesc: 'Log in on the home page to manage your profile.', goHomeBtn: 'Go to Home',
-    loadErrorTitle: 'Couldn\'t load profile', loadErrorDesc: 'This may be a temporary network or server hiccup. Please try again.',
     statTopicsLabel: 'Topics Created', statVotersLabel: 'Total Voters',
     statusActive: 'Published', statusInactive: 'Hidden', mvTotalLabel: 'comments',
     dashOverviewTitle: 'Overview of people voting on your topics', loadingText: 'Loading...',
     myTypeLinkText: '✨ My Type — See who I am',
-    createBtn: '＋ Create Company', sortLatest: 'Latest', sortPopular: 'Popular',
+    createBtn: '＋ Company', sortLatest: 'Latest', sortPopular: 'Popular',
     personalInfoTitle: 'Personal Info', birthdayLabel: 'Birthday',
     dayOpt: 'Day', monthOpt: 'Month', yearOpt: 'Year', genderLabel: 'Gender',
     genderChoose: 'Select Gender', genderMale: 'Male', genderFemale: 'Female', genderOther: 'Other',
@@ -939,7 +941,7 @@ const I18N = {
     dcReasonTextLabel: 'Please provide more detail', dcSubmitBtn: 'Submit Delete Request',
     dcErrReasonRequired: 'Please select a reason', dcErrReasonTextRequired: 'Please provide more detail',
     dcErrPasscodeRequired: 'Please enter your passcode to confirm',
-    joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
+    joinBtnLabel: 'I work here because...', leaveBtnLabel: 'I LEFT because...',
     mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
     joinMainReasonLabel: 'What made you apply to / join this company?',
@@ -1684,11 +1686,16 @@ function buildVoteQuestionsHTML(side, prefillData){
       </div>`;
   }
   const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
+  // FIX x2 (feedback ของ Pop, sync กับ index.txt): label ใช้ class .ynu-question-label ให้ตัวหนา/ขนาดเท่าข้ออื่น
+  // + เพิ่มตัวนับตัวอักษร 0/5000 (oninput inline เพราะ textarea นี้ re-render ทิ้งทุกครั้งที่เปิดฟอร์ม)
+  const leaveImprovementLen = String(prefillData.leave_improvement_suggestion || '').length;
   return `${rows}
     <div class="ynu-row" style="margin-bottom:6px;">
-      <label style="display:block;font-size:13px;margin-bottom:6px;">${t18n('leaveImprovementLabel')}</label>
+      <div class="ynu-question-label">${t18n('leaveImprovementLabel')}</div>
       <textarea id="leaveImprovementInput" maxlength="5000" rows="2" placeholder="${t18n('leaveImprovementPh')}"
+        oninput="document.getElementById('leaveImprovementCounter').textContent=this.value.length+'/5000'"
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
+      <div id="leaveImprovementCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">${leaveImprovementLen}/5000</div>
     </div>`;
 }
 
@@ -1776,8 +1783,13 @@ function renderMyComments(){
   el.innerHTML = STATE.myComments.map(c=>{
     const sideLabel = c.side === 'A' ? t18n('joinBtnLabel') : t18n('leaveBtnLabel');
     const dateStr = c.last_changed_at ? new Date(c.last_changed_at).toLocaleDateString(getLang()==='th'?'th-TH':'en-US', {year:'numeric', month:'short', day:'numeric'}) : '';
+    // FIX (ขอบการ์ดสีฟ้าตายตัวเสมอ ไม่ตรงกับสีจริงของการ์ดบริษัทนั้นๆ): .my-comment-card ใน CSS รองรับ
+    // var(--card-color, var(--primary)) อยู่แล้ว แค่ไม่เคยมีใครตั้ง --card-color ให้จริงเลย ตั้งผ่าน inline
+    // style ตรงนี้จาก c.card_color ที่ backend ส่งมาให้แล้ว (ดู actionGetMyComments) ถ้าบริษัทนั้นไม่มีสีเก็บไว้
+    // (ว่างเปล่า) ก็ตกลงไปใช้ค่า default (var(--primary)) เหมือนเดิม ไม่พังอะไร
+    const cardColorStyle = c.card_color ? ` style="--card-color:${escapeHtml(c.card_color)}"` : '';
     return `
-      <button type="button" class="my-comment-card" data-vote="${c.vote_id}">
+      <button type="button" class="my-comment-card" data-vote="${c.vote_id}"${cardColorStyle}>
         <div class="mc-top">
           <div class="mc-company">${escapeHtml(c.company_name)}</div>
           <span class="mc-side-badge ${c.side === 'A' ? 'a' : 'b'}">${escapeHtml(sideLabel)}</span>
@@ -2230,7 +2242,7 @@ function goToPlanBillingTab(){
 // FREE user กด Export ที่การ์ดหัวข้อ -> popup นี้แทนการ export ทันที (ปุ่ม Export โชว์เสมอไม่ว่า plan ไหน
 // ตาม spec ข้อ 6) กด [อัปเกรด] พาไปแท็บ Plan & Billing ทันที ไม่กด ก็ปิดด้วย ✕ มุมขวาบนของ modal ปกติ
 function showExportGatePopup(){
-  document.getElementById('confirmModalTitle').textContent = 'Export your results';
+  document.getElementById('confirmModalTitle').textContent = 'Export your comments';
   document.getElementById('confirmModalText').textContent = t('exportGateMsg');
   document.getElementById('confirmModalActions').innerHTML =
     `<button class="btn btn-primary full-btn" id="confirmModalUpgradeBtn">${t('exportGateUpgradeBtn')}</button>`;
