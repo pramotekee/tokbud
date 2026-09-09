@@ -395,6 +395,23 @@
   }
   .comment-item-time{ display:block; margin-top:6px; font-size:11px; color:var(--text-muted); }
   .comment-empty, .comment-loading{ text-align:center; font-size:13px; color:var(--text-muted); padding:26px 0; }
+
+  /* --- answer grid: โชว์คำตอบ Yes/No/Not sure (+คะแนนตัดสินใจถูกไหม ฝั่ง Join) ใต้แต่ละคอมเมนต์เสมอ ไม่ต้องกด toggle
+     Pop ยืนยัน: คงประโยคคำถามเต็มทุกข้อ ไม่ตัดคำ แค่ลด font-size ให้พอวางได้ 2 คอลัมน์ (เซลล์สูงได้ตามความยาวประโยค) --- */
+  .answer-grid{
+    display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;
+    margin-top:10px; white-space:normal;
+  }
+  .answer-cell{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 9px; min-width:0; }
+  .answer-cell-label{ font-size:10.5px; line-height:1.35; color:var(--text-muted); margin-bottom:5px; word-break:break-word; }
+  .answer-cell-value{ display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:700; line-height:1.35; word-break:break-word; }
+  .answer-cell-value svg{ flex-shrink:0; margin-top:1px; }
+  .av-yes{ color:#16a34a; }
+  .av-no{ color:#dc2626; }
+  .av-unsure{ color:var(--text-muted); }
+  .av-score-low{ color:#dc2626; }
+  .av-score-mid{ color:var(--text-muted); }
+  .av-score-high{ color:#16a34a; }
   #commentSentinel{ height:1px; }
 
   /* --- mini dashboard --- */
@@ -3109,6 +3126,48 @@ const JOIN_QUESTION_LABELS = { join_salary_good:'qSalaryGood', join_benefits_goo
 const LEAVE_QUESTIONS = ['leave_salary_benefits_mismatch','leave_no_growth','leave_culture_mismatch','leave_manager_mismatch','leave_team_mismatch','leave_worklife_mismatch','leave_better_offer','leave_not_challenging'];
 const LEAVE_QUESTION_LABELS = { leave_salary_benefits_mismatch:'qSalaryMismatch', leave_no_growth:'qNoGrowth', leave_culture_mismatch:'qCultureMismatch', leave_manager_mismatch:'qManagerMismatch', leave_team_mismatch:'qTeamMismatch', leave_worklife_mismatch:'qWorklifeMismatch', leave_better_offer:'qBetterOffer', leave_not_challenging:'qNotChallenging' };
 
+/* --- answer grid (read-only): แสดงคำตอบ Yes/No/Not sure + คะแนนตัดสินใจถูกไหม ใต้คอมเมนต์แต่ละอัน
+   ใช้ JOIN_QUESTIONS/LEAVE_QUESTIONS/JOIN_QUESTION_LABELS/LEAVE_QUESTION_LABELS ชุดเดียวกับฟอร์มโหวตด้านบน
+   ให้ label ตรงกันเป๊ะเสมอ ไม่ต้อง maintain รายการคำถามซ้ำ 2 ที่ --- */
+const AG_ICON_YES = '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,10 8,14 16,6"/></svg>';
+const AG_ICON_NO = '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>';
+const AG_ICON_UNSURE = '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="10" x2="16" y2="10"/></svg>';
+
+function answerCellHTML(labelText, iconSvg, valueText, colorClass){
+  return `<div class="answer-cell">
+    <div class="answer-cell-label">${escapeHtml(labelText)}</div>
+    <div class="answer-cell-value ${colorClass}">${iconSvg}<span>${escapeHtml(valueText)}</span></div>
+  </div>`;
+}
+
+// เกรดสีคะแนน 1-5: 1-2=แดง(ไม่โอเค) 3=เทา(เฉยๆ) 4-5=เขียว(โอเค) — ตามที่ Pop ยืนยัน ให้ความรู้สึกบวก/ลบเหมือนเซลล์ YNU อื่น
+function scoreColorClass(n){
+  n = Number(n);
+  if(n <= 2) return 'av-score-low';
+  if(n === 3) return 'av-score-mid';
+  return 'av-score-high';
+}
+
+function buildAnswerGridHTML(side, data){
+  data = data || {};
+  const fields = side === 'A' ? JOIN_QUESTIONS : LEAVE_QUESTIONS;
+  const labels = side === 'A' ? JOIN_QUESTION_LABELS : LEAVE_QUESTION_LABELS;
+
+  let cells = fields.map(f => {
+    const v = data[f];
+    let icon = AG_ICON_UNSURE, text = t18n('unsureOpt'), cls = 'av-unsure';
+    if(v === 'yes'){ icon = AG_ICON_YES; text = t18n('yesOpt'); cls = 'av-yes'; }
+    else if(v === 'no'){ icon = AG_ICON_NO; text = t18n('noOpt'); cls = 'av-no'; }
+    return answerCellHTML(t18n(labels[f]), icon, text, cls);
+  }).join('');
+
+  if(side === 'A' && data.join_confidence_score){
+    cells += answerCellHTML(t18n('confidenceScoreLabel'), '', t18n('scoreDesc' + data.join_confidence_score), scoreColorClass(data.join_confidence_score));
+  }
+
+  return `<div class="answer-grid">${cells}</div>`;
+}
+
 function ynuRowHTML(fieldId, labelKey, prefill){
   const v = prefill || '';
   return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:14px;">
@@ -3349,7 +3408,7 @@ async function loadMoreComments(isFirst){
     listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
   } else {
     listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
-      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
+      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span>${buildAnswerGridHTML(CM_STATE.side, c)}</div>
     `).join(''));
   }
 
