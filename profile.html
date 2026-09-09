@@ -858,7 +858,7 @@ const I18N = {
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
     mtEmptyState: 'ยังไม่มีบริษัทที่คุณสร้าง', mcEmptyState: 'ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้',
     ecModalTitle: 'แก้ไขคอมเมนต์',
-    joinMainReasonLabel: 'ปัจจัยที่คุณสมัคร/ร่วมงานกับบริษัทนี้คืออะไร?',
+    joinMainReasonLabel: 'ฉันทำงานที่นี่เพราะ...',
     leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?',
     requiredMark: '*', yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
     qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการและสิทธิประโยชน์ที่ได้รับดี', qBrandReputation: 'ทำงานที่นี่เพราะชื่อเสียงของบริษัท',
@@ -873,7 +873,12 @@ const I18N = {
     qTeamMismatch: 'ทีมงาน/เพื่อนร่วมงานไม่เหมาะกับฉัน', qWorklifeMismatch: 'Work-life balance ไม่เหมาะกับฉัน',
     qBetterOffer: 'ได้รับ offer ที่ดีกว่าจากที่อื่น', qNotChallenging: 'งานไม่ท้าทาย/ไม่ตรงสาย',
     leaveImprovementLabel: 'ถ้าปรับปรุงสิ่งนี้ คุณอาจจะอยู่ต่อ?', leaveImprovementPh: 'พิมพ์คำตอบของคุณ... (ไม่บังคับ)',
-    errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก', understandBtn: 'เข้าใจแล้ว', okBtn: 'ตกลง'
+    errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก', understandBtn: 'เข้าใจแล้ว', okBtn: 'ตกลง',
+    // FIX (Pop เจอบั๊ก): showInfoPopup/showConfirmPopup เดิม fallback เป็นข้อความไทยตายตัว ("แจ้งให้ทราบ",
+    // "ยืนยันการทำรายการ", "ยกเลิก", "ยืนยัน") ไม่ว่า toggle ภาษาจะเป็น EN อยู่ก็ตาม เพิ่ม key ให้ครบแล้วเรียกผ่าน
+    // t18n() แทนการ hardcode ในทุกจุดที่เจอ (ทั้งฟังก์ชัน default และจุดเรียกตรงๆ เช่น force_logout popup)
+    noticeTitle: 'แจ้งให้ทราบ', confirmActionTitle: 'ยืนยันการทำรายการ',
+    cancelBtnGeneric: 'ยกเลิก', confirmBtnGeneric: 'ยืนยัน', reloginBtn: 'เข้าสู่ระบบใหม่'
   },
   en: {
     backHome: '← Back to Home', lockedTitle: 'Please log in first',
@@ -941,10 +946,10 @@ const I18N = {
     dcReasonTextLabel: 'Please provide more detail', dcSubmitBtn: 'Submit Delete Request',
     dcErrReasonRequired: 'Please select a reason', dcErrReasonTextRequired: 'Please provide more detail',
     dcErrPasscodeRequired: 'Please enter your passcode to confirm',
-    joinBtnLabel: 'I work here because...', leaveBtnLabel: 'I LEFT because...',
+    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT because...',
     mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
-    joinMainReasonLabel: 'What made you apply to / join this company?',
+    joinMainReasonLabel: 'I WORK here because...',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?',
     requiredMark: '*', yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
     qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits & employee perks', qBrandReputation: 'Company reputation',
@@ -959,7 +964,9 @@ const I18N = {
     qTeamMismatch: 'Team/colleagues didn\'t fit me', qWorklifeMismatch: 'Work-life balance didn\'t fit me',
     qBetterOffer: 'Got a better offer elsewhere', qNotChallenging: 'Work wasn\'t challenging / not my field',
     leaveImprovementLabel: 'What could have made you stay?', leaveImprovementPh: 'Type your answer... (optional)',
-    errMainReasonRequired: 'Please fill in this field before saving', understandBtn: 'Got it', okBtn: 'OK'
+    errMainReasonRequired: 'Please fill in your answer before saving', understandBtn: 'Got it', okBtn: 'OK',
+    noticeTitle: 'Notice', confirmActionTitle: 'Confirm Action',
+    cancelBtnGeneric: 'Cancel', confirmBtnGeneric: 'Confirm', reloginBtn: 'Log in again'
   }
 };
 function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
@@ -1115,21 +1122,21 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{
 
 /* ---------- Confirm/Info popup (แทน confirm() ของเบราว์เซอร์ + toast เล็กๆ ทุกจุดที่เกี่ยวกับหัวข้อ/บัญชี) ---------- */
 function showInfoPopup(message, btnLabel, title){
-  document.getElementById('confirmModalTitle').textContent = title || 'แจ้งให้ทราบ';
+  document.getElementById('confirmModalTitle').textContent = title || t18n('noticeTitle');
   document.getElementById('confirmModalText').textContent = message;
   document.getElementById('confirmModalActions').innerHTML =
-    `<button class="btn btn-primary full-btn" id="confirmModalOkBtn">${btnLabel || 'ตกลง'}</button>`;
+    `<button class="btn btn-primary full-btn" id="confirmModalOkBtn">${btnLabel || t18n('okBtn')}</button>`;
   document.getElementById('confirmModalOkBtn').addEventListener('click', ()=> closeModal('confirmModal'));
   openModal('confirmModal');
 }
 
 // title/message/onConfirm ต้องระบุ, confirmLabel/cancelLabel/danger ไม่บังคับ
 function showConfirmPopup({ title, message, confirmLabel, cancelLabel, danger, onConfirm }){
-  document.getElementById('confirmModalTitle').textContent = title || 'ยืนยันการทำรายการ';
+  document.getElementById('confirmModalTitle').textContent = title || t18n('confirmActionTitle');
   document.getElementById('confirmModalText').textContent = message || '';
   document.getElementById('confirmModalActions').innerHTML = `
-    <button class="btn btn-ghost full-btn" id="confirmModalCancelBtn">${cancelLabel || 'ยกเลิก'}</button>
-    <button class="btn ${danger ? 'btn-danger' : 'btn-primary'} full-btn" id="confirmModalConfirmBtn">${confirmLabel || 'ยืนยัน'}</button>
+    <button class="btn btn-ghost full-btn" id="confirmModalCancelBtn">${cancelLabel || t18n('cancelBtnGeneric')}</button>
+    <button class="btn ${danger ? 'btn-danger' : 'btn-primary'} full-btn" id="confirmModalConfirmBtn">${confirmLabel || t18n('confirmBtnGeneric')}</button>
   `;
   document.getElementById('confirmModalCancelBtn').addEventListener('click', ()=> closeModal('confirmModal'));
   document.getElementById('confirmModalConfirmBtn').addEventListener('click', onConfirm);
@@ -2083,10 +2090,10 @@ document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
 
   // เปลี่ยนเบอร์สำเร็จ: backend revoke session เดิมทิ้งแล้ว ต้องบังคับ logout ให้ user login ใหม่ด้วยเบอร์ใหม่
   if(res.force_logout){
-    document.getElementById('confirmModalTitle').textContent = 'แจ้งให้ทราบ';
+    document.getElementById('confirmModalTitle').textContent = t18n('noticeTitle');
     document.getElementById('confirmModalText').textContent = res.message;
     document.getElementById('confirmModalActions').innerHTML =
-      `<button class="btn btn-primary full-btn" id="confirmModalOkBtn">เข้าสู่ระบบใหม่</button>`;
+      `<button class="btn btn-primary full-btn" id="confirmModalOkBtn">${t18n('reloginBtn')}</button>`;
     document.getElementById('confirmModalOkBtn').addEventListener('click', ()=>{
       logout();
       location.href = 'index.html';
