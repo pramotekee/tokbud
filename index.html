@@ -1013,7 +1013,10 @@
     <button class="modal-close" data-close="voteConfirmModal" style="margin-left:auto;display:block;">✕</button>
     <h3 style="margin:0 0 10px;" data-i18n="voteConfirmTitle">ยืนยันการเลือก</h3>
     <p id="voteConfirmText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.6;"></p>
-    <div id="voteAnonymityNotice" style="display:none;text-align:left;font-size:12.5px;color:var(--text-muted);line-height:1.6;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 18px;background:var(--bg);" data-i18n="voteAnonymityNotice"></div>
+    <!-- FIX (feedback ของ Pop): กล่อง anonymity notice เดิมพื้นหลังกลืนกับพื้นหลัง modal (var(--bg)) มองไม่เด่น
+         ทั้งที่เป็นข้อความสำคัญ (การันตีความเป็นส่วนตัว) เปลี่ยนเป็นสีเหลือง/ส้มอ่อนให้เด่นขึ้นแทน (ไม่ใช้สีแดง
+         เพราะแดงสื่อถึงคำเตือน/อันตราย ซึ่งไม่ตรงกับเนื้อหาที่เป็นเรื่องดี ไม่ใช่เรื่องต้องระวัง) -->
+    <div id="voteAnonymityNotice" style="display:none;text-align:left;font-size:12.5px;color:#7A5B00;line-height:1.6;border:1.5px solid #F5D149;border-radius:10px;padding:12px 14px;margin:0 0 18px;background:#FFF7D6;" data-i18n="voteAnonymityNotice"></div>
     <!-- FIX (Pop เจอบั๊ก): เดิมช่อง comment ที่ว่างเช็คผ่าน showInfoPopup() ซึ่งลบ/ซ่อนฟอร์มทั้งหมดทิ้งก่อนโชว์
          ข้อความเตือน (ดูคอมเมนต์ยาวที่ confirmVote/validateVoteFormComplete ด้านล่าง) — เพิ่ม class "ynu-row" +
          hint span ให้ไฮไลท์ได้แบบเดียวกับคำถาม Yes/No/Not sure ข้ออื่นๆ แทน ไม่ต้องซ่อน/ลบข้อมูลอะไรเลย -->
@@ -1177,7 +1180,7 @@ const I18N = {
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     createSubmitBtn: 'สร้างบริษัท',
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
-    joinMainReasonLabel: 'ปัจจัยที่คุณสมัคร/ร่วมงานกับบริษัทนี้คืออะไร?', joinMainReasonPh: 'พิมพ์คำตอบของคุณ...',
+    joinMainReasonLabel: 'ฉันทำงานที่นี่เพราะ...', joinMainReasonPh: 'พิมพ์คำตอบของคุณ...',
     leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?', leaveMainReasonPh: 'พิมพ์คำตอบของคุณ...',
     requiredMark: '*', requiredHint: '(บังคับตอบ)',
     yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
@@ -1204,7 +1207,7 @@ const I18N = {
     deletePasscodeLabel: 'กรอก Passcode เพื่อยืนยันการขอลบ', deleteConfirmBtn: 'ส่งคำขอลบ',
     deletePendingMsg: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ',
     errTitleRequired: 'กรุณากรอกชื่อบริษัท', errTitleEnglishOnly: 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น',
-    errAnswerRequired: 'กรุณาตอบข้อนี้', voteThankYouMsg: 'ขอบคุณสำหรับความคิดเห็นอันมีค่าที่คุณมอบให้',
+    errAnswerRequired: 'กรุณาตอบข้อนี้', voteThankYouMsg: 'ดีใจที่ได้ฟังเรื่องราวของคุณ ขอบคุณที่แบ่งปันนะ',
     errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 หมวด', errCategoryMax: 'เลือกได้สูงสุด 5 หมวดเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
     feedEmptyState: 'ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
@@ -1263,8 +1266,8 @@ const I18N = {
     ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
-    joinBtnLabel: 'I work here because...', leaveBtnLabel: 'I LEFT because...',
-    joinMainReasonLabel: 'What made you apply to / join this company?', joinMainReasonPh: 'Type your answer...',
+    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT because...',
+    joinMainReasonLabel: 'I WORK here because...', joinMainReasonPh: 'Type your answer...',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
     requiredMark: '*', requiredHint: '(required)',
     yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
@@ -1291,7 +1294,7 @@ const I18N = {
     deletePasscodeLabel: 'Enter your Passcode to confirm this request', deleteConfirmBtn: 'Submit delete request',
     deletePendingMsg: 'A delete request is already pending review',
     errTitleRequired: 'Please enter a company name', errTitleEnglishOnly: 'Company name must be in English only',
-    errAnswerRequired: 'Please answer this question', voteThankYouMsg: 'Thank you for the valuable feedback you shared with us.',
+    errAnswerRequired: 'Please answer this question', voteThankYouMsg: 'Love to hear from you — thanks for sharing your story!',
     errCategoryRequired: 'Please select at least 1 category', errCategoryMax: 'You can select up to 5 only', errTagRequired: 'Please add at least 1 tag',
     feedEmptyState: "No results yet<br>Try a different category or search term",
     errCoverRequired: 'Please attach a company logo before creating the company',
@@ -1306,7 +1309,7 @@ const I18N = {
     errSignupProvinceRequired: 'Please select a province', myAccountFallback: 'My Account', loggedOutToast: 'Logged out',
     imageLoadFailToast: 'Failed to load image, please try uploading again', imageUploadFailToast: 'Image upload failed',
     loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
-    voteConfirmTitle: 'Give my comment', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
+    voteConfirmTitle: 'Share my comment', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
     okBtn: 'OK', understandBtn: 'Got it', savingText: 'Saving...',
     sideLabelPrefix: 'Side',
     voteConfirmMsg: 'Once confirmed, your answer is saved immediately and you can come back to edit it anytime from "My Comment".',
@@ -3194,6 +3197,24 @@ async function confirmVote(){
  * ถ้าไม่มีคอมเมนต์เลยจะโชว์ empty state แทนที่จะปิดปุ่มหรือซ่อนไป กัน user สับสนว่าเว็บพัง */
 let CM_STATE = { topicId:null, side:null, page:0, totalPages:1, loading:false, observer:null };
 
+// FIX (ฟีเจอร์ที่ Pop ขอ): ลิงก์/ชื่อเว็บไซต์ที่ user พิมพ์ในคอมเมนต์ (เช่น "google.com" หรือ URL เต็ม)
+// ให้กลายเป็นลิงก์กดได้ เปิดแท็บใหม่ ให้คนอ่านกดตามไปดูได้เลยไม่ต้อง copy เอง ทำงานบนข้อความที่ escapeHtml()
+// แล้วเท่านั้น (กัน XSS — regex เห็นแค่ตัวอักษรธรรมดา ไม่มีทางเจอ raw <script> โผล่มาได้) แล้วห่อด้วย <a> เอง
+function linkifyEscapedText(escaped){
+  return escaped.replace(
+    /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<]*)?\b)/gi,
+    (match) => {
+      // regex โลภ อาจกินวรรคตอนท้ายประโยคติดมาด้วย (เช่น "google.com." หรือ "google.com,") ตัดออกจากตัวลิงก์ก่อน
+      const trailMatch = match.match(/[.,!?;:)\]]+$/);
+      const trail = trailMatch ? trailMatch[0] : '';
+      const core = trail ? match.slice(0, -trail.length) : match;
+      if(!core) return match;
+      const href = /^https?:\/\//i.test(core) ? core : `https://${core}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${core}</a>${trail}`;
+    }
+  );
+}
+
 function formatCommentTime(dateStr){
   if(!dateStr) return '';
   const d = new Date(dateStr);
@@ -3235,7 +3256,7 @@ async function loadMoreComments(isFirst){
     listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
   } else {
     listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
-      <div class="comment-item">${escapeHtml(c.comment)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
+      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
     `).join(''));
   }
 
