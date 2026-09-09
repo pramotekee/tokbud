@@ -1014,11 +1014,15 @@
     <h3 style="margin:0 0 10px;" data-i18n="voteConfirmTitle">ยืนยันการเลือก</h3>
     <p id="voteConfirmText" style="font-size:13.5px;color:var(--text-muted);margin:0 0 10px;line-height:1.6;"></p>
     <div id="voteAnonymityNotice" style="display:none;text-align:left;font-size:12.5px;color:var(--text-muted);line-height:1.6;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 18px;background:var(--bg);" data-i18n="voteAnonymityNotice"></div>
-    <div id="voteCommentWrap" style="display:none;text-align:left;margin:-4px 0 18px;">
+    <!-- FIX (Pop เจอบั๊ก): เดิมช่อง comment ที่ว่างเช็คผ่าน showInfoPopup() ซึ่งลบ/ซ่อนฟอร์มทั้งหมดทิ้งก่อนโชว์
+         ข้อความเตือน (ดูคอมเมนต์ยาวที่ confirmVote/validateVoteFormComplete ด้านล่าง) — เพิ่ม class "ynu-row" +
+         hint span ให้ไฮไลท์ได้แบบเดียวกับคำถาม Yes/No/Not sure ข้ออื่นๆ แทน ไม่ต้องซ่อน/ลบข้อมูลอะไรเลย -->
+    <div id="voteCommentWrap" class="ynu-row" style="display:none;text-align:left;margin:-4px 0 18px;">
       <label id="voteCommentLabel" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;"></label>
       <textarea id="voteCommentInput" maxlength="5000" rows="3" placeholder=""
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;"></textarea>
       <div id="voteCommentCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">0/5000</div>
+      <span id="voteCommentMissingHint" class="ynu-missing-hint" style="display:none;" data-i18n="errMainReasonRequired"></span>
     </div>
     <div id="voteQuestionsWrap" style="text-align:left;margin:0 0 18px;"></div>
     <div style="display:flex;gap:10px;" id="voteConfirmActions">
@@ -1204,7 +1208,7 @@ const I18N = {
     errCategoryRequired: 'กรุณาเลือกอย่างน้อย 1 หมวด', errCategoryMax: 'เลือกได้สูงสุด 5 หมวดเท่านั้น', errTagRequired: 'กรุณาใส่ Tag อย่างน้อย 1 อัน',
     feedEmptyState: 'ยังไม่มีข้อมูลในตอนนี้<br>ลองเปลี่ยนหมวดหรือคำค้นหาดูครับ',
     errCoverRequired: 'กรุณาแนบโลโก้บริษัทให้เรียบร้อยก่อนสร้างบริษัท',
-    errMainReasonRequired: 'กรุณากรอกคำตอบในช่องนี้ก่อนบันทึก',
+    errMainReasonRequired: 'กรุณากรอกคำตอบข้อนี้ก่อนบันทึก',
     errPasscodeRequired: 'กรุณากรอก Passcode', errDeleteReasonRequired: 'กรุณาเลือกเหตุผลและกรอกรายละเอียดให้ครบ',
     errSignupAvatarRequired: 'กรุณาอัพโหลดรูปโปรไฟล์ก่อนสมัครสมาชิก', errSignupUsernameRequired: 'กรุณากรอก Username',
     errSignupEmailRequired: 'โปรดใส่อีเมล เพื่อไม่เสียสิทธิ์ในการร่วมสนุก ลุ้นรับรางวัลต่างๆ และใช้เป็นช่องทางในการติดต่อจากทีมงานถึงคุณ',
@@ -1227,7 +1231,7 @@ const I18N = {
     commentLoadingText: 'กำลังโหลดความคิดเห็น...'
   },
   en: {
-    createBtn: '＋ Create Company', createBtn2: 'Create Company', loginBtn: 'Log In',
+    createBtn: '＋ Company', createBtn2: 'Create Company', loginBtn: 'Log In',
     heroTitle: '<b>Find</b> the place where you shine.',
     searchPlaceholder: 'Search companies, tags...',
     sortShuffle: 'Shuffle', sortLatest: 'Latest', sortPopular: 'Popular',
@@ -1259,7 +1263,7 @@ const I18N = {
     ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
-    joinBtnLabel: 'I JOINED because...', leaveBtnLabel: 'I LEFT because...',
+    joinBtnLabel: 'I work here because...', leaveBtnLabel: 'I LEFT because...',
     joinMainReasonLabel: 'What made you apply to / join this company?', joinMainReasonPh: 'Type your answer...',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
     requiredMark: '*', requiredHint: '(required)',
@@ -1291,7 +1295,7 @@ const I18N = {
     errCategoryRequired: 'Please select at least 1 category', errCategoryMax: 'You can select up to 5 only', errTagRequired: 'Please add at least 1 tag',
     feedEmptyState: "No results yet<br>Try a different category or search term",
     errCoverRequired: 'Please attach a company logo before creating the company',
-    errMainReasonRequired: 'Please fill in this field before saving',
+    errMainReasonRequired: 'Please fill in your answer before saving',
     errPasscodeRequired: 'Please enter your Passcode', errDeleteReasonRequired: 'Please select a reason and fill in all required details',
     errSignupAvatarRequired: 'Please upload a profile picture before signing up', errSignupUsernameRequired: 'Please enter a Username',
     errSignupEmailRequired: 'Please enter your email so you don\'t miss out on giveaways and updates from our team',
@@ -2557,7 +2561,7 @@ function topicCardHTML(t){
     <div class="mini-dash">
       <div class="mini-dash-title">
         <span class="mini-dash-summary">
-          Total voters <b style="color:${t.card_color || 'var(--primary)'}">${t.total_votes}</b>
+          Total comments <b style="color:${t.card_color || 'var(--primary)'}">${t.total_votes}</b>
           <button class="dash-toggle-btn" data-dash-toggle="${t.company_id}" aria-expanded="false" aria-label="Show/hide voter summary">▾</button>
         </span>
       </div>
@@ -3042,11 +3046,20 @@ function buildVoteQuestionsHTML(side, prefillData){
       </div>`;
   }
   const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
+  // FIX x2 (feedback ของ Pop):
+  // 1) label นี้เดิมใช้ inline style เดี่ยวๆ (13px ไม่ตัวหนา) ไม่ได้ใช้ class .ynu-question-label เหมือนคำถาม
+  //    ข้ออื่นทุกข้อ (13.5px + ตัวหนา) เลยดูแตกต่างกันโดยไม่ตั้งใจ -> เปลี่ยนมาใช้ class เดียวกันให้เหมือนกันหมด
+  // 2) เดิมไม่มีตัวนับตัวอักษรมุมขวาล่างเหมือนช่อง comment หลัก ทั้งที่ maxlength เท่ากัน (5000) -> เพิ่มตัวนับ
+  //    ด้วย oninput inline ตรงนี้เลย (ไม่ผูก addEventListener แยกเหมือน voteCommentInput เพราะ textarea นี้ถูก
+  //    re-render ทิ้ง/สร้างใหม่ทุกครั้งที่เปิดฟอร์มผ่าน innerHTML — ผูก listener แยกแล้วจะหลุดทุกรอบ)
+  const leaveImprovementLen = String(prefillData.leave_improvement_suggestion || '').length;
   return `${rows}
     <div class="ynu-row" style="margin-bottom:6px;">
-      <label style="display:block;font-size:13px;margin-bottom:6px;">${t18n('leaveImprovementLabel')}</label>
+      <div class="ynu-question-label">${t18n('leaveImprovementLabel')}</div>
       <textarea id="leaveImprovementInput" maxlength="5000" rows="2" placeholder="${t18n('leaveImprovementPh')}"
+        oninput="document.getElementById('leaveImprovementCounter').textContent=this.value.length+'/5000'"
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
+      <div id="leaveImprovementCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">${leaveImprovementLen}/5000</div>
     </div>`;
 }
 
@@ -3091,10 +3104,26 @@ function collectVoteQuestionAnswers(side){
   return answers;
 }
 
-// เช็คว่าทุกข้อ (YNU ทั้งหมด + คะแนนความมั่นใจฝั่ง Join) ตอบครบหรือยัง ก่อนอนุญาตให้ Confirm
-// ถ้ามีข้อไหนขาด -> ล้อมกรอบแดง + เลื่อนจอไปข้อแรกที่ขาด แล้ว return false กัน submit ไม่ให้ยิง API ไปเปล่าๆ
-function validateVoteQuestionsAnswered(){
-  let firstMissingRow = null;
+// FIX ใหญ่ (บั๊กที่ Pop เจอ): เดิมช่อง comment ว่าง -> เรียก showInfoPopup() ซึ่งลบ/ซ่อนฟอร์มทั้งใบทิ้งก่อนโชว์
+// ข้อความเตือน (ดู showInfoPopup ด้านบน) กด "Got it" แล้วเลยเจอฟอร์มว่างเปล่า/โดนพากลับ home เพราะข้อมูลที่กรอก
+// ไปแล้วถูกลบไปตั้งแต่ก่อนกด Got it ด้วยซ้ำ ส่วนคำถาม Yes/No/Not sure ใช้วิธีล้อมกรอบแดง+เลื่อนจอไปข้อที่ขาด
+// (ไม่ลบข้อมูล) ถูกต้องอยู่แล้ว -> รวม 2 การเช็คเป็นฟังก์ชันเดียว ให้ช่อง comment ใช้วิธีเดียวกับคำถามข้ออื่นๆ
+// เช็คครบทุกข้อพร้อมกันในรอบเดียว (ไม่ใช่เช็ค comment ก่อนแล้วค่อยเช็ค YNU ทีหลัง) ตามที่ Pop ขอ แล้วเลื่อนจอไป
+// ข้อแรกสุดที่ขาดเท่านั้น ไม่ปิด/ล้าง modal หรือข้อมูลที่กรอกไว้แล้วเลยแม้แต่นิดเดียว
+function validateVoteFormComplete(){
+  let firstMissingEl = null;
+
+  const commentWrap = document.getElementById('voteCommentWrap');
+  const commentInput = document.getElementById('voteCommentInput');
+  const commentHint = document.getElementById('voteCommentMissingHint');
+  if(commentInput.value.trim()){
+    clearYnuMissing(commentWrap);
+  } else {
+    commentWrap.classList.add('ynu-missing');
+    if(commentHint) commentHint.style.display = 'block';
+    firstMissingEl = commentWrap;
+  }
+
   document.querySelectorAll('#voteQuestionsWrap .ynu-row[data-ynu-field]').forEach(row=>{
     const field = row.dataset.ynuField;
     let answered;
@@ -3109,11 +3138,12 @@ function validateVoteQuestionsAnswered(){
       row.classList.add('ynu-missing');
       const hint = row.querySelector('.ynu-missing-hint');
       if(hint) hint.style.display = 'block';
-      if(!firstMissingRow) firstMissingRow = row;
+      if(!firstMissingEl) firstMissingEl = row;
     }
   });
-  if(firstMissingRow){
-    firstMissingRow.scrollIntoView({ behavior:'smooth', block:'center' });
+
+  if(firstMissingEl){
+    firstMissingEl.scrollIntoView({ behavior:'smooth', block:'center' });
     return false;
   }
   return true;
@@ -3122,18 +3152,12 @@ function validateVoteQuestionsAnswered(){
 async function confirmVote(){
   if(!pendingVoteConfirm) return;
   const { topicId, side } = pendingVoteConfirm;
+
+  if(!validateVoteFormComplete()){
+    return; // มีข้อไหนยังไม่ตอบ (รวม comment) -> ไม่ยิง API เลย ไม่ปิด modal ไม่ลบข้อมูลที่กรอกไว้แล้วสักตัว
+  }
+
   const mainReason = document.getElementById('voteCommentInput').value.trim();
-  const errText = document.getElementById('voteConfirmText');
-
-  if(!mainReason){
-    showInfoPopup(t18n('errMainReasonRequired'), t18n('understandBtn'));
-    return;
-  }
-
-  if(!validateVoteQuestionsAnswered()){
-    return; // มีข้อไหนยังไม่ตอบ -> ไม่ยิง API เลย กันเคสกด Confirm ทั้งที่ตอบไม่ครบแล้วนึกว่าบันทึกสำเร็จ
-  }
-
   const confirmBtn = document.getElementById('voteConfirmBtn');
   const cancelBtn = document.getElementById('voteCancelBtn');
   confirmBtn.disabled = true; if(cancelBtn) cancelBtn.disabled = true;
