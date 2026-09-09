@@ -878,7 +878,12 @@ const I18N = {
     // "ยืนยันการทำรายการ", "ยกเลิก", "ยืนยัน") ไม่ว่า toggle ภาษาจะเป็น EN อยู่ก็ตาม เพิ่ม key ให้ครบแล้วเรียกผ่าน
     // t18n() แทนการ hardcode ในทุกจุดที่เจอ (ทั้งฟังก์ชัน default และจุดเรียกตรงๆ เช่น force_logout popup)
     noticeTitle: 'แจ้งให้ทราบ', confirmActionTitle: 'ยืนยันการทำรายการ',
-    cancelBtnGeneric: 'ยกเลิก', confirmBtnGeneric: 'ยืนยัน', reloginBtn: 'เข้าสู่ระบบใหม่'
+    cancelBtnGeneric: 'ยกเลิก', confirmBtnGeneric: 'ยืนยัน', reloginBtn: 'เข้าสู่ระบบใหม่',
+    // FIX (feedback ของ Pop): popup ตอนแก้ไข "My Comment" สำเร็จ เดิมใช้หัวข้อ default "แจ้งให้ทราบ" (noticeTitle)
+    // ร่วมกับ popup อื่นๆ ทั่วไป — รู้สึกแข็งกระด้างเกินไปสำหรับจังหวะที่ user เพิ่งแก้ไขคอมเมนต์ของตัวเองเสร็จ
+    // (ไม่ใช่ตอนส่งคอมเม้นท์ใหม่ครั้งแรก อันนั้นมี popup "Give my comment"/thank-you ของตัวเองแยกอยู่แล้ว) เลย
+    // แยก key ใหม่เฉพาะจุดนี้ ให้เป็นโทนขอบคุณแทน ไม่กระทบ noticeTitle ที่จุดอื่นยังใช้ร่วมกันอยู่
+    editSuccessTitle: 'ขอบคุณ'
   },
   en: {
     backHome: '← Back to Home', lockedTitle: 'Please log in first',
@@ -966,7 +971,8 @@ const I18N = {
     leaveImprovementLabel: 'What could have made you stay?', leaveImprovementPh: 'Type your answer... (optional)',
     errMainReasonRequired: 'Please fill in your answer before saving', understandBtn: 'Got it', okBtn: 'OK',
     noticeTitle: 'Notice', confirmActionTitle: 'Confirm Action',
-    cancelBtnGeneric: 'Cancel', confirmBtnGeneric: 'Confirm', reloginBtn: 'Log in again'
+    cancelBtnGeneric: 'Cancel', confirmBtnGeneric: 'Confirm', reloginBtn: 'Log in again',
+    editSuccessTitle: 'Thank you'
   }
 };
 function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
@@ -1854,7 +1860,7 @@ document.getElementById('ecSaveBtn').addEventListener('click', async ()=>{
     return;
   }
   closeModal('editCommentModal');
-  showInfoPopup(pickLang(res.message), t18n('okBtn'));
+  showInfoPopup(pickLang(res.message), t18n('okBtn'), t18n('editSuccessTitle'));
   loadMyComments();
 });
 
