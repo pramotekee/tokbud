@@ -62,7 +62,7 @@
     font-family:'Inter', sans-serif; font-weight:400; font-size:15px; line-height:1.6;
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3, .topic-title, .vb-label, .btn, .modal-head h3, .creator-name{
+  h1,h2,h3, .topic-title, .vb-label, .btn, .modal-head h3{
     font-family:'Lexend', sans-serif;
   }
   img{ max-width:100%; display:block; }
@@ -285,16 +285,14 @@
     overflow:hidden; border:2px solid var(--card-color, var(--primary)); border-top-width:5px;
   }
   .card-top{
-    display:flex; align-items:center; justify-content:space-between; padding:12px 14px 0;
+    display:flex; align-items:center; justify-content:flex-end; padding:12px 14px 0;
   }
-  .creator{ display:flex; align-items:center; gap:8px; }
   .creator-avatar{
     width:32px; height:32px; border-radius:50%; overflow:hidden; flex-shrink:0;
     background:var(--primary-light); border:1.5px solid var(--line); cursor:pointer;
     display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:600;
   }
   .creator-avatar img{ width:100%; height:100%; object-fit:cover; }
-  .creator-name{ font-size:13px; color:var(--text-muted); font-weight:500; }
   .share-icon-btn{
     width:32px; height:32px; border-radius:50%; background:var(--bg);
     display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--primary);
@@ -308,7 +306,7 @@
 
   .card-content-block{ padding:12px 14px 4px; }
   .cover-img{ width:100%; height:100%; object-fit:contain; display:block; }
-  .cover-img-wrap{ aspect-ratio:9/16; border-radius:12px; overflow:hidden; background:var(--bg); cursor:zoom-in; }
+  .cover-img-wrap{ aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:var(--bg); cursor:zoom-in; }
   .text-topic-box{
     background:var(--bg); border-radius:12px; padding:22px 16px; text-align:center; min-height:120px;
     display:flex; flex-direction:column; justify-content:center; gap:8px;
@@ -373,7 +371,7 @@
   /* --- vote row แบบมีรูป: [A][รูป][B] ทั้ง 3 แท่งสัดส่วนเท่ากันหมด คือสี่เหลี่ยมผืนผ้าแนวตั้ง 9:16 --- */
   .vote-row-image{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:14px; }
   .vote-row-image .vote-btn{
-    aspect-ratio:9/16; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    aspect-ratio:3/4; display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:8px 4px; word-break:break-word;
   }
 
@@ -573,7 +571,7 @@
   }
   .type-toggle button.selected{ border-color:var(--primary); color:var(--primary); background:#fff; }
   .cover-upload{
-    width:100%; aspect-ratio:9/16; max-height:520px; border:1.5px dashed var(--line); border-radius:12px;
+    width:100%; aspect-ratio:3/4; max-height:520px; border:1.5px dashed var(--line); border-radius:12px;
     display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:13px;
     background:var(--bg); overflow:hidden; text-align:center; padding:10px;
   }
@@ -581,7 +579,7 @@
   .preview-3col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; align-items:stretch; }
   .preview-3col .cover-upload{ max-height:none; }
   .preview-vote-btn{
-    aspect-ratio:9/16; border-radius:12px; background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white);
+    aspect-ratio:3/4; border-radius:12px; background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white);
     border:2px solid color-mix(in srgb, var(--card-color, var(--primary)) 30%, white);
     display:flex; align-items:center; justify-content:center; text-align:center;
     font-size:12.5px; font-weight:600; color:var(--text-muted); padding:6px 4px; word-break:break-word;
@@ -2537,10 +2535,6 @@ function joinCaption(t){ return t.join_caption || t18n('joinBtnLabel'); }
 function leaveCaption(t){ return t.leave_caption || t18n('leaveBtnLabel'); }
 
 function topicCardHTML(t){
-  const avatarInner = t.creator_profile_image
-    ? `<img src="${t.creator_profile_image}">`
-    : (t.creator_username ? t.creator_username.charAt(0).toUpperCase() : '?');
-
   // คำอธิบาย: จำกัดไว้ 2 บรรทัดในการ์ด (ไม่ลิมิตความยาวตอนพิมพ์) ยาวเกินให้กดปุ่ม "อ่านเพิ่มเติม" เปิด popup อ่านเต็ม
   const descBlock = t.description
     ? `<div class="topic-desc clamp-2" data-desc-topic="${t.company_id}">${linkifyText(t.description)}</div><button type="button" class="desc-more-btn" data-desc-topic="${t.company_id}">อ่านเพิ่มเติม</button>`
@@ -2578,10 +2572,6 @@ function topicCardHTML(t){
   return `
   <div class="topic-card" data-card-id="${t.company_id}" style="--card-color:${t.card_color || 'var(--primary)'}">
     <div class="card-top">
-      <div class="creator">
-        <div class="creator-avatar" ${t.creator_profile_image ? `data-lightbox="${t.creator_profile_image}"` : ''}>${avatarInner}</div>
-        <span class="creator-name">${escapeHtml(t.creator_username || 'ไม่ระบุชื่อ')}</span>
-      </div>
       <button class="share-icon-btn" data-topic="${t.company_id}">⤴</button>
     </div>
 
@@ -3408,7 +3398,7 @@ async function loadMoreComments(isFirst){
     listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
   } else {
     listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
-      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span>${buildAnswerGridHTML(CM_STATE.side, c)}</div>
+      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}${buildAnswerGridHTML(CM_STATE.side, c)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
     `).join(''));
   }
 
