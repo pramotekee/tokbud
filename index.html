@@ -283,9 +283,7 @@
   .topic-card{
     background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
     overflow:hidden; border:2px solid var(--card-color, var(--primary)); border-top-width:5px;
-  }
-  .card-top{
-    display:flex; align-items:center; justify-content:flex-end; padding:12px 14px 0;
+    position:relative;
   }
   .creator-avatar{
     width:32px; height:32px; border-radius:50%; overflow:hidden; flex-shrink:0;
@@ -297,7 +295,9 @@
     width:32px; height:32px; border-radius:50%; background:var(--bg);
     display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--primary);
   }
-  .topic-card .share-icon-btn{ color:var(--card-color, var(--primary)); }
+  /* ลอยทับมุมขวาบนของการ์ด แทนที่จะกินพื้นที่เป็นแถวแยก (เดิมมี avatar+username คู่กันในแถวนั้น
+     พอตัด avatar+username ออกไปแล้วเหลือปุ่มนี้ลอยเดี่ยว ๆ บนแถวว่างเปล่า ดูมีช่องว่างแปลก ๆ) */
+  .topic-card .share-icon-btn{ position:absolute; top:12px; right:14px; z-index:2; color:var(--card-color, var(--primary)); }
   .qr-code-box{
     display:flex; align-items:center; justify-content:center; padding:16px;
     background:#fff; border:1.5px solid var(--line); border-radius:14px; min-height:220px;
@@ -324,7 +324,7 @@
   #descModalBody{ font-size:14px; line-height:1.65; color:var(--text); white-space:pre-wrap; word-break:break-word; }
   #descModalBody a{ color:var(--primary); text-decoration:underline; word-break:break-all; }
   /* หัวข้อ+รายละเอียดของการ์ดแบบรูปภาพ: ไม่มีกล่องพื้นหลังแบบ text-topic-box แต่ต้องมี title/desc ให้ user อ่านก่อนโหวตเหมือนกัน */
-  .card-content-block > .topic-title{ margin-top:0; }
+  .card-content-block > .topic-title{ margin-top:0; padding-right:40px; }
   .card-content-block > .topic-desc{ margin-top:2px; }
 
   .meta-row{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:10px 14px 0; }
@@ -2571,9 +2571,7 @@ function topicCardHTML(t){
 
   return `
   <div class="topic-card" data-card-id="${t.company_id}" style="--card-color:${t.card_color || 'var(--primary)'}">
-    <div class="card-top">
-      <button class="share-icon-btn" data-topic="${t.company_id}">⤴</button>
-    </div>
+    <button class="share-icon-btn" data-topic="${t.company_id}">⤴</button>
 
     ${textBlock}
 
