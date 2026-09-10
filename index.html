@@ -145,6 +145,26 @@
   }
   .hero-card img{ aspect-ratio:16/9; object-fit:cover; }
 
+  /* ===== Comment ticker bar: วิ่งขวา->ซ้ายไม่หยุด ใต้ hero บนสุดของ search box (ไอเดียของ Pop) =====
+     สุ่มคอมเมนต์ข้ามทุกบริษัท ให้คนที่ยังไม่มีบริษัทเป้าหมายในใจเห็นตัวอย่างเนื้อหาจริงก่อนแล้วอยากกดตามไปอ่าน
+     ข้อมูลพ่วงมากับ getHomeFeed อยู่แล้ว (ดู actionGetHomeFeed ฝั่ง Apps Script) ไม่ใช่คำขอแยก */
+  .ticker-wrap{
+    background:var(--surface); border-bottom:1px solid var(--line); padding:9px 0;
+    overflow:hidden; position:relative; cursor:grab;
+  }
+  .ticker-wrap.paused{ cursor:grabbing; }
+  .ticker-track{ display:flex; align-items:center; white-space:nowrap; width:max-content; }
+  .ticker-item{
+    display:inline-flex; align-items:center; gap:7px; background:none; border:none;
+    padding:0 22px; font:inherit; color:inherit; cursor:pointer;
+  }
+  .ticker-badge{ flex-shrink:0; font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:100px; white-space:nowrap; }
+  .ticker-badge.a{ background:var(--side-a); color:#fff; }
+  .ticker-badge.b{ background:var(--side-b); color:var(--primary-dark); }
+  .ticker-text{ font-size:12.5px; color:var(--text); }
+  .ticker-text .tk-ellipsis, .ticker-text .tk-company{ color:var(--text-muted); }
+  .ticker-sep{ color:var(--line); }
+
   /* ===== Search + Category pills ===== */
   .filter-bar{
     position:sticky; top:63px; z-index:40; background:var(--bg);
@@ -748,6 +768,10 @@
   </div>
 </section>
 
+<div class="ticker-wrap" id="tickerWrap" style="display:none;">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
 <div class="filter-bar">
   <div class="search-row">
     <div class="search-box">
@@ -1195,6 +1219,7 @@ const I18N = {
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     createSubmitBtn: 'สร้างบริษัท',
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
+    tickerJoinBadge: 'ทำงานอยู่', tickerLeaveBadge: 'ลาออกแล้ว',
     joinMainReasonLabel: 'ฉันทำงานที่นี่เพราะ...', joinMainReasonPh: 'พิมพ์คำตอบของคุณ...',
     leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?', leaveMainReasonPh: 'พิมพ์คำตอบของคุณ...',
     requiredMark: '*', requiredHint: '(บังคับตอบ)',
@@ -1286,6 +1311,7 @@ const I18N = {
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
     joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT here because...',
+    tickerJoinBadge: 'I WORK', tickerLeaveBadge: 'I LEFT',
     joinMainReasonLabel: 'I WORK here because...', joinMainReasonPh: 'Type your answer...',
     leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
     requiredMark: '*', requiredHint: '(required)',
@@ -1408,7 +1434,8 @@ let STATE = {
   pendingVote: null, // {topicId, side} ถ้าโหวตตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ
   pendingExport: null, // {companyId} ถ้ากด Export ตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ (ดู handleExportClick)
   // first-time (key ไม่มีเลย) = 'card' เสมอ — รองรับ 3 ค่า: 'card' | 'line' | 'carousel' (feature: View by Carousel)
-  feedView: (()=>{ const v = localStorage.getItem(FEED_VIEW_KEY); return (v === 'line' || v === 'carousel') ? v : 'card'; })()
+  feedView: (()=>{ const v = localStorage.getItem(FEED_VIEW_KEY); return (v === 'line' || v === 'carousel') ? v : 'card'; })(),
+  tickerStarted: false // กัน initTickerBar() รันซ้ำทุกครั้งที่ loadHomeFeed() ถูกเรียก (ค้นหา/เปลี่ยนหน้า/filter) ไม่งั้นแถบวิ่งจะรีเซ็ตตำแหน่งกระตุกทุกครั้ง
 };
 
 // topicId ของการ์ดที่เปิด (expand) อยู่ใน Line view — module-level เจตนาให้ "อยู่ข้ามการ re-render"
@@ -2266,6 +2293,10 @@ async function loadHomeFeed(){
 
   renderCategoryPills(res.success ? res.categories : []);
   initHeroBanners(res.success ? res.banners : []);
+  if(!STATE.tickerStarted && res.success){
+    STATE.tickerStarted = true;
+    initTickerBar(res.tickerComments);
+  }
 }
 
 function renderResultCount(){
@@ -3575,6 +3606,74 @@ function initHeroBanners(banners){
 async function loadHeroBanners(){
   const res = await api('getHeroBanners');
   initHeroBanners(res.success ? res.banners : []);
+}
+
+/* ===== Comment ticker bar (ไอเดียของ Pop) =====
+   ข้อมูลพ่วงมากับ getHomeFeed อยู่แล้ว (res.tickerComments) ไม่ใช่คำขอแยก — กันปัญหา cold-start ซ้อนที่เคยแก้ไปแล้ว
+   (ดูคอมเมนต์ยาวเหนือ actionGetHomeFeed ฝั่ง Apps Script) initTickerBar() ถูกเรียกแค่ครั้งเดียวต่อการเปิดหน้า
+   (ดู STATE.tickerStarted guard ใน loadHomeFeed) ไม่ re-init ทุกครั้งที่ loadHomeFeed ถูกเรียกซ้ำ (ค้นหา/เปลี่ยนหน้า)
+   ไม่งั้นแถบจะรีเซ็ตตำแหน่งกระตุกทุกครั้งที่พิมพ์ค้นหา */
+let tickerRAF = null;
+let tickerPos = 0;
+let tickerPaused = false;
+
+// ตัด 100 ตัวอักษรแบบฉลาด: หาช่องว่างที่ใกล้จุดตัดที่สุดในช่วง 15 ตัวอักษรก่อนหน้า กันคำภาษาอังกฤษขาดครึ่งคำ
+// (ภาษาไทยไม่มีช่องว่างระหว่างคำอยู่แล้ว ถ้าหาช่องว่างไม่เจอในช่วงนั้นก็ตัดตรงจุด maxLen ปกติ)
+function smartTruncate(text, maxLen){
+  text = String(text || '').trim();
+  if(text.length <= maxLen) return text;
+  const windowText = text.slice(0, maxLen);
+  const lastSpace = windowText.lastIndexOf(' ');
+  const cut = (lastSpace >= maxLen - 15) ? lastSpace : maxLen;
+  return text.slice(0, cut).trim();
+}
+
+function tickerItemHTML(item){
+  const isJoin = item.side === 'A';
+  const badgeText = t18n(isJoin ? 'tickerJoinBadge' : 'tickerLeaveBadge');
+  const sideLabel = t18n(isJoin ? 'joinBtnLabel' : 'leaveBtnLabel');
+  const snippet = smartTruncate(item.comment, 100);
+  return `<button type="button" class="ticker-item" data-topic="${item.company_id}" data-side="${item.side}" data-side-label="${escapeHtml(sideLabel)}">
+    <span class="ticker-badge ${isJoin ? 'a' : 'b'}">${escapeHtml(badgeText)}</span>
+    <span class="ticker-text">${escapeHtml(snippet)}<span class="tk-ellipsis">... </span><span class="tk-company">(${escapeHtml(item.company_name || '')})</span></span>
+  </button><span class="ticker-sep">•</span>`;
+}
+
+function initTickerBar(comments){
+  const wrap = document.getElementById('tickerWrap');
+  const track = document.getElementById('tickerTrack');
+  comments = comments || [];
+  if(comments.length === 0){ wrap.style.display = 'none'; return; }
+
+  wrap.style.display = 'block';
+  // ต่อเนื้อหาซ้ำ 1 รอบ ให้วน loop แบบไม่มีรอยต่อ (พอเลื่อนครบความกว้างครึ่งแรกก็รีเซ็ตกลับ 0 ทันที เพราะครึ่งหลังเหมือนกันเป๊ะ)
+  const itemsHTML = comments.map(tickerItemHTML).join('');
+  track.innerHTML = itemsHTML + itemsHTML;
+
+  track.querySelectorAll('.ticker-item').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      openCommentModal(btn.dataset.topic, btn.dataset.side, btn.dataset.sideLabel);
+    });
+  });
+
+  wrap.addEventListener('pointerdown', ()=>{ tickerPaused = true; wrap.classList.add('paused'); });
+  wrap.addEventListener('pointerup', ()=>{ tickerPaused = false; wrap.classList.remove('paused'); });
+  wrap.addEventListener('pointerleave', ()=>{ tickerPaused = false; wrap.classList.remove('paused'); });
+
+  if(tickerRAF) cancelAnimationFrame(tickerRAF);
+  // เคารพ prefers-reduced-motion ของเครื่อง user (accessibility) — โชว์เนื้อหาแบบนิ่ง ไม่บังคับวิ่ง
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  function tick(){
+    if(!tickerPaused){
+      tickerPos -= 0.5;
+      const half = track.scrollWidth / 2;
+      if(half > 0 && Math.abs(tickerPos) >= half) tickerPos = 0;
+      track.style.transform = `translateX(${tickerPos}px)`;
+    }
+    tickerRAF = requestAnimationFrame(tick);
+  }
+  tickerRAF = requestAnimationFrame(tick);
 }
 
 // สร้าง/คำนวณจำนวนชุดของ track ใหม่ ให้กว้างพอสำหรับวนลูปแบบไม่มีรอยต่อ ไม่ว่าจะมี banner กี่ใบ หรือจอกว้างแค่ไหน
