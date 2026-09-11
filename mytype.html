@@ -72,6 +72,8 @@
   .state-box{ text-align:center; padding:70px 20px; color:#6E6680; }
   .state-box .spinner{ width:30px; height:30px; border:3px solid rgba(33,67,200,0.15); border-top-color:#2143C8; border-radius:50%; margin:0 auto 14px; animation:spin .8s linear infinite; }
   .state-box .msg{ font-size:14.5px; }
+  .state-box .empty-headline{ font-size:19px; font-weight:700; color:#fff; margin-bottom:10px; }
+  .state-box .empty-desc{ font-size:13.5px; line-height:1.6; color:rgba(255,255,255,0.75); max-width:340px; margin:0 auto; }
 
   /* ===== การ์ดพื้นขาว (ทุกกล่องคอนเทนต์วางอยู่บนพื้นม่วง) ===== */
   .card{ background:var(--surface); border-radius:24px; box-shadow:var(--shadow); padding:24px 20px; margin-bottom:16px; }
@@ -371,9 +373,10 @@ const I18N = {
     backHome: '← กลับหน้าแรก', backMyType: '← กลับไปหน้า My Type ของฉัน', loadingText: 'กำลังโหลด...',
     notFoundMsg: 'ไม่พบผู้ใช้นี้ กรุณาตรวจสอบลิงก์อีกครั้ง',
     aboutMeTitle: 'About Me',
-    emptyOwnerMsg: 'คุณยังไม่ได้ตั้งค่า My Type ของตัวเองเลย ลองเริ่มเลยไหม?',
+    emptyOwnerHeadline: 'สวัสดี 👋 มารู้จักตัวคุณกันเถอะ',
+    emptyOwnerDesc: 'สแนปช็อตสั้นๆ ว่าคุณคิด ทำงาน และมีปฏิสัมพันธ์กับคนอื่นแบบไหน เลือกสิ่งที่ตรงกับตัวคุณที่สุด ตั้งแต่ความชอบในชีวิตประจำวันไปจนถึงมุมมองการใช้ชีวิต',
     emptyVisitorMsg: 'คนนี้ยังไม่ได้ตั้งค่า My Type เลย',
-    setupBtn: '✏️ เริ่มตั้งค่า My Type',
+    setupBtn: 'สร้าง My Type ของฉัน',
     shareBtn: '🔗 Share', editBtn: '✏️ Edit', saveBtn: '💾 บันทึก', cancelBtn: 'ยกเลิก',
     savingText: 'กำลังบันทึก...',
     editHeaderHint: 'แตะค้างแล้วลากไปตามตำแหน่งที่ใช่ที่สุด',
@@ -401,9 +404,10 @@ const I18N = {
     backHome: '← Back to Home', backMyType: '← Back to My Type', loadingText: 'Loading...',
     notFoundMsg: 'User not found. Please check the link again.',
     aboutMeTitle: 'About Me',
-    emptyOwnerMsg: 'You haven\'t set up your My Type yet. Want to start now?',
+    emptyOwnerHeadline: 'Hey there 👋 Let\'s get to know you.',
+    emptyOwnerDesc: 'A quick snapshot of how you tend to think, work, and connect with others. Choose what feels most like you, from everyday preferences to the way you approach life.',
     emptyVisitorMsg: 'This person hasn\'t set up My Type yet.',
-    setupBtn: '✏️ Set Up My Type',
+    setupBtn: 'Create My Type',
     shareBtn: '🔗 Share', editBtn: '✏️ Edit', saveBtn: '💾 Save', cancelBtn: 'Cancel',
     savingText: 'Saving...',
     editHeaderHint: 'Press and drag to the spot that fits you best',
@@ -849,7 +853,9 @@ function renderEmptyState(data){
       </div>
     </div>
     <div class="state-box" style="padding:36px 20px;">
-      <div class="msg" style="color:rgba(255,255,255,0.85);">${isOwner ? t('emptyOwnerMsg') : t('emptyVisitorMsg')}</div>
+      ${isOwner
+        ? `<div class="empty-headline">${t('emptyOwnerHeadline')}</div><div class="empty-desc">${t('emptyOwnerDesc')}</div>`
+        : `<div class="msg" style="color:rgba(255,255,255,0.85);">${t('emptyVisitorMsg')}</div>`}
     </div>
     ${isOwner ? `<div class="btn-row"><button class="btn btn-primary full-btn" onclick="enterEditMode()">${t('setupBtn')}</button></div>` : ''}
   `;
