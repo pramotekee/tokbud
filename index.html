@@ -388,7 +388,7 @@
   .topic-card .cover-img-wrap{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); }
   .topic-card .text-topic-box{ background:color-mix(in srgb, var(--card-color, var(--primary)) 8%, white); }
 
-  /* --- vote row แบบมีรูป: [A][รูป][B] ทั้ง 3 แท่งสัดส่วนเท่ากันหมด คือสี่เหลี่ยมผืนผ้าแนวตั้ง 9:16 --- */
+  /* --- vote row แบบมีรูป: [A][รูป][B] ทั้ง 3 แท่งสัดส่วนเท่ากันหมด คือสี่เหลี่ยมผืนผ้าแนวตั้ง 3:4 --- */
   .vote-row-image{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:14px; }
   .vote-row-image .vote-btn{
     aspect-ratio:3/4; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -550,6 +550,20 @@
   #ctTitle{ resize:none; overflow:hidden; line-height:1.5; min-height:44px; font-family:inherit; }
   .field-error{ color:#D64545; font-size:12px; margin-top:4px; display:none; }
   .field-hint{ font-weight:400; color:var(--text-muted); }
+
+  /* ===== #6: Business Category pills บนฟอร์มหลัก (เดิม .cat-picker-btn ไม่มี style เลย เป็นแค่ text
+     ล้วนๆ ไม่มีกรอบ) ทำให้หน้าตาเหมือน field input/select/textarea อื่นๆ ในฟอร์ม + ใส่ pill ของหมวดที่เลือกไว้ ===== */
+  .cat-picker-btn{
+    width:100%; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px;
+    background:var(--bg); text-align:left; cursor:pointer;
+  }
+  .cat-picker-pills{ display:flex; flex-wrap:wrap; gap:6px; }
+  .cat-picker-pills:not(:empty){ margin-bottom:6px; }
+  .cat-picker-pill{
+    display:inline-flex; align-items:center; padding:4px 12px; border-radius:100px;
+    font-size:12.5px; font-weight:500; background:var(--primary); color:#fff; white-space:nowrap;
+  }
+  .cat-picker-hint{ font-size:13px; color:var(--text-muted); }
 
   /* ===== Signup wizard (step-by-step) ===== */
   .su-progress{ margin-bottom:22px; }
@@ -977,7 +991,7 @@
     </div>
 
     <div class="field" id="coverField">
-      <label><span data-i18n="coverImageLabel">โลโก้บริษัท (สัดส่วน 9:16)</span> <span class="field-hint" data-i18n="coverImageHint">— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด</span></label>
+      <label><span data-i18n="coverImageLabel">โลโก้บริษัท (สัดส่วน 3:4)</span> <span class="field-hint" data-i18n="coverImageHint">— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด</span></label>
       <div class="preview-3col">
         <div class="preview-vote-btn" data-i18n="joinBtnLabel">ทำงานที่นี่เพราะ...</div>
         <div class="cover-upload" id="coverPreview" onclick="document.getElementById('coverFile').click()">
@@ -993,7 +1007,13 @@
 
     <div class="field">
       <label><span data-i18n="ctCategoryLabel">หมวดหมู่</span> <span class="req-mark" data-i18n="requiredMark">*</span></label>
-      <button type="button" class="cat-picker-btn" id="ctCategoryBtn" data-i18n="ctCategoryChoose">เลือกได้สูงสุด 5 หมวด</button>
+      <!-- FIX (#6 feedback ของ Pop): เดิมกดเข้า popup ถึงจะเห็นว่าเลือกหมวดอะไรไปแล้ว เสียเวลา — ย้าย pill
+           ของหมวดที่เลือกไว้แล้วมาโชว์ตรงนี้เลย ไม่ต้องกดเข้าไปดู ส่วนคำใบ้ "เลือกได้สูงสุด 5 หมวด" ให้อยู่ใต้ pill
+           เสมอ ไม่ว่าจะเลือกไปแล้วกี่หมวดก็ตาม (ดู updateCategoryBtnLabel ด้านล่างที่ render #ctCategoryPills) -->
+      <div type="button" class="cat-picker-btn" id="ctCategoryBtn" role="button" tabindex="0">
+        <div class="cat-picker-pills" id="ctCategoryPills"></div>
+        <div class="cat-picker-hint" data-i18n="ctCategoryChoose">เลือกได้สูงสุด 5 หมวด</div>
+      </div>
     </div>
 
     <div class="field">
@@ -1187,6 +1207,7 @@ const FEED_VIEW_KEY = 'wz_feed_view';
 const I18N = {
   th: {
     createBtn: '＋ สร้างบริษัท', createBtn2: 'สร้างบริษัท', loginBtn: 'เข้าสู่ระบบ',
+    createFormLoadingToast: 'ฟอร์มกำลังโหลด กรุณารอสักครู่...',
     heroTitle: '<b>Find</b> the place where you shine.',
     searchPlaceholder: 'ค้นหาบริษัท, tag...',
     sortShuffle: 'สุ่ม', sortLatest: 'ล่าสุด', sortPopular: 'ยอดนิยม',
@@ -1211,7 +1232,7 @@ const I18N = {
     footerDesc: 'Find the place where you shine.',
     footerMenuHeading: 'เมนู', footerHome: 'หน้าแรก', footerLoginLink: 'เข้าสู่ระบบ / สมัครสมาชิก',
     createModalTitle: 'สร้างบริษัทใหม่',
-    coverImageLabel: 'โลโก้บริษัท (สัดส่วน 9:16)', coverImageHint: '— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด',
+    coverImageLabel: 'โลโก้บริษัท (สัดส่วน 3:4)', coverImageHint: '— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด',
     coverUploadPrompt: '＋ แตะเพื่อแนบโลโก้บริษัท',
     ctTitleLabel: 'ชื่อบริษัท', ctTitleHint: '(ภาษาอังกฤษเท่านั้น)', ctTitlePh: 'e.g. ABC Corporation',
     ctDescLabel: 'รายละเอียด', optionalHint2: '(ไม่บังคับ)', ctDescPh: 'อธิบายเพิ่มเติมเกี่ยวกับบริษัท...',
@@ -1279,6 +1300,7 @@ const I18N = {
   },
   en: {
     createBtn: '＋ Company', createBtn2: 'Create Company', loginBtn: 'Log In',
+    createFormLoadingToast: 'Form is still loading, please wait a moment...',
     heroTitle: '<b>Find</b> the place where you shine.',
     searchPlaceholder: 'Search companies, tags...',
     sortShuffle: 'Shuffle', sortLatest: 'Latest', sortPopular: 'Popular',
@@ -1303,7 +1325,7 @@ const I18N = {
     footerDesc: 'Find the place where you shine.',
     footerMenuHeading: 'Menu', footerHome: 'Home', footerLoginLink: 'Log In / Sign Up',
     createModalTitle: 'Create New Company',
-    coverImageLabel: 'Company logo (9:16 ratio)', coverImageHint: '— this preview is exactly how it will look in the feed',
+    coverImageLabel: 'Company logo (3:4 ratio)', coverImageHint: '— this preview is exactly how it will look in the feed',
     coverUploadPrompt: '＋ Tap to attach a company logo',
     ctTitleLabel: 'Company Name', ctTitleHint: '(English only)', ctTitlePh: 'e.g. ABC Corporation',
     ctDescLabel: 'Description', optionalHint2: '(optional)', ctDescPh: 'Add more detail about the company...',
@@ -1435,7 +1457,15 @@ let STATE = {
   pendingExport: null, // {companyId} ถ้ากด Export ตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ (ดู handleExportClick)
   // first-time (key ไม่มีเลย) = 'card' เสมอ — รองรับ 3 ค่า: 'card' | 'line' | 'carousel' (feature: View by Carousel)
   feedView: (()=>{ const v = localStorage.getItem(FEED_VIEW_KEY); return (v === 'line' || v === 'carousel') ? v : 'card'; })(),
-  tickerStarted: false // กัน initTickerBar() รันซ้ำทุกครั้งที่ loadHomeFeed() ถูกเรียก (ค้นหา/เปลี่ยนหน้า/filter) ไม่งั้นแถบวิ่งจะรีเซ็ตตำแหน่งกระตุกทุกครั้ง
+  tickerStarted: false, // กัน initTickerBar() รันซ้ำทุกครั้งที่ loadHomeFeed() ถูกเรียก (ค้นหา/เปลี่ยนหน้า/filter) ไม่งั้นแถบวิ่งจะรีเซ็ตตำแหน่งกระตุกทุกครั้ง
+  // FIX (บั๊กที่ Pop เจอ): Business Category/Card Color บางครั้งเปิด "+ Company" มาแล้วว่างเปล่าไม่มีตัวเลือกให้กด —
+  // เพราะ loadCreateFormOptions() (ยิง getCardColors สด + ใช้ STATE.categories) รันแค่ครั้งเดียวตอน init และเป็น
+  // async ถ้า user กดปุ่มเร็วกว่า promise จะ resolve (เช่น Apps Script cold start ช้า) ฟอร์มจะว่าง — ปิดปุ่ม
+  // "+ Company" ทุกจุดไว้ก่อนจนกว่า flag นี้จะเป็น true (ดู loadCreateFormOptions/tryOpenCreateModal/renderHeaderAuth)
+  createFormReady: false,
+  // เก็บผลค้นหาล่าสุดที่เคยโหลดสำเร็จไว้ในเครื่อง user เอง (ดู #10 ที่ Pop feedback: ลบช่องค้นหาจนว่างแล้วช้า
+  // เพราะยิง API ใหม่ทุกครั้ง) key คือ search query ที่ใช้ตอนโหลด (normalize แล้ว), value คือ payload ที่ backend ส่งกลับ
+  searchResultCache: {}
 };
 
 // topicId ของการ์ดที่เปิด (expand) อยู่ใน Line view — module-level เจตนาให้ "อยู่ข้ามการ re-render"
@@ -1633,17 +1663,26 @@ function logout(){
   showToast(t('loggedOutToast'));
 }
 
+// FIX (#4 บั๊กที่ Pop เจอ): ปุ่ม "+ Company" ปิด (disabled) + โชว์ loading spinner จนกว่า STATE.createFormReady
+// จะเป็น true (ตั้งโดย loadCreateFormOptions() ตอนโหลด categories/card colors เสร็จสมบูรณ์จริง) กันเปิดฟอร์มมาว่างเปล่า
+function createBtnHTML(){
+  if(!STATE.createFormReady){
+    return `<button class="btn btn-accent" id="createBtn" disabled><span class="btn-spinner"></span>${t('loadingText')}</button>`;
+  }
+  return `<button class="btn btn-accent" id="createBtn" data-i18n="createBtn">${t('createBtn')}</button>`;
+}
+
 function renderHeaderAuth(){
   const el = document.getElementById('headerActions');
   if(isLoggedIn()){
     const uname = (STATE.session && STATE.session.username) ? STATE.session.username : t('myAccountFallback');
     el.innerHTML = `
-      <button class="btn btn-accent" id="createBtn" data-i18n="createBtn">${t('createBtn')}</button>
+      ${createBtnHTML()}
       <a class="btn btn-ghost" href="profile.html" id="authBtn">${escapeHtml(uname)}</a>
     `;
   } else {
     el.innerHTML = `
-      <button class="btn btn-accent" id="createBtn" data-i18n="createBtn">${t('createBtn')}</button>
+      ${createBtnHTML()}
       <button class="btn btn-ghost" id="authBtn" data-i18n="loginBtn">${t('loginBtn')}</button>
     `;
   }
@@ -1656,6 +1695,17 @@ function renderHeaderAuth(){
 
 function handleCreateClick(){
   if(!isLoggedIn()){ openLoginModal('redirect'); return; }
+  tryOpenCreateModal();
+}
+
+// จุดเดียวที่อนุญาตให้เปิด createModal จริงๆ (ทุกปุ่ม "+ Company"/"สร้างบริษัท" ทั้งเว็บต้องผ่านทางนี้) กัน
+// เปิดฟอร์มก่อนข้อมูล categories/card colors จะพร้อม (ดู STATE.createFormReady ด้านบน) ปกติปุ่มจะถูก disabled
+// อยู่แล้วระหว่างที่ยังไม่พร้อม เช็คซ้ำอีกชั้นตรงนี้กันเคส edge (เช่น auto-open หลังสมัครสมาชิกใหม่)
+function tryOpenCreateModal(){
+  if(!STATE.createFormReady){
+    showToast(t18n('createFormLoadingToast'));
+    return;
+  }
   openModal('createModal');
 }
 
@@ -1862,11 +1912,11 @@ document.getElementById('welcomeVoteBtn').addEventListener('click', ()=>{
 });
 document.getElementById('welcomeCreateBtn').addEventListener('click', ()=>{
   closeModal('welcomeModal');
-  openModal('createModal');
+  tryOpenCreateModal();
 });
 document.getElementById('welcomeCreateFirstBtn').addEventListener('click', ()=>{
   closeModal('welcomeModal');
-  openModal('createModal');
+  tryOpenCreateModal();
 });
 
 /* ---------- Image upload (profile & cover) ---------- */
@@ -2072,11 +2122,11 @@ let ctSelectedColor = '';
 let ctCoverUrl = '';
 let ctSelectedCategories = [];
 
+// FIX (#6 feedback ของ Pop): เดิมแค่เปลี่ยน text บนปุ่มเป็น "N หมวดที่เลือก" ไม่บอกว่าเลือกหมวดไหนไปบ้าง ต้อง
+// กดเข้า popup ถึงจะเห็น — ตอนนี้ render เป็น pill ของหมวดที่เลือกไว้จริงๆ ให้เห็นตรงหน้าฟอร์มเลย
 function updateCategoryBtnLabel(){
-  const btn = document.getElementById('ctCategoryBtn');
-  btn.textContent = ctSelectedCategories.length === 0
-    ? t18n('ctCategoryChoose')
-    : `${ctSelectedCategories.length} ${getLang() === 'th' ? 'หมวดที่เลือก' : (ctSelectedCategories.length === 1 ? 'category selected' : 'categories selected')}`;
+  const wrap = document.getElementById('ctCategoryPills');
+  wrap.innerHTML = ctSelectedCategories.map(c => `<span class="cat-picker-pill">${escapeHtml(c)}</span>`).join('');
 }
 
 async function loadCreateFormOptions(){
@@ -2126,6 +2176,11 @@ async function loadCreateFormOptions(){
   });
   if(STATE.cardColors[DEFAULT_IDX]) ctSelectedColor = STATE.cardColors[DEFAULT_IDX].hex;
   if(ctSelectedColor) document.getElementById('createModal').style.setProperty('--card-color', ctSelectedColor);
+
+  // ทั้ง category checklist และ card color swatches เติมข้อมูลเสร็จสมบูรณ์แล้วจริงๆ ณ จุดนี้ (รวม await
+  // api('getCardColors') ด้านบนแล้ว) ค่อยเปิดปุ่ม "+ Company" ให้กดได้ — แก้บั๊ก #4 ที่ Pop เจอ (กดเร็วไปเจอฟอร์มว่าง)
+  STATE.createFormReady = true;
+  renderHeaderAuth();
 }
 
 document.getElementById('coverFile').addEventListener('change', async (e)=>{
@@ -2158,6 +2213,11 @@ document.getElementById('ctTitle').addEventListener('keydown', (e)=>{
 });
 
 document.getElementById('ctCategoryBtn').addEventListener('click', ()=> openModal('categoryPickerModal'));
+// #ctCategoryBtn เปลี่ยนจาก <button> เป็น <div role="button"> (ต้องใส่ pill ข้างในหลายอัน + คำใบ้ต่อท้าย ทำใน
+// <button> ไม่สะดวก) เลยต้องเติม keyboard support (Enter/Space) เองแทนที่ browser จะให้มาฟรีๆ เหมือน <button>
+document.getElementById('ctCategoryBtn').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal('categoryPickerModal'); }
+});
 
 document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('createError');
@@ -2196,6 +2256,9 @@ document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
   }
   closeModal('createModal');
   resetCreateForm();
+  // ล้างแคชผลลัพธ์ที่เคยเก็บไว้ (#10) ทิ้งทั้งหมด เพราะมีบริษัทใหม่เพิ่มเข้ามาแล้ว ถ้าไม่ล้าง กดกลับหน้าแรก
+  // (createSuccessHomeBtn ด้านล่าง เรียก loadTopics() หน้า 1 ต่อ) อาจได้ของแคชเก่าที่ยังไม่มีบริษัทที่เพิ่งสร้าง
+  STATE.searchResultCache = {};
   if(STATE.cameFromProfile){
     const homeBtnEl = document.getElementById('createSuccessHomeBtn');
     homeBtnEl.removeAttribute('data-i18n');
@@ -2207,7 +2270,7 @@ document.getElementById('createSubmitBtn').addEventListener('click', async ()=>{
 
 document.getElementById('createSuccessCreateBtn').addEventListener('click', ()=>{
   closeModal('createSuccessModal');
-  openModal('createModal');
+  tryOpenCreateModal();
 });
 document.getElementById('createSuccessHomeBtn').addEventListener('click', ()=>{
   closeModal('createSuccessModal');
@@ -2242,6 +2305,26 @@ function resetCreateForm(){
 
 /* ---------- Topics / Feed ---------- */
 async function loadTopics(){
+  // FIX (#10 feedback ของ Pop): เดิมพิมพ์ค้นหา หรือแม้แต่ลบตัวอักษรออกจนช่องว่างเปล่า ก็ยิง API ไปถาม server
+  // ใหม่ทุกครั้ง (บางทีเจอ cold start ของ Apps Script ก็หมุนโหลดนานมาก) — ตอนนี้ถ้าช่องค้นหาว่างเปล่า (ไม่ได้
+  // กำลังค้นหาอะไรอยู่) เช็คก่อนว่าเคยโหลด "หน้านี้ + หมวดหมู่/การเรียงลำดับเดียวกัน" ไว้แล้วในเครื่องรึยัง ถ้าเคย
+  // เอาของเก่ามาโชว์ทันทีเลย ไม่ต้องรอ server ตอบใหม่ (แคชอยู่แค่ใน memory ของหน้านี้ ปิด/รีเฟรชหน้าแล้วหายไปเอง
+  // ไม่เสี่ยงข้อมูลค้างข้ามรอบใช้งาน) ส่วนตอนกำลังพิมพ์ค้นหาจริงๆ (searchQuery ไม่ว่าง) ยังยิง API สดใหม่เสมอ
+  const isEmptySearch = !STATE.searchQuery;
+  const cacheKey = _emptySearchCacheKey();
+  if(isEmptySearch && STATE.searchResultCache[cacheKey]){
+    const cached = STATE.searchResultCache[cacheKey];
+    STATE.feedLoadError = '';
+    STATE.topics = cached.companies;
+    STATE.totalCount = cached.count;
+    STATE.totalPages = cached.total_pages;
+    STATE.page = cached.page;
+    renderFeed();
+    renderResultCount();
+    renderPagination();
+    return;
+  }
+
   // ใช้ข้อความ EN ตายตัวเสมอ (ไม่ผูกกับ TH/EN toggle) ตาม decision ของ Pop เพราะเป็นแค่ spinner ชั่วคราว
   // อยากให้คนทุกชาติเข้าใจได้ทันทีโดยไม่ต้องพึ่งภาษาที่เลือกไว้
   document.getElementById('feed').innerHTML = `<div class="area-loading"><div class="area-spinner"></div>Loading companies...</div>`;
@@ -2262,9 +2345,21 @@ async function loadTopics(){
   renderResultCount();
   renderPagination();
 
+  if(isEmptySearch && res.success){
+    STATE.searchResultCache[_emptySearchCacheKey()] = {
+      companies: STATE.topics, count: STATE.totalCount, total_pages: STATE.totalPages, page: STATE.page
+    };
+  }
+
   // dashboard (สรุปเพศ/อายุ) โหลดแบบ lazy ตอน user กดเปิดเองเท่านั้น (ดู toggleDashSummary) — ไม่ preload
   // ทั้งฟีดอัตโนมัติอีกต่อไปแล้ว เพราะเดิมทำให้ยิง API ต่อเนื่อง 20-100 ครั้งทุกครั้งที่โหลดหน้า ซึ่งเป็นสาเหตุหลัก
   // ที่ทำให้หน้าโหลดช้า/ค้าง (ดู commit note)
+}
+
+// key ต้องรวมทุกตัวแปรที่มีผลต่อผลลัพธ์ตอนไม่มีคำค้นหา (หมวดหมู่/โหมดเรียง/seed ของ shuffle/หน้า/ขนาดหน้า) —
+// ถ้าตัวแปรใดเปลี่ยน ต้องถือเป็นคนละชุดผลลัพธ์ ห้ามเอาแคชของอีกชุดมาโชว์ผิดๆ
+function _emptySearchCacheKey(){
+  return [STATE.activeCategory||'', STATE.sortMode, STATE.sortMode==='shuffle'?STATE.shuffleSeed:'', STATE.page, STATE.pageSize].join('|');
 }
 
 // P0-fix (หน้าแรกโหลดช้า/ค้าง/ขึ้น error ให้ลองใหม่บ่อยมาก — feedback ของ Pop): เดิม init() ยิงแยก 3 คำขอ
@@ -3874,8 +3969,11 @@ async function initFocusMode(topicId){
     // เหมือนเดิมทุกประการ ไม่กระทบความสดของข้อมูล — การ fetch topics รอบถัดๆ ไป (เปลี่ยนหน้า/หมวดหมู่/ค้นหา/
     // เรียงลำดับ) ยังใช้ loadTopics() เดิมตามปกติ เพราะไม่ต้องโหลด banners/categories ซ้ำทุกครั้งอยู่แล้ว
     await loadHomeFeed();
-    loadCreateFormOptions(); // เติม dropdown ของ modal สร้างหัวข้อเท่านั้น ไม่ใช่สิ่งที่เห็นตอนเปิดหน้าแรก
   }
+  // FIX: ย้าย loadCreateFormOptions() ออกมานอก if/else ให้รันทุกโหมดเสมอ (เดิมอยู่แค่ใน else ทำให้โหมด
+  // focus/แชร์ลิงก์ทีมี ?topic=ID ไม่เคยเรียกเลย -> ปุ่ม "+ Company" จะค้างสถานะ disabled/loading ตลอดไปเพราะ
+  // STATE.createFormReady ไม่มีวันถูกตั้งเป็น true) เติม dropdown ของ modal สร้างหัวข้อเท่านั้น ไม่ใช่สิ่งที่เห็นตอนเปิดหน้าแรก
+  loadCreateFormOptions();
 
   // มาจากปุ่ม "+ สร้างหัวข้อ" ในหน้า "หัวข้อของฉัน" (profile.html) — เปิด modal สร้างหัวข้อให้อัตโนมัติ
   // จะได้ไม่ต้องมาเจอหน้าแรกเฉยๆ แล้วต้องกดสร้างหัวข้อเองซ้ำอีกที
