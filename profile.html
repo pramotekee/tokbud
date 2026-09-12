@@ -1102,7 +1102,12 @@ const I18N = {
     editSuccessTitle: 'Thank you'
   }
 };
-function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
+// P0-fix (feedback ของ Pop: พบ getLang() ที่นี่ default ผิดทิศ เหมือนบั๊กเดียวกันที่เจอใน mytype.txt — เทียบกับ
+// index.txt แล้วพบว่าเขียนสลับทิศทางกัน ที่นี่ default 'th' เว้นแต่เคยตั้งค่าเป็น 'en' ไว้ก่อน ผิดตรงข้ามกับ
+// index.txt ที่ default 'en' เว้นแต่เคยตั้งค่าเป็น 'th' ไว้ก่อน) แก้ให้ตรงกับ index.txt: default เป็น EN เสมอ
+// สำหรับ user ที่ยังไม่เคยกดสลับภาษามาก่อนเลย (ไม่มีค่าใน localStorage) — มีผลกับทุกแท็บในหน้านี้ (My Company/
+// My Comment/Plan & Billing/My Profile) ที่ผ่าน t()/data-i18n ไม่ใช่แค่จุดใดจุดหนึ่ง
+function getLang(){ return localStorage.getItem(LANG_KEY) === 'th' ? 'th' : 'en'; }
 function t(key){ const lang = getLang(); return (I18N[lang] && I18N[lang][key] !== undefined) ? I18N[lang][key] : (I18N.th[key] || ''); }
 // backend ส่งข้อความบางจุดมาเป็น "ไทย / English" คู่กัน (pattern เดียวกับ index.html) — เลือกฝั่งที่ตรงกับ
 // ภาษาปัจจุบันของ user ให้ ถ้าไม่มี " / " ก็ส่งข้อความเดิมกลับไปเฉยๆ (กันเคส message เก่าที่ยังไม่ bilingual)
