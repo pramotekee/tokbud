@@ -3946,6 +3946,34 @@ async function initFocusMode(topicId){
   const params = new URLSearchParams(location.search);
   const focusId = params.get('topic');
 
+  // P0-fix (feedback ของ Pop: กด "สมัครสมาชิกเลย" จากหน้า My Type แล้วต้องรอ popup ขึ้นช้า): เดิม 2 บล็อก
+  // auto-open นี้ (create=1 / signup=1) อยู่ท้ายฟังก์ชัน หลัง `await loadHomeFeed()` (ยิง topics+categories+
+  // hero banner รวมกัน หนักสุดของหน้านี้ และเสี่ยง Apps Script cold-start มากสุด) ทำให้ popup ที่ไม่ได้ใช้
+  // ข้อมูลฟีดเลยต้องรอคิวข้อมูลที่ไม่เกี่ยวข้องจบก่อนถึงจะเปิดได้ -> ย้ายมาไว้ตรงนี้ (ก่อน loadHomeFeed/
+  // initFocusMode) ให้เริ่มทำงานขนานไปเลยตั้งแต่ต้น ไม่ต้องรอคิวข้อมูลหน้าแรกที่ popup ไม่ได้ใช้เลย
+  if(params.get('create') === '1'){
+    STATE.cameFromProfile = true;
+    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
+    // ยังคงต้องรอ sessionCheckPromise ก่อนเปิดจริงเหมือนเดิม (ของเดิม ไม่แตะ logic) กัน user ที่ localStorage
+    // บอกว่า login อยู่แต่จริงๆ session หมดอายุแล้วฝั่ง server เจอ error กรุณา login ทันทีหลัง modal เปิด —
+    // เปลี่ยนจาก await เป็น .then() ให้เป็น background chain แทน จะได้ไม่ทำให้ loadHomeFeed/initFocusMode
+    // ด้านล่างต้องรอคิวตามไปด้วย (สองงานนี้ไม่เกี่ยวกันเลย ให้วิ่งขนานกันได้จริง)
+    sessionCheckPromise.then(()=> setTimeout(()=> handleCreateClick(), 100));
+  }
+
+  // P0-fix (UX สมัครสมาชิกจาก popup login ของหน้า My Type — mytype.txt): มาจากปุ่ม "สมัครสมาชิกเลย" ใน popup
+  // login ของ My Type (ตอนกดดู social/website ของคนอื่นแล้วยังไม่ได้ login) — เดิมพาแค่มาหน้าแรกเฉยๆ ผู้ใช้ต้อง
+  // กวาดสายตาหาปุ่มสมัครเอง เปลี่ยนมาเปิด signupModal ให้อัตโนมัติทันทีตาม pattern เดียวกับ ?create=1 ด้านบน
+  // ไม่ต้องรอ sessionCheckPromise เลยด้วยซ้ำ (ต่างจาก create=1 ด้านบน) เพราะ isLoggedIn() อ่านจาก STATE.session
+  // ที่ประกอบจาก localStorage ไว้ตั้งแต่ต้นสคริปต์แล้ว (ดูตอนประกาศ STATE ด้านบนของไฟล์) เชื่อถือได้ทันทีไม่ต้อง
+  // round-trip ไปเช็คกับ server ก่อน — ปุ่มนี้กดมาได้ก็ต่อเมื่อยังไม่ login อยู่แล้วเท่านั้น เช็ค local ก็พอเพียง
+  if(params.get('signup') === '1'){
+    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
+    if(!isLoggedIn()){
+      setTimeout(()=> openSignupModalDirect(), 100);
+    }
+  }
+
   // P0-feature (hero banner -> การ์ดหัวข้อเดียว แม่นยำ 100%, ไอเดียของ Pop): เดิมโหลดฟีดทั้งหน้า + hero banner
   // แล้วค่อย scrollIntoView หาการ์ดทีหลัง ต้องแข่งกับเวลาโหลดของหลายอย่างพร้อมกัน ต่อให้จูนจังหวะ (รอ hero banner
   // + 2 rAF) ดีขึ้นแล้วก็ยังมีโอกาสสะดุด/ไม่ชัวร์ 100% อยู่ดีถ้าเน็ตช้าผิดปกติ หรือ hero banner ใช้เวลาเกิน 3 วิ
@@ -3982,28 +4010,6 @@ async function initFocusMode(topicId){
   // focus/แชร์ลิงก์ทีมี ?topic=ID ไม่เคยเรียกเลย -> ปุ่ม "+ Company" จะค้างสถานะ disabled/loading ตลอดไปเพราะ
   // STATE.createFormReady ไม่มีวันถูกตั้งเป็น true) เติม dropdown ของ modal สร้างหัวข้อเท่านั้น ไม่ใช่สิ่งที่เห็นตอนเปิดหน้าแรก
   loadCreateFormOptions();
-
-  // มาจากปุ่ม "+ สร้างหัวข้อ" ในหน้า "หัวข้อของฉัน" (profile.html) — เปิด modal สร้างหัวข้อให้อัตโนมัติ
-  // จะได้ไม่ต้องมาเจอหน้าแรกเฉยๆ แล้วต้องกดสร้างหัวข้อเองซ้ำอีกที
-  if(params.get('create') === '1'){
-    STATE.cameFromProfile = true;
-    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
-    await sessionCheckPromise; // รอให้แน่ใจก่อนว่า session ยัง valid จริง จะได้ไม่เปิด modal แล้วเจอ error กรุณา login ทันที
-    setTimeout(()=> handleCreateClick(), 100);
-  }
-
-  // P0-fix (UX สมัครสมาชิกจาก popup login ของหน้า My Type — mytype.txt): มาจากปุ่ม "สมัครสมาชิกเลย" ใน popup
-  // login ของ My Type (ตอนกดดู social/website ของคนอื่นแล้วยังไม่ได้ login) — เดิมพาแค่มาหน้าแรกเฉยๆ ผู้ใช้ต้อง
-  // กวาดสายตาหาปุ่มสมัครเอง เปลี่ยนมาเปิด signupModal ให้อัตโนมัติทันทีตาม pattern เดียวกับ ?create=1 ด้านบน
-  // เช็ค !isLoggedIn() กันเคส edge ที่ user มี session อยู่แล้ว (เช่น login สำเร็จไปแล้วจากแท็บอื่นก่อนหน้า) จะได้
-  // ไม่เปิด signup modal ทับซ้อนให้คนที่มีบัญชีอยู่แล้วงง
-  if(params.get('signup') === '1'){
-    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
-    await sessionCheckPromise;
-    if(!isLoggedIn()){
-      setTimeout(()=> openSignupModalDirect(), 100);
-    }
-  }
 })();
 </script>
 </body>
