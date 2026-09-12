@@ -892,6 +892,20 @@ const I18N = {
     changePasscodeTitle: 'เปลี่ยน Passcode', oldPasscodeLabel: 'Passcode เดิม',
     newPasscodeLabel: 'Passcode ใหม่', passcodeHint: '(อย่างน้อย 6 หลัก)',
     confirmPasscodeLabel: 'ยืนยัน Passcode ใหม่', saveInfoBtn: 'บันทึกข้อมูล',
+    // FIX (feedback ของ Pop): ข้อความ validation/toast ของฟอร์ม Edit Info เดิม hardcode เป็นไทยล้วนทั้งหมด
+    // ไม่ผ่านระบบแปลภาษาเลยสักจุด ทำให้ค้างเป็นไทยแม้ผู้ใช้จะเลือก EN ไว้อยู่ก็ตาม (บั๊กคลาสเดียวกับ "กำลังบันทึก...")
+    errUsernameRequired: 'กรุณากรอก Username', errEmailRequired: 'กรุณากรอกอีเมล',
+    errEmailInvalid: 'อีเมลไม่ถูกต้อง กรุณาใส่ @ ด้วย', errBirthdayRequired: 'กรุณาเลือกวันเกิดให้ครบ วัน/เดือน/ปี',
+    errGenderRequired: 'กรุณาเลือกเพศ', errCountryRequired: 'กรุณาเลือกประเทศ', errProvinceRequired: 'กรุณาเลือกจังหวัด',
+    errPhonePasscodeBothChange: 'ไม่สามารถเปลี่ยนหมายเลขโทรศัพท์และ Passcode พร้อมกันได้ กรุณาเลือกเปลี่ยนอย่างใดอย่างหนึ่งต่อครั้ง',
+    errPhoneInvalidFormat: 'หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณากรอกให้ครบ 10 หลัก ขึ้นต้นด้วย 0',
+    errPhonePasscodeConfirmRequired: 'กรุณากรอก Passcode เพื่อยืนยันก่อนเปลี่ยนหมายเลขโทรศัพท์',
+    errOldPasscodeRequired: 'กรุณากรอก Passcode เดิมเพื่อยืนยันก่อนเปลี่ยน',
+    errPasscodeMinLength: 'Passcode ใหม่ต้องมีอย่างน้อย 6 หลัก', errPasscodeConfirmMismatch: 'ยืนยัน Passcode ใหม่ไม่ตรงกัน',
+    saveInfoSuccessToast: 'บันทึกข้อมูลสำเร็จ',
+    deleteAccountErrPasscodeRequired: 'กรุณากรอก Passcode เพื่อยืนยัน',
+    deleteAccountConfirmMsg: 'คุณจะเข้าสู่ระบบด้วยเบอร์นี้ไม่ได้อีก การกระทำนี้ไม่สามารถย้อนกลับได้',
+    imageLoadFailToast: 'โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง',
     closeAccountTitle: 'ปิดบัญชีถาวร',
     closeAccountDesc: 'การลบบัญชีจะทำให้คุณเข้าสู่ระบบด้วยเบอร์นี้ไม่ได้อีก แต่หัวข้อและผลโหวตที่คุณเคยสร้างไว้จะยังคงอยู่ในระบบตามเดิม เพื่อไม่ให้กระทบข้อมูลของคนอื่นที่เกี่ยวข้อง การกระทำนี้ไม่สามารถย้อนกลับได้',
     confirmPasscodeToDeleteLabel: 'กรอก Passcode เพื่อยืนยัน', confirmDeleteBtn: 'ยืนยันปิดบัญชี',
@@ -997,6 +1011,18 @@ const I18N = {
     changePasscodeTitle: 'Change Passcode', oldPasscodeLabel: 'Current Passcode',
     newPasscodeLabel: 'New Passcode', passcodeHint: '(at least 6 digits)',
     confirmPasscodeLabel: 'Confirm New Passcode', saveInfoBtn: 'Save Info',
+    errUsernameRequired: 'Please enter a username', errEmailRequired: 'Please enter your email',
+    errEmailInvalid: 'Invalid email — please include an @', errBirthdayRequired: 'Please select your full birthday — day/month/year',
+    errGenderRequired: 'Please select a gender', errCountryRequired: 'Please select a country', errProvinceRequired: 'Please select a province',
+    errPhonePasscodeBothChange: "You can't change your phone number and Passcode at the same time — please change one at a time",
+    errPhoneInvalidFormat: 'Invalid phone number — please enter 10 digits starting with 0',
+    errPhonePasscodeConfirmRequired: 'Please enter your Passcode to confirm before changing your phone number',
+    errOldPasscodeRequired: 'Please enter your current Passcode to confirm before changing it',
+    errPasscodeMinLength: 'New Passcode must be at least 6 digits', errPasscodeConfirmMismatch: "New Passcode confirmation doesn't match",
+    saveInfoSuccessToast: 'Info saved successfully',
+    deleteAccountErrPasscodeRequired: 'Please enter your Passcode to confirm',
+    deleteAccountConfirmMsg: "You won't be able to log in with this phone number again. This action cannot be undone.",
+    imageLoadFailToast: 'Failed to load image — please try uploading again',
     closeAccountTitle: 'Permanently Close Account',
     closeAccountDesc: 'Deleting your account means you won\'t be able to log in with this phone number again. Topics and votes you\'ve created will remain in the system so other users\' data isn\'t affected. This action cannot be undone.',
     confirmPasscodeToDeleteLabel: 'Enter Passcode to confirm', confirmDeleteBtn: 'Close Account',
@@ -1385,10 +1411,10 @@ document.getElementById('editAvatarFile').addEventListener('change', async (e)=>
     const url = await uploadImageFile(file);
     loadImageWithRetry(url,
       (u)=>{ STATE.editAvatarUrl = u; preview.innerHTML = `<img src="${u}">`; },
-      ()=>{ showToast('โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง'); renderAvatarPreview(); }
+      ()=>{ showToast(t18n('imageLoadFailToast')); renderAvatarPreview(); }
     );
   }catch(err){
-    showToast('อัพโหลดรูปไม่สำเร็จ: ' + err.message);
+    showToast(t18n('uploadFailToast') + ': ' + err.message);
     renderAvatarPreview();
   }
 });
@@ -2266,37 +2292,37 @@ document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
   // เช็คทีละช่องเรียงตามลำดับที่ฟิลด์ปรากฏบนหน้าฟอร์มจริง (บนลงล่าง) เหมือนที่แก้ในหน้าสมัครสมาชิก
   // เพื่อความสม่ำเสมอ — แม้ฟอร์มนี้ prefill ค่าเดิมมาให้อยู่แล้วโอกาสเจอน้อยกว่า แต่หลักการเดียวกัน
   if(!username){
-    errEl.textContent = 'กรุณากรอก Username';
+    errEl.textContent = t18n('errUsernameRequired');
     errEl.style.display = 'block';
     return;
   }
   if(!email){
-    errEl.textContent = 'กรุณากรอกอีเมล';
+    errEl.textContent = t18n('errEmailRequired');
     errEl.style.display = 'block';
     return;
   }
   if(email.indexOf('@') === -1){
-    errEl.textContent = 'อีเมลไม่ถูกต้อง กรุณาใส่ @ ด้วย';
+    errEl.textContent = t18n('errEmailInvalid');
     errEl.style.display = 'block';
     return;
   }
   if(!bDay || !bMonth || !bYear){
-    errEl.textContent = 'กรุณาเลือกวันเกิดให้ครบ วัน/เดือน/ปี';
+    errEl.textContent = t18n('errBirthdayRequired');
     errEl.style.display = 'block';
     return;
   }
   if(!gender){
-    errEl.textContent = 'กรุณาเลือกเพศ';
+    errEl.textContent = t18n('errGenderRequired');
     errEl.style.display = 'block';
     return;
   }
   if(!country){
-    errEl.textContent = 'กรุณาเลือกประเทศ';
+    errEl.textContent = t18n('errCountryRequired');
     errEl.style.display = 'block';
     return;
   }
   if(country === 'Thailand' && !province){
-    errEl.textContent = 'กรุณาเลือกจังหวัด';
+    errEl.textContent = t18n('errProvinceRequired');
     errEl.style.display = 'block';
     return;
   }
@@ -2312,19 +2338,19 @@ document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
 
   // เปลี่ยนเบอร์กับเปลี่ยน Passcode ห้ามทำพร้อมกัน (นโยบายความปลอดภัย: บังคับเลือกทีละอย่างต่อรอบ)
   if(wantsPhoneChange && wantsPasscodeChange){
-    errEl.textContent = 'ไม่สามารถเปลี่ยนหมายเลขโทรศัพท์และ Passcode พร้อมกันได้ กรุณาเลือกเปลี่ยนอย่างใดอย่างหนึ่งต่อครั้ง';
+    errEl.textContent = t18n('errPhonePasscodeBothChange');
     errEl.style.display = 'block';
     return;
   }
 
   if(wantsPhoneChange){
     if(!/^0[0-9]{9}$/.test(phone)){
-      errEl.textContent = 'หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณากรอกให้ครบ 10 หลัก ขึ้นต้นด้วย 0';
+      errEl.textContent = t18n('errPhoneInvalidFormat');
       errEl.style.display = 'block';
       return;
     }
     if(!phonePasscode){
-      errEl.textContent = 'กรุณากรอก Passcode เพื่อยืนยันก่อนเปลี่ยนหมายเลขโทรศัพท์';
+      errEl.textContent = t18n('errPhonePasscodeConfirmRequired');
       errEl.style.display = 'block';
       return;
     }
@@ -2332,17 +2358,17 @@ document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
 
   if(wantsPasscodeChange){
     if(!oldPasscode){
-      errEl.textContent = 'กรุณากรอก Passcode เดิมเพื่อยืนยันก่อนเปลี่ยน';
+      errEl.textContent = t18n('errOldPasscodeRequired');
       errEl.style.display = 'block';
       return;
     }
     if(newPasscode.length < 6){
-      errEl.textContent = 'Passcode ใหม่ต้องมีอย่างน้อย 6 หลัก';
+      errEl.textContent = t18n('errPasscodeMinLength');
       errEl.style.display = 'block';
       return;
     }
     if(newPasscode !== newPasscode2){
-      errEl.textContent = 'ยืนยัน Passcode ใหม่ไม่ตรงกัน';
+      errEl.textContent = t18n('errPasscodeConfirmMismatch');
       errEl.style.display = 'block';
       return;
     }
@@ -2396,7 +2422,7 @@ document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
 
   STATE.profile = Object.assign(STATE.profile, res.user);
   renderProfileHead();
-  showToast('บันทึกข้อมูลสำเร็จ');
+  showToast(t18n('saveInfoSuccessToast'));
 });
 
 /* ---------- Delete account tab ---------- */
@@ -2405,14 +2431,14 @@ document.getElementById('deleteAccountBtn').addEventListener('click', async ()=>
   errEl.style.display = 'none';
   const passcode = document.getElementById('deletePasscode').value.trim();
   if(!passcode){
-    errEl.textContent = 'กรุณากรอก Passcode เพื่อยืนยัน';
+    errEl.textContent = t18n('deleteAccountErrPasscodeRequired');
     errEl.style.display = 'block';
     return;
   }
 
   showConfirmPopup({
     title: t('deleteAccountConfirmTitle'),
-    message: 'คุณจะเข้าสู่ระบบด้วยเบอร์นี้ไม่ได้อีก การกระทำนี้ไม่สามารถย้อนกลับได้',
+    message: t18n('deleteAccountConfirmMsg'),
     confirmLabel: t('deleteAccountConfirmLabel'),
     danger: true,
     onConfirm: doDeleteAccount
