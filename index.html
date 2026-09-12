@@ -1709,11 +1709,14 @@ function tryOpenCreateModal(){
   openModal('createModal');
 }
 
-document.getElementById('openSignupBtn').addEventListener('click', ()=>{
+// จุดเดียวที่เปิด signupModal จริงๆ ตรงๆ (ปุ่มในหน้านี้ + auto-open จาก ?signup=1 ตอน init() ด้านล่าง
+// ที่มาจากปุ่ม "สมัครสมาชิกเลย" ใน popup login ของหน้า My Type ทั้งคู่เรียกผ่านทางนี้)
+function openSignupModalDirect(){
   closeModal('loginModal');
   resetSignupWizard();
   openModal('signupModal');
-});
+}
+document.getElementById('openSignupBtn').addEventListener('click', openSignupModalDirect);
 
 document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   const phone = document.getElementById('loginPhone').value.trim();
@@ -3987,6 +3990,19 @@ async function initFocusMode(topicId){
     history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
     await sessionCheckPromise; // รอให้แน่ใจก่อนว่า session ยัง valid จริง จะได้ไม่เปิด modal แล้วเจอ error กรุณา login ทันที
     setTimeout(()=> handleCreateClick(), 100);
+  }
+
+  // P0-fix (UX สมัครสมาชิกจาก popup login ของหน้า My Type — mytype.txt): มาจากปุ่ม "สมัครสมาชิกเลย" ใน popup
+  // login ของ My Type (ตอนกดดู social/website ของคนอื่นแล้วยังไม่ได้ login) — เดิมพาแค่มาหน้าแรกเฉยๆ ผู้ใช้ต้อง
+  // กวาดสายตาหาปุ่มสมัครเอง เปลี่ยนมาเปิด signupModal ให้อัตโนมัติทันทีตาม pattern เดียวกับ ?create=1 ด้านบน
+  // เช็ค !isLoggedIn() กันเคส edge ที่ user มี session อยู่แล้ว (เช่น login สำเร็จไปแล้วจากแท็บอื่นก่อนหน้า) จะได้
+  // ไม่เปิด signup modal ทับซ้อนให้คนที่มีบัญชีอยู่แล้วงง
+  if(params.get('signup') === '1'){
+    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
+    await sessionCheckPromise;
+    if(!isLoggedIn()){
+      setTimeout(()=> openSignupModalDirect(), 100);
+    }
   }
 })();
 </script>
