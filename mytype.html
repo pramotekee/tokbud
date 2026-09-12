@@ -59,6 +59,8 @@
   .btn-primary{ background:var(--primary); color:#fff; }
   .btn-primary:hover{ box-shadow:0 6px 16px rgba(33,67,200,0.35); }
   .btn-ghost{ background:var(--surface); color:var(--primary); border:1.5px solid var(--line); }
+  .btn-accent{ background:var(--accent); color:var(--primary-dark); font-weight:600; }
+  .signup-cta-btn{ margin-top:10px; }
   /* ปุ่ม "See My Type Summary Sheet" โดยเฉพาะ (ไม่แตะ .btn-ghost ตัวเดิม เพราะใช้ร่วมกับปุ่มอื่นอีกหลายจุด
      เช่น Let's Play, Show Me, Cancel, Share) — พื้นเหลืองล้วน ไม่มีเส้นขอบ ตัวอักษรม่วงเดิม ให้เด่นสะดุดตากว่าปุ่มทั่วไป */
   .btn-summary-highlight{ background:#F5D149; color:var(--primary); border:none; }
@@ -103,6 +105,9 @@
   .q-track.editable .q-handle{ touch-action:none; cursor:grab; }
   .q-track.editable .q-handle:active{ cursor:grabbing; background:var(--primary-dark); }
   .q-track.readonly .q-handle{ background:var(--text-muted); }
+  /* P0-fix (บังคับเอียงข้างใดข้างหนึ่ง ห้ามค่าตรงกลาง 50 พอดี): กรอบแดง + ข้อความเตือนใต้แถวคำถามที่ผิด */
+  .q-track.editable.error{ box-shadow:0 0 0 2px var(--danger); border-radius:10px; }
+  .q-error-msg{ display:none; color:var(--danger); font-size:11.5px; margin:6px 10px 0; }
   .edit-hint{ text-align:left; font-size:12px; color:var(--text-muted); margin-top:-6px; margin-bottom:14px; }
 
   /* ===== My Type guessing game (visitor view only) =====
@@ -299,7 +304,7 @@
     <button class="btn btn-primary full-btn" id="loginSubmitBtn" data-i18n="loginBtn">เข้าสู่ระบบ</button>
     <div class="divider-note">
       <span data-i18n="noAccountText">ยังไม่มีบัญชี?</span>
-      <a href="index.html" class="btn-ghost" style="display:inline-block;padding:4px 12px;border-radius:100px;font-size:12.5px;margin-top:8px;" data-i18n="goSignupLink">สมัครสมาชิกที่หน้าแรก</a>
+      <button type="button" class="btn btn-accent full-btn signup-cta-btn" id="goSignupBtn" data-i18n="goSignupLink">สมัครสมาชิกเลย</button>
     </div>
   </div>
 </div>
@@ -396,9 +401,10 @@ const I18N = {
     needOwnTypeMsg: 'กรุณาตั้งค่า My Type ของตัวเองก่อน ถึงจะใช้ฟีเจอร์นี้ได้',
     loginTitle: 'เข้าสู่ระบบก่อน เพื่อดูช่องทางติดต่อของคนนี้',
     phoneLabel: 'เบอร์โทรศัพท์', loginBtn: 'เข้าสู่ระบบ', loggingInText: 'กำลังเข้าสู่ระบบ...',
-    noAccountText: 'ยังไม่มีบัญชี?', goSignupLink: 'สมัครสมาชิกที่หน้าแรก',
+    noAccountText: 'ยังไม่มีบัญชี?', goSignupLink: 'สมัครสมาชิกเลย',
     loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ',
-    charCount: '{n}/500 ตัวอักษร'
+    charCount: '{n}/500 ตัวอักษร',
+    sliderMidError: 'กรุณาเลือกให้เอียงไปทางใดทางหนึ่ง'
   },
   en: {
     backHome: '← Back to Home', backMyType: '← Back to My Type', loadingText: 'Loading...',
@@ -427,9 +433,10 @@ const I18N = {
     needOwnTypeMsg: 'Please set up your own My Type first to use this feature.',
     loginTitle: 'Log in to view this person\'s contact info',
     phoneLabel: 'Phone Number', loginBtn: 'Log In', loggingInText: 'Logging in...',
-    noAccountText: 'Don\'t have an account?', goSignupLink: 'Sign up on the home page',
+    noAccountText: 'Don\'t have an account?', goSignupLink: 'Sign Up Now',
     loginErrorRequired: 'Please enter both your phone number and Passcode',
-    charCount: '{n}/500 characters'
+    charCount: '{n}/500 characters',
+    sliderMidError: 'Please lean toward one side or the other'
   }
 };
 function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
@@ -611,10 +618,22 @@ function contactRowHtml(channels, links, gated){
   return `<div class="contact-row">${items}</div>`;
 }
 
+// P0-fix (กด Website/social แล้ว 404): เดิม window.open(url) ตรงๆ ถ้า user พิมพ์ไม่มี http(s):// นำหน้า
+// (เช่น "tokbud.vercel.app" เฉยๆ) เบราว์เซอร์ตีความเป็น path สัมพัทธ์ของหน้าปัจจุบัน เลย 404 -> เติม https://
+// ให้อัตโนมัติถ้ายังไม่มี scheme (เช็คด้วย regex กันไม่ให้เติมซ้ำถ้า user copy ลิงก์ที่มี http(s):// มาอยู่แล้ว)
+// ใช้ทั้งตอนกดเปิดลิงก์ (เผื่อข้อมูลเก่าที่ยังไม่มี scheme) และตอน save (ดู saveMyType ด้านล่าง) เพื่อให้ข้อมูล
+// ที่เก็บในชีทสะอาดตั้งแต่ต้น ไม่ต้องพึ่งการเติมตอน runtime ทุกครั้ง
+function normalizeContactUrl(url){
+  const trimmed = String(url || '').trim();
+  if(!trimmed) return '';
+  if(/^https?:\/\//i.test(trimmed)) return trimmed;
+  return 'https://' + trimmed;
+}
+
 function handleContactClick(channel, url){
   if(!isLoggedIn()){ openLoginModal(); return; }
   if(!url){ showToast(getLang()==='th' ? 'กำลังโหลดข้อมูล กรุณาลองใหม่อีกครั้ง' : 'Still loading, please try again.'); return; }
-  window.open(url, '_blank', 'noopener');
+  window.open(normalizeContactUrl(url), '_blank', 'noopener');
 }
 
 function sliderRowHtml(q, value, editable){
@@ -625,6 +644,7 @@ function sliderRowHtml(q, value, editable){
       <div class="q-track ${editable ? 'editable' : 'readonly'}" data-key="${q.key}" data-value="${v}">
         <div class="q-handle"></div>
       </div>
+      ${editable ? `<div class="q-error-msg" id="qerr-${q.key}"></div>` : ''}
     </div>`;
 }
 
@@ -939,7 +959,40 @@ function bindDrag(track){
   handle.addEventListener('pointerdown', onDown);
 }
 
+// P0-fix (บังคับเอียงข้างใดข้างหนึ่ง ห้ามค่ากึ่งกลาง 50 พอดี — ไม่มีใครรู้สึก 50/50 เป๊ะๆ กับทั้ง 2 ฝั่งจริงๆ):
+// เช็คทุกคำถามที่ user แตะระหว่าง session แก้ไขนี้ (editTouched) โดยเช็คที่ "ค่าที่จะถูกบันทึกจริง" (ปัดเป็น
+// จำนวนเต็มแล้ว 1-100 ตามที่ backend จะเก็บ ดู actionSaveMyType) ไม่ใช่ค่า float ดิบจากการลาก เพราะค่าที่ปัดแล้ว
+// ต่างหากที่มีความหมายจริงตอนบันทึก — ถ้าเจอข้อไหนตรง 50 ให้ขึ้นกรอบแดง+ข้อความเตือนที่แถวนั้น เลื่อนจอไปหาข้อ
+// แรกที่ผิด แล้วกันไม่ให้กด save ผ่านจนกว่าจะแก้
+function roundedSliderValue(raw){
+  return Math.max(1, Math.min(100, Math.round(raw)));
+}
+
+function validateMyTypeSliders(){
+  document.querySelectorAll('#content .q-track.editable.error').forEach(tr => tr.classList.remove('error'));
+  document.querySelectorAll('#content .q-error-msg').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
+
+  let firstInvalidTrack = null;
+  Object.keys(editTouched).forEach(key => {
+    if(roundedSliderValue(editValues[key]) !== 50) return;
+    const track = document.querySelector(`#content .q-track.editable[data-key="${key}"]`);
+    if(!track) return;
+    track.classList.add('error');
+    const msgEl = document.getElementById('qerr-' + key);
+    if(msgEl){ msgEl.textContent = t('sliderMidError'); msgEl.style.display = 'block'; }
+    if(!firstInvalidTrack) firstInvalidTrack = track;
+  });
+
+  if(firstInvalidTrack){
+    firstInvalidTrack.scrollIntoView({ behavior:'smooth', block:'center' });
+    return false;
+  }
+  return true;
+}
+
 async function saveMyType(){
+  if(!validateMyTypeSliders()) return; // กันกด save ผ่านตั้งแต่ต้น ไม่ต้องยิง API เลยถ้ายังมีข้อที่ค้างตรงกลาง
+
   const btn = document.getElementById('saveMyTypeBtn');
   const originalHtml = btn.innerHTML;
   btn.disabled = true;
@@ -947,15 +1000,16 @@ async function saveMyType(){
 
   const payload = {
     aboutme: document.getElementById('editAboutme').value,
-    fb: document.getElementById('editFb').value,
-    ig: document.getElementById('editIg').value,
-    yt: document.getElementById('editYt').value,
-    tt: document.getElementById('editTt').value,
-    x: document.getElementById('editX').value,
-    website: document.getElementById('editWebsite').value
+    fb: normalizeContactUrl(document.getElementById('editFb').value),
+    ig: normalizeContactUrl(document.getElementById('editIg').value),
+    yt: normalizeContactUrl(document.getElementById('editYt').value),
+    tt: normalizeContactUrl(document.getElementById('editTt').value),
+    x: normalizeContactUrl(document.getElementById('editX').value),
+    website: normalizeContactUrl(document.getElementById('editWebsite').value)
   };
   // ส่งเฉพาะคำถามที่ "แตะจริง" ระหว่าง session แก้ไขนี้ (รวมข้อที่เคยตอบไว้ก่อนแล้วด้วย เพราะถือว่า touched ตั้งแต่โหลดมา)
-  Object.keys(editTouched).forEach(k => { payload[k] = editValues[k]; });
+  // ปัดเป็นจำนวนเต็ม 1-100 ตอนส่งเลย (ไม่มี 0 ไม่มีทศนิยม) ให้ตรงกับที่ backend จะเก็บจริง
+  Object.keys(editTouched).forEach(k => { payload[k] = roundedSliderValue(editValues[k]); });
 
   const res = await api('saveMyType', payload, 'POST');
   btn.disabled = false;
@@ -1017,6 +1071,13 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   localStorage.setItem('wz_session', JSON.stringify(res));
   closeModal('loginModal');
   await loadProfile(); // โหลดใหม่ทั้งหน้า จะได้ contact_links / is_owner / grouping ที่ถูกต้องตามสิทธิ์ใหม่
+});
+// P0-fix (UX สมัครสมาชิกจาก popup login ของหน้า My Type): เดิมเป็นลิงก์ข้อความพาไปหน้าแรกเฉยๆ ผู้ใช้ต้อง
+// กวาดสายตาหาปุ่มสมัครเองอีกที เปลี่ยนเป็นพาไปหน้าแรกพร้อม ?signup=1 ให้ index.html เปิดฟอร์มสมัครสมาชิกให้เลย
+// อัตโนมัติทันที (ใช้ query-param pattern เดียวกับ ?create=1 ที่มีอยู่แล้วในโปรเจกต์ ไม่ต้อง duplicate ฟอร์ม
+// สมัครสมาชิกทั้ง wizard 5 step มาไว้ในไฟล์นี้ ซึ่งจะเสี่ยงโค้ด 2 ชุดไม่ sync กันในอนาคต)
+document.getElementById('goSignupBtn').addEventListener('click', ()=>{
+  location.href = 'index.html?signup=1';
 });
 document.querySelectorAll('.passcode-toggle').forEach(btn=>{
   btn.addEventListener('click', ()=>{
