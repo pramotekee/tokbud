@@ -2156,8 +2156,9 @@ async function loadCreateFormOptions(){
     updateCategoryBtnLabel();
   });
 
-  const res = await api('getCardColors');
-  STATE.cardColors = res.success ? res.colors : [];
+  // FIX (feedback ของ Pop): เดิมยิง api('getCardColors') แยกอีกรอบตรงนี้ ทั้งที่ตอนนี้ card colors พ่วงมากับ
+  // getHomeFeed แล้ว (ดู loadHomeFeed ด้านบนที่ set STATE.cardColors ไว้ก่อนเรียกฟังก์ชันนี้เสมอ) ไม่ต้องรอ
+  // round-trip ที่ 2 อีกต่อไป — ปุ่ม "+ Company" เปิดให้กดได้เร็วขึ้น 1 รอบ network เต็มๆ
   const wrap2 = document.getElementById('colorSwatches');
   const DEFAULT_IDX = 8; // ม่วง — ตรงกับ default ฝั่ง backend
   STATE.cardColors.forEach((c, i)=>{
@@ -2177,8 +2178,8 @@ async function loadCreateFormOptions(){
   if(STATE.cardColors[DEFAULT_IDX]) ctSelectedColor = STATE.cardColors[DEFAULT_IDX].hex;
   if(ctSelectedColor) document.getElementById('createModal').style.setProperty('--card-color', ctSelectedColor);
 
-  // ทั้ง category checklist และ card color swatches เติมข้อมูลเสร็จสมบูรณ์แล้วจริงๆ ณ จุดนี้ (รวม await
-  // api('getCardColors') ด้านบนแล้ว) ค่อยเปิดปุ่ม "+ Company" ให้กดได้ — แก้บั๊ก #4 ที่ Pop เจอ (กดเร็วไปเจอฟอร์มว่าง)
+  // ทั้ง category checklist และ card color swatches เติมข้อมูลเสร็จสมบูรณ์แล้วจริงๆ ณ จุดนี้ ค่อยเปิดปุ่ม
+  // "+ Company" ให้กดได้ — แก้บั๊ก #4 ที่ Pop เจอ (กดเร็วไปเจอฟอร์มว่าง)
   STATE.createFormReady = true;
   renderHeaderAuth();
 }
@@ -2388,6 +2389,10 @@ async function loadHomeFeed(){
 
   renderCategoryPills(res.success ? res.categories : []);
   initHeroBanners(res.success ? res.banners : []);
+  // FIX (feedback ของ Pop, ปุ่ม "+ Company" หมุนนาน): card colors พ่วงมากับ getHomeFeed แล้ว (ดู
+  // actionGetHomeFeed ฝั่ง backend) loadCreateFormOptions() ด้านล่างเลยไม่ต้องยิง action=getCardColors
+  // แยกอีกรอบ ตัดรอบ round-trip ที่ต้องรอออกไปได้ 1 รอบเต็มๆ ก่อนปุ่มจะเปิดให้กด
+  STATE.cardColors = res.success ? (res.cardColors || []) : [];
   if(!STATE.tickerStarted && res.success){
     STATE.tickerStarted = true;
     initTickerBar(res.tickerComments);
