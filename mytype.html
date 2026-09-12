@@ -249,7 +249,13 @@
   .mte-identity{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
   .mte-identity-left{ display:flex; align-items:center; gap:12px; }
   .mte-powered{ font-size:9px; color:#6E6680; white-space:nowrap; }
-  .mte-avatar{ width:44px; height:44px; border-radius:50%; object-fit:cover; }
+  // P0-fix (รูปในวงกลม avatar ของ PDF ดูอ้วน/บิดสัดส่วน ต่างจากหน้าเว็บปกติที่กลมสวย): ต้นเหตุคือ html2canvas
+  // (ตัวถ่าย snapshot DOM มาทำ PDF) ไม่รองรับ CSS object-fit:cover บน <img> อย่างถูกต้อง — มันจะ "ยืด" รูป
+  // เต็มกรอบ width/height ตรงๆ แทนที่จะ crop ให้พอดีเหมือนที่ browser จริงแสดงผล (ซึ่งเป็นเหตุผลที่หน้าเว็บปกติ
+  // .avatar/img ที่ใช้ object-fit:cover เหมือนกันถึงดูปกติดี เพราะนั่น render ด้วย browser จริง ไม่ผ่าน html2canvas)
+  // -> เปลี่ยนมาใช้ background-image + background-size:cover แทน (เทคนิคมาตรฐานที่ html2canvas รองรับแม่นกว่า
+  // object-fit บน img มาก) ไม่ต้องพึ่ง object-fit เลย ดู myTypeExportHtml() ที่เปลี่ยน <img> เป็น <div> แทน
+  .mte-avatar{ width:44px; height:44px; border-radius:50%; background-size:cover; background-position:center; }
   .mte-avatar-fallback{ background:#2143C8; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px; }
   .mte-name{ font-size:17px; font-weight:700; }
   .mte-toppick{ background:#FFF6D9; border:1px solid #F5D149; border-radius:8px; padding:6px 12px; margin-bottom:6px; }
@@ -1249,7 +1255,7 @@ async function myTypeExportHtml(){
       </div>
       <div class="mte-identity">
         <div class="mte-identity-left">
-          ${avatarSrc ? `<img class="mte-avatar" src="${avatarSrc}">` : `<div class="mte-avatar mte-avatar-fallback">${initial}</div>`}
+          ${avatarSrc ? `<div class="mte-avatar" style="background-image:url('${avatarSrc}')"></div>` : `<div class="mte-avatar mte-avatar-fallback">${initial}</div>`}
           <div class="mte-name">${escapeHtml(name)}</div>
         </div>
         <span class="mte-powered">Powered by tokbud.vercel.app</span>
