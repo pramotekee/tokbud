@@ -148,6 +148,38 @@
   .color-swatch.selected{ box-shadow:0 0 0 2px var(--text); }
   .tag-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .tag-grid input{ padding:9px 12px !important; font-size:13px !important; }
+
+  /* ===== #7: category checklist (popup) + #6 pills บนฟอร์มหลัก — ก็อปจาก index.html (ดูคอมเมนต์บนสุดของ
+     บล็อกนี้: ฟอร์ม Edit ใช้ชุดเดียวกับ Create ทั้งหมดแล้ว ต้องมี category/card color ให้เลือกด้วย ไม่ใช่แค่ชื่อ+โลโก้) ===== */
+  .target-checklist{ display:flex; flex-direction:column; }
+  .target-checklist .check-row{
+    display:flex; align-items:center; gap:12px; padding:11px 4px;
+    font-size:14px; color:var(--text); cursor:pointer; user-select:none;
+    border-bottom:1px solid var(--line); position:relative; margin-bottom:0;
+  }
+  .target-checklist .check-row:last-child{ border-bottom:none; }
+  .target-checklist .check-row input{ position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .target-checklist .check-box{
+    flex-shrink:0; width:20px; height:20px; border-radius:6px;
+    border:1.5px solid var(--line); background:var(--surface);
+    position:relative; transition:all .15s ease;
+  }
+  .target-checklist .check-row input:checked + .check-box{ background:var(--primary); border-color:var(--primary); }
+  .target-checklist .check-row input:checked + .check-box::after{
+    content:''; position:absolute; left:6px; top:2px; width:5px; height:10px;
+    border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg);
+  }
+  .cat-picker-btn{
+    width:100%; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px;
+    background:var(--bg); text-align:left; cursor:pointer;
+  }
+  .cat-picker-pills{ display:flex; flex-wrap:wrap; gap:6px; }
+  .cat-picker-pills:not(:empty){ margin-bottom:6px; }
+  .cat-picker-pill{
+    display:inline-flex; align-items:center; padding:4px 12px; border-radius:100px;
+    font-size:12.5px; font-weight:500; background:var(--primary); color:#fff; white-space:nowrap;
+  }
+  .cat-picker-hint{ font-size:13px; color:var(--text-muted); }
   .date-row{ display:flex; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
   .date-row .field{ flex:1 1 140px; min-width:140px; margin-bottom:0; }
   .date-row.stack-row{ flex-direction:column; gap:14px; }
@@ -762,8 +794,9 @@
   </div>
 </div>
 
-<!-- ===== Edit Company Modal (TOKBUD: แก้ได้แค่ชื่อ+โลโก้ ตาม actionEditCompany ฝั่ง backend — ต่างจาก
-     WEZIDE เดิมที่แก้ได้ทั้งฟอร์ม เพราะ field อื่นทั้งหมด (category/tags/card_color/description) ล็อกไว้ตั้งแต่ตอนสร้าง) ===== -->
+<!-- ===== Edit Company Modal (TOKBUD #7: ใช้ฟอร์มเดียวกับตอนสร้าง (createModal ใน index.html) ทั้งหมด
+     ตาม feedback ของ Pop — เดิมแก้ได้แค่ชื่อ+โลโก้ ตอนนี้แก้ได้ทุก field เหมือนตอนสร้าง (pre-fill ข้อมูลเดิมเข้าไปก่อน)
+     ตรงกับ actionEditCompany เวอร์ชันใหม่ฝั่ง backend ที่รับ field ครบชุดแล้ว ===== -->
 <div class="modal-overlay" id="editTopicModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -772,21 +805,56 @@
     </div>
 
     <div class="field">
-      <label data-i18n="etLogoLabel">โลโก้บริษัท (สัดส่วน 9:16)</label>
+      <label data-i18n="etLogoLabel">โลโก้บริษัท (สัดส่วน 3:4)</label>
       <div class="cover-upload" id="etCoverPreview" onclick="document.getElementById('etCoverFile').click()" data-i18n="etLogoUploadPh">
         ＋ แตะเพื่อแนบโลโก้บริษัท
       </div>
       <input type="file" accept="image/*" id="etCoverFile" style="display:none;">
     </div>
 
-    <div class="field"><label data-i18n="etNameLabel">ชื่อบริษัท</label> <span class="field-hint" data-i18n="ctTitleHint">(English only)</span><input type="text" id="etTitle" placeholder="e.g. ABC Corporation"></div>
+    <div class="field"><label data-i18n="etNameLabel">ชื่อบริษัท</label> <span class="req-mark" data-i18n="requiredMark">*</span> <span class="field-hint" data-i18n="ctTitleHint">(English only)</span><input type="text" id="etTitle" placeholder="e.g. ABC Corporation"></div>
+    <div class="field"><label><span data-i18n="ctDescLabel">รายละเอียด</span> <span class="field-hint" data-i18n="optionalHint2">(ไม่บังคับ)</span></label><textarea id="etDescription" rows="3" placeholder="อธิบายเพิ่มเติมเกี่ยวกับบริษัท..." data-i18n-ph="ctDescPh"></textarea></div>
 
-    <p style="font-size:12px;color:var(--text-muted);margin:-4px 0 14px;line-height:1.6;" data-i18n="etNote">
-      หมายเหตุ: การแก้ไขแล้วบันทึก บริษัทจะยังคงสถานะเดิม (เผยแพร่/ซ่อน) และคอมเมนต์เดิมทั้งหมดจะยังอยู่ครบ ไม่ถูกล้าง
-    </p>
+    <div class="field">
+      <label><span data-i18n="ctCategoryLabel">หมวดหมู่</span> <span class="req-mark" data-i18n="requiredMark">*</span></label>
+      <div class="cat-picker-btn" id="etCategoryBtn" role="button" tabindex="0">
+        <div class="cat-picker-pills" id="etCategoryPills"></div>
+        <div class="cat-picker-hint" data-i18n="ctCategoryChoose">เลือกได้สูงสุด 5 หมวด</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label><span data-i18n="ctTagLabel">Tag</span> <span class="field-hint" data-i18n="ctTagHint">(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)</span></label>
+      <div class="tag-grid">
+        <input type="text" id="etTag1" placeholder="Tag 1">
+        <input type="text" id="etTag2" placeholder="Tag 2">
+        <input type="text" id="etTag3" placeholder="Tag 3">
+        <input type="text" id="etTag4" placeholder="Tag 4">
+        <input type="text" id="etTag5" placeholder="Tag 5">
+      </div>
+    </div>
+
+    <div class="field">
+      <label data-i18n="ctColorLabel">สีการ์ด</label>
+      <div class="color-swatches" id="etColorSwatches"></div>
+    </div>
 
     <div class="field-error" id="etError"></div>
     <button class="btn btn-primary full-btn" id="etSaveBtn" data-i18n="etSaveBtn">บันทึกการแก้ไข</button>
+  </div>
+</div>
+
+<!-- ===== Category Picker Modal (ก็อปจาก index.html categoryPickerModal — ดูคอมเมนต์ที่ต้นทางเรื่อง
+     checklist เอง แทน native <select multiple>) ===== -->
+<div class="modal-overlay" id="categoryPickerModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="ctCategoryLabel">หมวดหมู่</h3>
+      <button class="modal-close" data-close="categoryPickerModal">✕</button>
+    </div>
+    <p class="field-hint" style="margin:-8px 0 14px;" data-i18n="ctCategoryChoose">เลือกได้สูงสุด 5 หมวด</p>
+    <div class="target-checklist" id="categoryChecklist"></div>
+    <button class="btn btn-primary full-btn" data-close="categoryPickerModal" style="margin-top:16px;" data-i18n="doneBtn">เสร็จสิ้น</button>
   </div>
 </div>
 
@@ -859,10 +927,13 @@ const I18N = {
     exportGateUpgradeBtn: 'อัปเกรด', exportBtn: 'Export', exportLoading: 'กำลัง export...',
     exportSuccessToast: 'Export สำเร็จ',
     billingStatusSuccess: 'สำเร็จ', billingStatusFailed: 'ไม่สำเร็จ',
-    editCompanyTitle: 'แก้ไขบริษัท', etLogoLabel: 'โลโก้บริษัท (สัดส่วน 9:16)',
+    editCompanyTitle: 'แก้ไขบริษัท', etLogoLabel: 'โลโก้บริษัท (สัดส่วน 3:4)',
     etLogoUploadPh: '＋ แตะเพื่อแนบโลโก้บริษัท', etNameLabel: 'ชื่อบริษัท',
-    etNote: 'หมายเหตุ: การแก้ไขแล้วบันทึก บริษัทจะยังคงสถานะเดิม (เผยแพร่/ซ่อน) และคอมเมนต์เดิมทั้งหมดจะยังอยู่ครบ ไม่ถูกล้าง',
     etSaveBtn: 'บันทึกการแก้ไข', errCompanyNameRequired: 'กรุณากรอกชื่อบริษัท',
+    ctDescLabel: 'รายละเอียด', optionalHint2: '(ไม่บังคับ)', ctDescPh: 'อธิบายเพิ่มเติมเกี่ยวกับบริษัท...',
+    ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 หมวด', doneBtn: 'เสร็จสิ้น',
+    ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
+    errCategoryRequired: 'กรุณาเลือกหมวดหมู่', errCategoryMax: 'เลือกได้สูงสุด 5 หมวด', errTagRequired: 'กรุณาใส่ tag อย่างน้อย 1 อัน',
     ctTitleHint: '(ภาษาอังกฤษเท่านั้น)', errTitleEnglishOnly: 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น',
     uploadFailToast: 'อัพโหลดรูปไม่สำเร็จ', savingText: 'กำลังบันทึก...',
     dcTitle: 'ขอลบบริษัท', dcDesc: 'คำขอของคุณจะถูกส่งให้ทีมงานตรวจสอบก่อนดำเนินการลบจริง คอมเมนต์และข้อมูลทั้งหมดจะยังอยู่ครบจนกว่าจะได้รับการอนุมัติ',
@@ -871,6 +942,11 @@ const I18N = {
     dcReasonTextLabel: 'ระบุรายละเอียดเพิ่มเติม', dcSubmitBtn: 'ส่งคำขอลบ',
     dcErrReasonRequired: 'กรุณาเลือกเหตุผล', dcErrReasonTextRequired: 'กรุณาระบุรายละเอียดเพิ่มเติม',
     dcErrPasscodeRequired: 'กรุณากรอก Passcode เพื่อยืนยัน',
+    dcSuccessTitle: 'ขอบคุณ',
+    // #3: popup เตือนตอนกด Delete ซ้ำบริษัทที่มีคำขอลบค้างอยู่แล้ว (pending) — มีปุ่ม [OK]/[Cancel request]
+    dcAlreadyPendingTitle: 'มีคำขอลบที่รอดำเนินการอยู่แล้ว',
+    dcAlreadyPendingMsg: 'คุณเคยส่งคำร้องขอลบบริษัทนี้ไปแล้ว โปรดรอทีมงานพิจารณา เมื่ออนุมัติแล้วชื่อบริษัทนี้จะไม่ปรากฏให้เห็นอีกต่อไป แต่หากคุณเปลี่ยนใจ ไม่ต้องการลบแล้ว โปรดเลือก "Cancel request"',
+    dcCancelRequestBtn: 'Cancel request',
     joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
     mtEmptyState: 'ยังไม่มีบริษัทที่คุณสร้าง', mcEmptyState: 'ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้',
     ecModalTitle: 'แก้ไขคอมเมนต์',
@@ -955,10 +1031,13 @@ const I18N = {
     exportGateUpgradeBtn: 'Upgrade', exportBtn: 'Export', exportLoading: 'Exporting...',
     exportSuccessToast: 'Export successful',
     billingStatusSuccess: 'Success', billingStatusFailed: 'Failed',
-    editCompanyTitle: 'Edit Company', etLogoLabel: 'Company logo (9:16 ratio)',
+    editCompanyTitle: 'Edit Company', etLogoLabel: 'Company logo (3:4 ratio)',
     etLogoUploadPh: '＋ Tap to attach company logo', etNameLabel: 'Company name',
-    etNote: 'Note: saving your edit keeps the company\'s current status (published/hidden) and all existing comments stay intact.',
     etSaveBtn: 'Save Changes', errCompanyNameRequired: 'Please enter a company name',
+    ctDescLabel: 'Description', optionalHint2: '(optional)', ctDescPh: 'Add more detail about the company...',
+    ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
+    ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
+    errCategoryRequired: 'Please select a category', errCategoryMax: 'Select up to 5 categories', errTagRequired: 'Please add at least 1 tag',
     ctTitleHint: '(English only)', errTitleEnglishOnly: 'Company name must be in English only',
     uploadFailToast: 'Upload failed', savingText: 'Saving...',
     dcTitle: 'Request Company Deletion', dcDesc: 'Your request will be sent to our team for review before the company is actually deleted. All comments and data stay intact until the request is approved.',
@@ -967,6 +1046,10 @@ const I18N = {
     dcReasonTextLabel: 'Please provide more detail', dcSubmitBtn: 'Submit Delete Request',
     dcErrReasonRequired: 'Please select a reason', dcErrReasonTextRequired: 'Please provide more detail',
     dcErrPasscodeRequired: 'Please enter your passcode to confirm',
+    dcSuccessTitle: 'Thank you',
+    dcAlreadyPendingTitle: 'Delete request already pending',
+    dcAlreadyPendingMsg: 'You already submitted a delete request for this company. Please wait for review — it\'ll be removed from the feed once approved. If you\'ve changed your mind, choose "Cancel request".',
+    dcCancelRequestBtn: 'Cancel request',
     joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT here because...',
     mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
@@ -1594,7 +1677,13 @@ document.getElementById('myTopicsList').addEventListener('click', (e)=>{
   } else if(btn.dataset.action === 'export'){
     handleExportClick(companyId, btn);
   } else if(btn.dataset.action === 'delete'){
-    openDeleteCompanyModal(companyId, topic.company_name);
+    // #3 feedback ของ Pop: กันกดส่งคำขอลบซ้ำ เช็ค flag has_pending_delete_request ที่ backend คำนวณมาให้ตั้งแต่
+    // ตอนโหลดลิสต์ (ดู actionGetMyCompanies) ถ้ามีคำขอค้างอยู่แล้ว โชว์ popup เตือนแทนที่จะเปิดฟอร์มขอลบซ้ำ
+    if(topic.has_pending_delete_request){
+      showDeleteAlreadyPendingPopup(companyId);
+    } else {
+      openDeleteCompanyModal(companyId, topic.company_name);
+    }
   }
 });
 
@@ -1666,10 +1755,43 @@ document.getElementById('dcSubmitBtn').addEventListener('click', async ()=>{
     return;
   }
   closeModal('deleteCompanyModal');
-  showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'));
+  // #1 feedback ของ Pop: เปลี่ยนหัวข้อ popup จาก default "แจ้งให้ทราบ/Notice" (กว้างไป) เป็น "ขอบคุณ/Thank you"
+  // เฉพาะเจาะจงตรงนี้ + ข้อความ EN ต่อท้ายเพิ่มแล้วฝั่ง backend (actionRequestDeleteCompany)
+  showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'), t18n('dcSuccessTitle'));
   // หมายเหตุ: ไม่ลบออกจากลิสต์/re-render ทันที เพราะคำขอลบเป็นแค่คำขอรอตรวจสอบ (status ยังเป็นเดิม) —
   // ต่างจาก WEZIDE เดิมที่ลบจริงทันทีตอนกดยืนยัน บริษัทจะยังคงอยู่ในลิสต์นี้จนกว่าทีมงานจะอนุมัติคำขอ
+  // โหลดลิสต์ใหม่ให้ has_pending_delete_request อัปเดตเป็น true ทันที (#3) กันกดส่งซ้ำได้จริงโดยไม่ต้อง refresh หน้าเอง
+  loadMyTopics();
 });
+
+// #3: popup เตือนตอนกด Delete ซ้ำบริษัทที่มีคำขอลบค้างอยู่แล้ว — [OK] แค่ปิด popup เฉยๆ, [Cancel request]
+// เรียก backend ให้เปลี่ยน status ของคำขอเดิมเป็น 'cancelled' (ดู actionCancelDeleteRequest)
+function showDeleteAlreadyPendingPopup(companyId){
+  showConfirmPopup({
+    title: t18n('dcAlreadyPendingTitle'),
+    message: t18n('dcAlreadyPendingMsg'),
+    cancelLabel: t18n('okBtn'),
+    confirmLabel: t18n('dcCancelRequestBtn'),
+    onConfirm: ()=> doCancelDeleteRequest(companyId)
+  });
+}
+
+async function doCancelDeleteRequest(companyId){
+  const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+  const cancelBtn = document.getElementById('confirmModalCancelBtn');
+  if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = t18n('savingText'); }
+  if(cancelBtn) cancelBtn.disabled = true;
+
+  const res = await api('cancelDeleteRequest', { session_token: STATE.session.session_token, company_id: companyId }, 'POST');
+  closeModal('confirmModal');
+  if(!res.success){
+    showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'));
+    return;
+  }
+  showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'));
+  // รีเฟรชลิสต์ให้ has_pending_delete_request กลับเป็น false ปุ่ม Delete เปิดให้ส่งคำขอใหม่ได้ตามปกติ
+  loadMyTopics();
+}
 
 /* ================= My Comment tab (ใหม่สำหรับ TOKBUD) =================
  * แก้ไขคำตอบโหวต/คอมเมนต์เดิมของตัวเองได้ ยิง action 'vote' ซ้ำเดิม (backend update-in-place เมื่อ
@@ -1920,9 +2042,78 @@ document.getElementById('ecSaveBtn').addEventListener('click', async ()=>{
   loadMyComments();
 });
 
-/* ---------- Edit Company modal (TOKBUD: แค่ชื่อ+โลโก้ ตาม actionEditCompany — field อื่นล็อกไว้ตั้งแต่สร้าง) ---------- */
+/* ---------- Edit Company modal (TOKBUD #7: ก็อปฟอร์มชุดเดียวกับตอนสร้าง (createModal ใน index.html)
+   มาทั้งหมด ตาม feedback ของ Pop ที่ต้องการให้แก้ได้ทุก field เหมือนตอนสร้าง ไม่ใช่แค่ชื่อ+โลโก้ ---------- */
 let etCoverUrl = '';
 let etCurrentCompanyId = '';
+let etSelectedCategories = [];
+let etSelectedColor = '';
+let etFormOptionsLoaded = false; // โหลด categories/card colors ครั้งแรกครั้งเดียว แคชไว้ใน STATE ไม่ต้องโหลดซ้ำทุกครั้งที่กด Edit
+
+// เหมือน loadCreateFormOptions() ใน index.html แต่ profile.html ไม่เคยโหลด STATE.categories มาก่อนเลย (หน้านี้
+// ไม่มี filter หมวดหมู่แบบหน้าแรก) เลยต้องยิง action 'getCategories' เองแยกต่างหาก (คนละ action จาก
+// getHomeFeed ที่ index.html ใช้ แต่ backend เป็น cache เดียวกัน ไม่ได้เพิ่มโหลดจริง) — เรียก await ก่อน
+// pre-fill ทุกครั้งที่เปิด Edit (ดู openEditTopicModal) กันปัญหาแบบเดียวกับบั๊ก #4 ที่ index.html เจอ (เปิดฟอร์ม
+// ก่อนข้อมูลจะมาครบ) โดยไม่ต้องทำ disable-button UI ซ้ำอีกชุด เพราะปุ่ม Edit ไม่ใช่ปุ่มถาวรบน header แบบ "+ Company"
+async function ensureEditFormOptionsLoaded(){
+  if(etFormOptionsLoaded) return;
+  const [catRes, colorRes] = await Promise.all([ api('getCategories'), api('getCardColors') ]);
+  STATE.categories = catRes.success ? catRes.categories : [];
+  STATE.cardColors = colorRes.success ? colorRes.colors : [];
+
+  const wrap = document.getElementById('categoryChecklist');
+  wrap.innerHTML = '';
+  STATE.categories.forEach(cat=>{
+    const row = document.createElement('label');
+    row.className = 'check-row';
+    row.innerHTML = `<input type="checkbox" value="${escapeHtml(cat)}"><span class="check-box"></span>${escapeHtml(cat)}`;
+    wrap.appendChild(row);
+  });
+  wrap.addEventListener('change', (e)=>{
+    if(e.target.type !== 'checkbox') return;
+    const val = e.target.value;
+    if(e.target.checked){
+      if(etSelectedCategories.length >= 5){
+        e.target.checked = false; // บล็อกตัวที่ 6 ทันที เหมือน createModal
+        showToast(t18n('errCategoryMax'));
+        return;
+      }
+      etSelectedCategories.push(val);
+    } else {
+      etSelectedCategories = etSelectedCategories.filter(c => c !== val);
+    }
+    updateEtCategoryPills();
+  });
+
+  const wrap2 = document.getElementById('etColorSwatches');
+  STATE.cardColors.forEach(c=>{
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'color-swatch';
+    sw.style.background = c.hex;
+    sw.dataset.hex = c.hex; // เก็บ hex ดิบไว้ต่างหาก เพราะ browser normalize sw.style.background เป็น rgb()
+    sw.title = c.name;      // เวลาอ่านกลับ เทียบ string ตรงๆ กับ hex เดิมไม่ได้ (ใช้ตอน pre-fill ใน openEditTopicModal)
+    sw.addEventListener('click', ()=>{
+      document.querySelectorAll('#etColorSwatches .color-swatch').forEach(s=> s.classList.remove('selected'));
+      sw.classList.add('selected');
+      etSelectedColor = c.hex;
+      document.getElementById('editTopicModal').style.setProperty('--card-color', c.hex);
+    });
+    wrap2.appendChild(sw);
+  });
+
+  etFormOptionsLoaded = true;
+}
+
+function updateEtCategoryPills(){
+  const wrap = document.getElementById('etCategoryPills');
+  wrap.innerHTML = etSelectedCategories.map(c => `<span class="cat-picker-pill">${escapeHtml(c)}</span>`).join('');
+}
+
+document.getElementById('etCategoryBtn').addEventListener('click', ()=> openModal('categoryPickerModal'));
+document.getElementById('etCategoryBtn').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal('categoryPickerModal'); }
+});
 
 document.getElementById('etCoverFile').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
@@ -1941,15 +2132,38 @@ document.getElementById('etCoverFile').addEventListener('change', async (e)=>{
   }
 });
 
-function openEditTopicModal(t){
+async function openEditTopicModal(t){
   etCurrentCompanyId = t.company_id;
   document.getElementById('etError').style.display = 'none';
 
-  document.getElementById('etTitle').value = t.company_name || '';
+  await ensureEditFormOptionsLoaded();
 
-  etCoverUrl = t.image_url || '';
+  document.getElementById('etTitle').value = t.company_name || '';
+  document.getElementById('etDescription').value = t.description || '';
+
+  // image_url_raw (ไม่ใช่ image_url ที่เป็น display url ผ่าน normalizeImageUrl() มาแล้ว) ต้องใช้ตัวดิบเก็บไว้
+  // ส่งกลับตอน submit ถ้า user ไม่ได้แนบโลโก้ใหม่ ไม่งั้น backend จะเข้าใจผิดว่า user ลบโลโก้ทิ้ง (ดู
+  // actionGetMyCompanies ฝั่ง backend ที่เพิ่ม image_url_raw เข้ามาให้ตรงนี้โดยเฉพาะ)
+  etCoverUrl = t.image_url_raw || '';
   const coverPreview = document.getElementById('etCoverPreview');
-  coverPreview.innerHTML = etCoverUrl ? `<img src="${etCoverUrl}">` : t18n('etLogoUploadPh');
+  coverPreview.innerHTML = (t.image_url || etCoverUrl) ? `<img src="${t.image_url || etCoverUrl}">` : t18n('etLogoUploadPh');
+
+  etSelectedCategories = t.category ? String(t.category).split(',').map(c=>c.trim()).filter(Boolean) : [];
+  document.querySelectorAll('#categoryChecklist input[type=checkbox]').forEach(cb=>{
+    cb.checked = etSelectedCategories.includes(cb.value);
+  });
+  updateEtCategoryPills();
+
+  const tagValues = t.tags || [];
+  ['etTag1','etTag2','etTag3','etTag4','etTag5'].forEach((id, i)=>{
+    document.getElementById(id).value = tagValues[i] || '';
+  });
+
+  etSelectedColor = t.card_color || '';
+  document.querySelectorAll('#etColorSwatches .color-swatch').forEach(sw=>{
+    sw.classList.toggle('selected', !!etSelectedColor && sw.dataset.hex.toLowerCase() === etSelectedColor.toLowerCase());
+  });
+  document.getElementById('editTopicModal').style.setProperty('--card-color', etSelectedColor || '');
 
   openModal('editTopicModal');
 }
@@ -1959,13 +2173,24 @@ document.getElementById('etSaveBtn').addEventListener('click', async ()=>{
   errEl.style.display = 'none';
 
   const companyName = document.getElementById('etTitle').value.trim();
+  const description = document.getElementById('etDescription').value.trim();
+  const categoryOptions = etSelectedCategories;
+  const category = categoryOptions.join(',');
+  const tags = ['etTag1','etTag2','etTag3','etTag4','etTag5'].map(id => document.getElementById(id).value.trim());
+
   if(!companyName){ errEl.textContent = t18n('errCompanyNameRequired'); errEl.style.display = 'block'; return; }
   if(!isEnglishOnlyName(companyName)){ errEl.textContent = t18n('errTitleEnglishOnly'); errEl.style.display = 'block'; return; }
+  if(!categoryOptions.length){ errEl.textContent = t18n('errCategoryRequired'); errEl.style.display = 'block'; return; }
+  if(categoryOptions.length > 5){ errEl.textContent = t18n('errCategoryMax'); errEl.style.display = 'block'; return; }
+  if(!tags.some(v => v)){ errEl.textContent = t18n('errTagRequired'); errEl.style.display = 'block'; return; }
 
   const payload = {
     session_token: STATE.session.session_token,
     company_id: etCurrentCompanyId,
-    company_name: companyName,
+    company_name: companyName, description,
+    category,
+    tag_1: tags[0], tag_2: tags[1], tag_3: tags[2], tag_4: tags[3], tag_5: tags[4],
+    card_color: etSelectedColor,
     image_url_raw: etCoverUrl
   };
 
@@ -1978,9 +2203,10 @@ document.getElementById('etSaveBtn').addEventListener('click', async ()=>{
     errEl.style.display = 'block';
     return;
   }
+  // FIX (#8+#9 feedback ของ Pop): เดิม backend fail ด้วย "No data to update" ถ้าไม่มีอะไรเปลี่ยนเลย ทำให้ค้าง
+  // อยู่ในฟอร์ม (ต้องเลื่อนขึ้นไปกด X เอง) ตอนนี้ backend คืนค่า success เสมอไม่ว่าจะมีจุดที่แก้จริงรึเปล่า
+  // closeModal() ด้านล่างนี้เลยทำงานได้ทุกเคสแล้ว ไม่ต้องเพิ่ม logic ปิด popup แยกอีกชุด
   closeModal('editTopicModal');
-  // แก้ตาม feedback ของ Pop: หัวข้อ popup เดิม default เป็น "แจ้งให้ทราบ" ทุกจุด กว้างไป ไม่สื่อว่าคือผลของ
-  // การกดบันทึกแก้ไขหัวข้อ -> ใส่หัวข้อเฉพาะเจาะจงตรงนี้แทน (bilingual ตาม pickLang เหมือน res.message)
   showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'), pickLang('แก้ไขสำเร็จ / Edit Successful'));
   loadMyTopics();
 });
