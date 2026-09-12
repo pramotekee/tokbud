@@ -10,6 +10,10 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- P0-fix (feedback ของ Pop: กด "สมัครสมาชิกเลย" แล้วต้องรอ popup ขึ้นช้า): prefetch หน้า index.html ไว้ล่วงหน้า
+     เงียบๆ ตั้งแต่หน้านี้โหลดเสร็จ เผื่อ user กดปุ่มสมัครสมาชิกใน popup login ทีหลัง เบราว์เซอร์จะได้มี HTML/CSS/JS
+     ของ index.html แคชไว้แล้วบางส่วน ลดเวลาดาวน์โหลดตอน navigate จริงได้ (ไม่ block อะไร เป็น background hint เฉยๆ) -->
+<link rel="prefetch" href="index.html">
 <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@100;400;700&family=Lexend:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -1076,7 +1080,11 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
 // กวาดสายตาหาปุ่มสมัครเองอีกที เปลี่ยนเป็นพาไปหน้าแรกพร้อม ?signup=1 ให้ index.html เปิดฟอร์มสมัครสมาชิกให้เลย
 // อัตโนมัติทันที (ใช้ query-param pattern เดียวกับ ?create=1 ที่มีอยู่แล้วในโปรเจกต์ ไม่ต้อง duplicate ฟอร์ม
 // สมัครสมาชิกทั้ง wizard 5 step มาไว้ในไฟล์นี้ ซึ่งจะเสี่ยงโค้ด 2 ชุดไม่ sync กันในอนาคต)
-document.getElementById('goSignupBtn').addEventListener('click', ()=>{
+// P0-fix (feedback ของ Pop: รู้สึกว่ากดแล้วต้องรอ ไม่รู้ว่าปุ่มทำงานหรือยัง): ให้ feedback ทันทีตอนกด (disable
+// ปุ่ม + เปลี่ยนข้อความเป็นสถานะกำลังโหลด) ก่อน navigate ออกจากหน้า จะได้รู้สึกว่าปุ่มตอบสนองทันที ไม่ใช่ค้างเฉยๆ
+document.getElementById('goSignupBtn').addEventListener('click', function(){
+  this.disabled = true;
+  this.innerHTML = `<span class="btn-spinner"></span>${getLang()==='th' ? 'กำลังเปิดฟอร์มสมัครสมาชิก...' : 'Opening sign up...'}`;
   location.href = 'index.html?signup=1';
 });
 document.querySelectorAll('.passcode-toggle').forEach(btn=>{
