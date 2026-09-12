@@ -879,6 +879,7 @@ const I18N = {
     statTopicsLabel: 'หัวข้อที่สร้างทั้งหมด', statVotersLabel: 'คนร่วมโหวตทั้งหมด',
     statusActive: 'กำลังเผยแพร่', statusInactive: 'ซ่อนอยู่', mvTotalLabel: 'ความคิดเห็น',
     dashOverviewTitle: 'ภาพรวมคนที่มาร่วมโหวตหัวข้อของคุณ', loadingText: 'กำลังโหลด...',
+    stillLoadingHint: 'ใช้เวลานานกว่าปกตินิดหน่อย กำลังโหลดอยู่ รอสักครู่นะครับ...',
     myTypeLinkText: '✨ My Type — ดูตัวตนของฉัน',
     createBtn: '＋ สร้างบริษัท', sortLatest: 'ล่าสุด', sortPopular: 'ยอดนิยม',
     personalInfoTitle: 'ข้อมูลส่วนตัว', birthdayLabel: 'วันเกิด',
@@ -983,6 +984,7 @@ const I18N = {
     statTopicsLabel: 'Topics Created', statVotersLabel: 'Total Voters',
     statusActive: 'Published', statusInactive: 'Hidden', mvTotalLabel: 'comments',
     dashOverviewTitle: 'Overview of people voting on your topics', loadingText: 'Loading...',
+    stillLoadingHint: "Taking a bit longer than usual — still loading, hang tight...",
     myTypeLinkText: '✨ My Type — See who I am',
     createBtn: '＋ Company', sortLatest: 'Latest', sortPopular: 'Popular',
     personalInfoTitle: 'Personal Info', birthdayLabel: 'Birthday',
@@ -1690,7 +1692,7 @@ document.getElementById('myTopicsList').addEventListener('click', (e)=>{
 async function doSetTopicStatus(companyId, status){
   const confirmBtn = document.getElementById('confirmModalConfirmBtn');
   const cancelBtn = document.getElementById('confirmModalCancelBtn');
-  if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = 'กำลังบันทึก...'; }
+  if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = t18n('savingText'); }
   if(cancelBtn) cancelBtn.disabled = true;
 
   const res = await api('setMyCompanyStatus', { session_token: STATE.session.session_token, company_id: companyId, status }, 'POST');
@@ -2057,9 +2059,11 @@ let etFormOptionsLoaded = false; // โหลด categories/card colors คร�
 // ก่อนข้อมูลจะมาครบ) โดยไม่ต้องทำ disable-button UI ซ้ำอีกชุด เพราะปุ่ม Edit ไม่ใช่ปุ่มถาวรบน header แบบ "+ Company"
 async function ensureEditFormOptionsLoaded(){
   if(etFormOptionsLoaded) return;
-  const [catRes, colorRes] = await Promise.all([ api('getCategories'), api('getCardColors') ]);
-  STATE.categories = catRes.success ? catRes.categories : [];
-  STATE.cardColors = colorRes.success ? colorRes.colors : [];
+  // FIX (feedback ของ Pop, ประสิทธิภาพ): เดิมยิง 2 คำขอแยก (getCategories + getCardColors) รวมเป็นคำขอเดียว
+  // (action=getCompanyFormOptions) ลดรอบ round-trip ที่ต้องรอ Apps Script ตอบกลับเหลือแค่ 1 ครั้ง
+  const res = await api('getCompanyFormOptions');
+  STATE.categories = res.success ? res.categories : [];
+  STATE.cardColors = res.success ? res.colors : [];
 
   const wrap = document.getElementById('categoryChecklist');
   wrap.innerHTML = '';
@@ -2360,7 +2364,7 @@ document.getElementById('editSaveBtn').addEventListener('click', async ()=>{
   }
 
   const btn = document.getElementById('editSaveBtn');
-  setBtnLoading(btn, true, 'กำลังบันทึก...');
+  setBtnLoading(btn, true, t18n('savingText'));
   const res = await api('updateProfile', params, 'POST');
   setBtnLoading(btn, false);
 
@@ -2689,7 +2693,16 @@ async function initProfilePage(){
   fillProvinceSelect();
   fillBirthdaySelects();
 
+  // FIX (feedback ของ Pop): เดิมโชว์แค่ "Loading..." เฉยๆ นิ่งๆ จนกว่าจะได้คำตอบ (หรือ error หลังรอ 30 วิ) ทำให้
+  // รู้สึกเหมือนหน้าเว็บค้าง/พังทั้งที่จริงๆ กำลังรออยู่เฉยๆ — ถ้ารอเกิน 6 วิ ยังไม่ได้คำตอบ เปลี่ยนข้อความให้
+  // อุ่นใจขึ้นว่ากำลังทำงานอยู่ (เลข 6 วิ นี้เป็นแค่ตัวเปลี่ยนข้อความ ไม่เกี่ยวกับ timeout จริงของ api() ที่ 15 วิ/ครั้ง)
+  const slowHintTimer = setTimeout(()=>{
+    const span = initLoader.querySelector('span');
+    if(span) span.textContent = t18n('stillLoadingHint');
+  }, 6000);
+
   const res = await api('getMyProfile', { session_token: STATE.session.session_token });
+  clearTimeout(slowHintTimer);
   initLoader.style.display = 'none';
   if(!res.success){
     // บั๊กที่เจอ: เดิม logout() + ล็อกหน้าทันทีทุกครั้งที่ res.success===false — แต่ api() เองก็คืน
