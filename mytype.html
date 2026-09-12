@@ -449,7 +449,12 @@ const I18N = {
     sliderMidError: 'Please lean toward one side or the other'
   }
 };
-function getLang(){ return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'th'; }
+// P0-fix (feedback ของ Pop: popup login เข้ามาจาก share link ยังขึ้นเป็นภาษาไทยทั้งที่เว็บนี้ตั้งใจให้ default
+// เป็น EN ทั้งเว็บเพื่อรองรับ global user — เทียบกับ index.txt แล้วพบว่า getLang() ที่นี่เขียนสลับทิศทางกัน
+// (ที่นี่: default 'th' เว้นแต่เคยตั้งค่าเป็น 'en' ไว้ก่อน ผิดทิศตรงข้ามกับ index.txt ที่ default 'en' เว้นแต่
+// เคยตั้งค่าเป็น 'th' ไว้ก่อน) แก้ให้ตรงกับ index.txt: default เป็น EN เสมอสำหรับ user ที่ยังไม่เคยกดสลับภาษา
+// มาก่อนเลย (ไม่มีค่าใน localStorage) มีผลกับทุกจุดในหน้านี้ที่ผ่าน data-i18n/t() ไม่ใช่แค่ popup login ชิ้นนี้
+function getLang(){ return localStorage.getItem(LANG_KEY) === 'th' ? 'th' : 'en'; }
 function t(key, vars){
   let s = (I18N[getLang()][key] !== undefined) ? I18N[getLang()][key] : key;
   if(vars) Object.keys(vars).forEach(k => { s = s.replace('{' + k + '}', vars[k]); });
