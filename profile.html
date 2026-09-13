@@ -2606,11 +2606,17 @@ async function handleExportClick(topicId, btn){
 // (navigator.canShare({files})) ให้เรียก navigator.share() ตรงๆ จากปุ่มในแอปเลย ไม่ต้อง navigate ไป blob: เลย
 // สักครั้ง (ต่างจาก PDF ตรงที่ CSV ไม่มีอะไรให้ preview เลยไม่ต้องทำ overlay/iframe เหมือน My Type) เบราว์เซอร์ที่
 // ไม่รองรับค่อย fallback ไปทาง <a download> แบบเดิม (ใช้ได้ปกติบน desktop และ Android Chrome อยู่แล้ว)
+// UX-fix: เดิมเช็คแค่ navigator.canShare ทำให้ desktop (macOS Safari เป็นต้น) โดนเด้ง OS share sheet ไปด้วย
+// ทั้งที่บั๊กต้นตอมีแค่ฝั่ง iOS/iPadOS เท่านั้น — เลยจำกัด share-first ให้ทำงานเฉพาะ iOS/iPadOS จริงๆ เท่านั้น
+// (iPadOS ปลอมตัวเป็น MacIntel ใน navigator.platform ตั้งแต่ iPadOS 13 เลยต้องเช็ค touch point ควบคู่ไปด้วย)
+function isIOSDevice(){
+  return /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 async function downloadCsv(csvContent, filename){
   const safeFilename = filename || 'export.csv';
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const file = new File([blob], safeFilename, { type: 'text/csv' });
-  const canShareFile = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
+  const canShareFile = isIOSDevice() && !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
 
   if(canShareFile){
     try{
