@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About — TOKBUD</title>
+<meta name="robots" content="index,follow">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&family=Lexend:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --primary: #2143C8;
+    --primary-dark: #0B1D7F;
+    --accent: #F5D149;
+    --bg: #F5F8FF;
+    --surface: #FFFFFF;
+    --body-text: #2A3050;
+    --text-muted: #5C6B9E;
+    --line: #DCE4F7;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--body-text);
+    font-family:'Inter', sans-serif; font-weight:400; font-size:15.5px; line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{ color:var(--primary); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    background:rgba(245,248,255,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    padding:14px 20px;
+  }
+  .back-link{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Lexend', sans-serif; font-weight:600; font-size:14px;
+    color:var(--primary); background:var(--surface);
+    border:1.5px solid var(--line); border-radius:100px;
+    padding:8px 16px 8px 12px; transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .back-link:hover{ text-decoration:none; box-shadow:0 6px 16px rgba(33,67,200,0.18); }
+  .back-link:active{ transform:scale(0.97); }
+  .back-link svg{ display:block; }
+
+  main{ max-width:720px; margin:0 auto; padding:44px 22px 90px; }
+  .page-title{
+    font-family:'Antonio', sans-serif; font-weight:700; font-size:34px;
+    color:var(--primary); margin:0 0 8px; letter-spacing:0.3px;
+  }
+  .en-title{
+    font-family:'Antonio', sans-serif; font-weight:700; font-size:26px;
+    color:var(--primary); margin:0 0 8px; letter-spacing:0.3px;
+  }
+  .lang-note{
+    display:inline-block; font-family:'Lexend', sans-serif; font-size:11.5px; font-weight:600;
+    color:var(--primary-dark); background:rgba(245,209,73,0.4);
+    border-radius:100px; padding:3px 11px; margin-bottom:18px; letter-spacing:0.2px;
+  }
+  .updated{ font-size:12.5px; color:var(--text-muted); margin:0 0 26px; }
+  .lede{
+    font-family:'Lexend', sans-serif; font-weight:600; font-size:17px; line-height:1.65;
+    color:var(--primary-dark); margin:0 0 28px;
+  }
+  main p{ margin:0 0 16px; }
+  main h2{
+    font-family:'Lexend', sans-serif; font-weight:700; font-size:17px;
+    color:var(--primary-dark); margin:34px 0 12px;
+  }
+  main ul{ margin:0 0 16px; padding-left:22px; }
+  main li{ margin:0 0 8px; }
+  blockquote{
+    margin:0 0 16px; padding:12px 16px; border-left:3px solid var(--accent);
+    background:var(--surface); border-radius:0 10px 10px 0;
+    font-style:italic; color:var(--primary-dark);
+  }
+  .contact-email{ font-weight:600; }
+  .lang-divider{ display:flex; align-items:center; gap:12px; margin:46px 0 30px; }
+  .lang-divider::before, .lang-divider::after{ content:''; flex:1; height:1px; background:var(--line); }
+  .lang-divider span{
+    font-family:'Lexend', sans-serif; font-weight:700; font-size:12px;
+    letter-spacing:1.5px; color:#fff; background:var(--primary);
+    border-radius:100px; padding:6px 14px; white-space:nowrap;
+  }
+  .page-footer{
+    max-width:720px; margin:0 auto; padding:0 22px 50px;
+    font-size:12px; color:var(--text-muted); text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-link" href="index.html">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l-6 6 6 6"/></svg>
+    <span>← กลับหน้าแรก</span>
+  </a>
+</div>
+
+<main>
+  <h1 class="page-title">เกี่ยวกับเรา</h1>
+  <div class="lang-note">English below ↓</div>
+  <p class="lede">ก่อนตัดสินใจทำงานที่ไหน คุณอยากรู้ไหมว่า คนที่ทำงานอยู่ที่นั่นจริง ๆ คิดอย่างไร?</p>
+  <p>การเลือกบริษัทที่จะร่วมงานด้วย จัดเป็นหนึ่งในการตัดสินใจสำคัญของชีวิต เพราะเราต้องอุทิศทั้งวันเวลา แรงกาย แรงใจ ความรู้ ความสามารถ สติปัญหา ทักษะ และอื่นๆ แทบทุกสิ่งที่เรามีเพื่อที่นี่</p>
+  <p>แต่ก่อนตัดสินใจ เรามักมีข้อมูลเกี่ยวกับบริษัทไม่มากนัก เรารู้จักแบรนด์จกาฝ่ายการตลาดที่ปั้นแต่งมาอย่างดีมากแล้ว เราเห็นตำแหน่งงาน อ่าน Job Description หรือพูดคุยกับคนสัมภาษณ์ ที่ HR จัดสรรมาอย่างดี แต่สิ่งที่เราอาจยังไม่รู้ คือประสบการณ์จริงของคนที่ทำงานอยู่ที่นั่น หรือคนที่เคยผ่านการทำงานที่นั่นมาก่อน เปรียบเหมือนเราได้ถามคนใช้สินค้า บริการนั้นจริง ๆ ว่า</p>
+  <blockquote>"เป็นไงวะ ใช้แล้วดีป่ะ ดีกว่าที่คาด หรือห่วยกว่าที่คิดไว้"</blockquote>
+  <p>TOKBUD (ตอกบัตร) เริ่มต้นจากความตั้งใจง่าย ๆ ว่า เราอยากให้คนที่กำลังมองหางาน มีโอกาสได้เห็นมุมมองของคนที่มีประสบการณ์จริงจากบริษัททั้งหลาย ที่ TOKBUD คนที่ยังทำงานอยู่สามารถแบ่งปันได้ว่า "ทำงานที่นี่เพราะ" ส่วนคนที่เคยผ่านการทำงานที่นี่มาแล้วสามารถบอกได้ว่า "ลาออกไปเพราะ"</p>
+  <p>ไม่ว่าจะเป็นเรื่องของหัวหน้า ทีม เพื่อนร่วมงาน วัฒนธรรมองค์กร โอกาสเติบโต รูปแบบการทำงาน ค่าตอบแทน หรือสิ่งเล็ก ๆ ที่เกิดขึ้นในชีวิตการทำงานจริง สิ่งเหล่านี้ล้วนเป็นส่วนหนึ่งของประสบการณ์ที่อาจช่วยให้ใครบางคนตัดสินใจได้ดีขึ้น</p>
+  <p>TOKBUD ไม่ได้มีเป้าหมายที่จะบอกว่าบริษัทไหน "ดี" หรือ "ไม่ดี" เพราะบริษัทเดียวกันอาจเป็นสถานที่ที่ใช่สำหรับคนหนึ่ง และไม่ใช่สำหรับอีกคนหนึ่ง</p>
+  <p>สิ่งที่เราอยากทำ คือเปิดพื้นที่ให้ผู้คนได้เห็นประสบการณ์และมุมมองที่หลากหลายรอบด้านจากคนใน เพื่อให้คนนอกที่กำลังตัดสินใจได้รู้จักบริษัทในมุมที่มากกว่าแค่สิ่งที่บริษัทเลือกคัดสรรเอามาบอกเกี่ยวกับตัวเอง เพื่อให้คนที่กำลังคิดสมัครงาน ได้รู้ว่า "ที่นี่เหมาะกับเราไหม?"</p>
+  <p>TOKBUD เป็นอีกหนึ่งพื้นที่ที่ช่วยให้คุณค้นหาคำตอบนั้น ผ่านประสบการณ์จริงของผู้คน</p>
+  <div class="lang-divider"><span>ENGLISH VERSION</span></div>
+  <h2 class="en-title" style="margin-top:0;">About</h2>
+  <p class="lede">Find the place where you shine.</p>
+  <p>Choosing where to work can be one of the most important decisions we make in life. Because once we choose a company, we invest so much of ourselves into it — our time, energy, effort, knowledge, skills, attention, and so much more.</p>
+  <p>Yet before making that decision, we often have very little information about what a company is really like. We know the brand, carefully crafted by marketing. We see the job opening, read the Job Description, and talk to interviewers carefully selected and prepared by HR. But what we may not know is what it is actually like to work there — from the people who are working there now, or those who have been through the experience before. It’s a little like asking someone who has actually used a product or service:</p>
+  <blockquote>"So, what’s it really like? Is it actually good? Better than you expected, or not quite what you thought?"</blockquote>
+  <p>TOKBUD started with a simple idea: to give people looking for their next job a chance to hear from people with real experience inside different companies. At TOKBUD, current employees can share "I work here because", while former employees can share "I left because."</p>
+  <p>It could be about managers, teams, colleagues, company culture, growth opportunities, ways of working, compensation, or the little things that shape everyday working life. These experiences can all provide valuable perspectives that may help someone make a better decision.</p>
+  <p>TOKBUD is not here to tell you which companies are "good" or "bad." Because the same company can be the right place for one person, and the wrong place for another.</p>
+  <p>What we want to do is create a space where people can see a wider range of real experiences and perspectives from the inside, so those on the outside can get to know a company beyond what it chooses to tell the world about itself. So, if you’re thinking about applying for a job, you can ask yourself: "Is this place right for me?"</p>
+  <p>TOKBUD is another place to help you find that answer, through the real experiences of people who have been there.</p>
+</main>
+
+<div class="page-footer">Copyright © 2026 TOKBUD. All rights reserved.</div>
+
+</body>
+</html>
