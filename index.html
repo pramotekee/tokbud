@@ -3064,11 +3064,18 @@ async function exportCompanyVotes(topicId, btn){
 // เหมือนกับ downloadCsv ของ profile.txt เป๊ะๆ (ดูคอมเมนต์ยาวที่นั่นสำหรับที่มาของ P0-fix เรื่อง iOS Safari
 // blob: URL หลุดติดไปกับไฟล์ตอน user กด share เอง) — คัดลอกมาเพราะ index.html/profile.html เป็นคนละหน้า
 // ไม่ได้ share ไฟล์ JS ร่วมกัน
+// UX-fix: เดิมเช็คแค่ navigator.canShare ทำให้ desktop (macOS Safari เป็นต้น) โดนเด้ง OS share sheet ไปด้วย
+// ทั้งที่บั๊กต้นตอ (<a download> กับ blob: ไม่เสถียร) มีแค่ฝั่ง iOS/iPadOS เท่านั้น — desktop/Android ดาวน์โหลด
+// ตรงๆ ทำงานปกติอยู่แล้ว เลยจำกัด share-first ให้ทำงานเฉพาะ iOS/iPadOS จริงๆ เท่านั้น (iPadOS ปลอมตัวเป็น
+// MacIntel ใน navigator.platform ตั้งแต่ iPadOS 13 เลยต้องเช็ค touch point ควบคู่ไปด้วย)
+function isIOSDevice(){
+  return /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
 async function downloadCsv(csvContent, filename){
   const safeFilename = filename || 'export.csv';
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const file = new File([blob], safeFilename, { type: 'text/csv' });
-  const canShareFile = !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
+  const canShareFile = isIOSDevice() && !!(navigator.canShare && navigator.share && navigator.canShare({ files: [file] }));
 
   if(canShareFile){
     try{
