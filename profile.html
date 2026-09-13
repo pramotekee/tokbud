@@ -922,9 +922,9 @@ const I18N = {
     billingHistoryTitle: 'ประวัติการชำระเงิน',
     billingHistoryEmpty: 'ยังไม่มีประวัติการชำระเงิน',
     planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อปลดล็อกฟีเจอร์เพิ่มเติม รวมถึงการ export ข้อมูลคำตอบจากคนที่แชร์ความคิดเห็นเกี่ยวกับบริษัทต่างๆ',
-    planPitchDesc: 'เพียง 199 บาท/เดือน (นับ 30 วัน) เพื่อนำข้อมูลไปต่อยอด วิเคราะห์ สำรวจ หรือใช้งานต่อได้ตามต้องการ ยกเลิกได้ตลอดเวลา',
-    planPriceUsdHint: '(~$5.5 USD — เปรียบเทียบมูลค่าโดยประมาณ)',
-    upgradeToProBtn: 'อัปเกรดเป็น PRO — 199 บาท/เดือน',
+    planPitchDesc: 'เพียง 249 บาท/เดือน (นับ 30 วัน) เพื่อนำข้อมูลไปต่อยอด วิเคราะห์ สำรวจ หรือใช้งานต่อได้ตามต้องการ ยกเลิกได้ตลอดเวลา',
+    planPriceUsdHint: '(~$7.5 USD — เปรียบเทียบมูลค่าโดยประมาณ)',
+    upgradeToProBtn: 'อัปเกรดเป็น PRO — 249 บาท/เดือน',
     currentPlanLabel: 'แผนที่คุณใช้งานอยู่ตอนนี้',
     proActiveLabel: 'PRO', freeLabel: 'FREE',
     proUntilActiveText: 'ต่ออายุอัตโนมัติรอบถัดไปวันที่ {date}',
@@ -1039,9 +1039,9 @@ const I18N = {
     billingHistoryTitle: 'Payment History',
     billingHistoryEmpty: 'No payment history yet',
     planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who shared their opinions about a company.',
-    planPitchDesc: 'Just 199 THB/month (30 days) to take the data further — analyze it, explore it, or use it for your own work. Cancel anytime.',
-    planPriceUsdHint: '(~$5.5 USD — approximate value comparison only, not the actual charged amount)',
-    upgradeToProBtn: 'Upgrade to PRO — 199 THB/month',
+    planPitchDesc: 'Just 249 THB/month (30 days) to take the data further — analyze it, explore it, or use it for your own work. Cancel anytime.',
+    planPriceUsdHint: '(~$7.5 USD — approximate value comparison only, not the actual charged amount)',
+    upgradeToProBtn: 'Upgrade to PRO — 249 THB/month',
     currentPlanLabel: 'Your current plan',
     proActiveLabel: 'PRO', freeLabel: 'FREE',
     proUntilActiveText: 'Auto-renews on {date}',
@@ -2524,7 +2524,7 @@ function renderPlanStatusCard(){
     actionHtml = `
       <p class="plan-pitch-title">${t('planPitchTitle')}</p>
       <p class="plan-pitch-desc">${t('planPitchDesc')}</p>
-      <p class="plan-price-tag">199 THB / month</p>
+      <p class="plan-price-tag">249 THB / month</p>
       <p class="plan-price-usd">${t('planPriceUsdHint')}</p>
       <button class="btn btn-primary full-btn" id="upgradeProBtn">${t('upgradeToProBtn')}</button>`;
   }
