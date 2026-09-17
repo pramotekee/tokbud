@@ -84,6 +84,30 @@
   /* ===== การ์ดพื้นขาว (ทุกกล่องคอนเทนต์วางอยู่บนพื้นม่วง) ===== */
   .card{ background:var(--surface); border-radius:24px; box-shadow:var(--shadow); padding:24px 20px; margin-bottom:16px; }
 
+  /* ===== TOKBUD Conversation Cards banner (เห็นเฉพาะเจ้าของบัญชี, อยู่เหนือกรอบ About Me) =====
+     เปิดให้ทุกคนเห็น/กดได้ (ทั้ง free/PRO) แล้วให้ conversationcard.html เป็นคนตัดสินโหมด demo/full เอง
+     ผ่าน session ที่อ่านจาก localStorage ตรงๆ (ดู actionGetCardAccess ฝั่ง appscript.txt) */
+  .convo-card-banner{
+    background:linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border-radius:24px; box-shadow:var(--shadow); padding:20px; margin-bottom:16px;
+    color:#fff; position:relative; overflow:hidden;
+  }
+  .convo-card-banner::after{
+    content:'🃏'; position:absolute; right:-10px; bottom:-18px; font-size:96px; opacity:.12; transform:rotate(-12deg);
+  }
+  .convo-card-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .convo-card-badge{
+    background:linear-gradient(135deg,var(--accent),#FFA53C); color:var(--primary-dark);
+    font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; letter-spacing:.5px;
+  }
+  .convo-card-title{ font-family:'Lexend',sans-serif; font-weight:800; font-size:17px; }
+  .convo-card-desc{ font-size:13px; line-height:1.55; color:rgba(255,255,255,0.85); max-width:88%; margin-bottom:16px; position:relative; z-index:1; }
+  .convo-card-btn{
+    background:var(--accent); color:var(--primary-dark); font-weight:700; font-size:14px;
+    padding:11px 20px; border-radius:100px; position:relative; z-index:1;
+  }
+  .convo-card-btn:active{ transform:scale(.96); }
+
   .profile-head{ display:flex; align-items:center; gap:16px; margin-bottom:18px; }
   .avatar{ width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--text-muted); }
   .avatar img{ width:100%; height:100%; object-fit:cover; }
@@ -414,7 +438,11 @@ const I18N = {
     noAccountText: 'ยังไม่มีบัญชี?', goSignupLink: 'สมัครสมาชิกเลย',
     loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ',
     charCount: '{n}/500 ตัวอักษร',
-    sliderMidError: 'กรุณาเลือกให้เอียงไปทางใดทางหนึ่ง'
+    sliderMidError: 'กรุณาเลือกให้เอียงไปทางใดทางหนึ่ง',
+    convoCardBadge: 'PRO',
+    convoCardTitle: 'TOKBUD Conversation Cards',
+    convoCardDesc: 'การ์ดชวนคุยกว่า 100+ ใบ ช่วยให้คุณรู้จักเพื่อนร่วมทีมหรือใครก็ได้ให้ลึกขึ้น เหมาะทั้งเล่นสนุกๆ หรือใช้เป็นเครื่องมือคุย 1-on-1 กับทีมของคุณ',
+    convoCardBtn: '🃏 เล่นเลย'
   },
   en: {
     backHome: '← Back to Home', backMyType: '← Back to My Type', loadingText: 'Loading...',
@@ -446,7 +474,11 @@ const I18N = {
     noAccountText: 'Don\'t have an account?', goSignupLink: 'Sign Up Now',
     loginErrorRequired: 'Please enter both your phone number and Passcode',
     charCount: '{n}/500 characters',
-    sliderMidError: 'Please lean toward one side or the other'
+    sliderMidError: 'Please lean toward one side or the other',
+    convoCardBadge: 'PRO',
+    convoCardTitle: 'TOKBUD Conversation Cards',
+    convoCardDesc: '100+ conversation-starter cards to help you get to know your team (or anyone) on a deeper level. Great for icebreakers or 1-on-1 conversations.',
+    convoCardBtn: '🃏 Play now'
   }
 };
 // P0-fix (feedback ของ Pop: popup login เข้ามาจาก share link ยังขึ้นเป็นภาษาไทยทั้งที่เว็บนี้ตั้งใจให้ default
@@ -826,6 +858,29 @@ function showGameResultPopup(){
   openModal('gameResultModal');
 }
 
+// เห็นเฉพาะเจ้าของบัญชีตอนดู My Type ของตัวเอง — ถ้านาย ก กดดู My Type ของนาย ข จะไม่เห็นแบนเนอร์นี้เลย
+// (ตั้งใจ ไม่ใช่ bug: ฟีเจอร์นี้เป็นของ "ตัวเอง" ใช้เล่น/ฝึกคุยกับคนอื่น ไม่ใช่ฟีเจอร์ของโปรไฟล์ที่กำลังดูอยู่)
+function convoCardBannerHtml(){
+  return `<div class="convo-card-banner">
+    <div class="convo-card-head">
+      <span class="convo-card-title">${t('convoCardTitle')}</span>
+      <span class="convo-card-badge">${t('convoCardBadge')}</span>
+    </div>
+    <div class="convo-card-desc">${t('convoCardDesc')}</div>
+    <button type="button" class="btn convo-card-btn" onclick="openConversationCards()">${t('convoCardBtn')}</button>
+  </div>`;
+}
+
+// Login ปกติไม่ควรเป็นไปได้ที่ isOwner=true แล้วยังไม่ login (เพราะ isOwner ต้องมาจาก session ที่ตรงกับเจ้าของ
+// โปรไฟล์เท่านั้น) แต่ยังกันไว้แบบ defensive เผื่อ session หลุดกลางอากาศ (เช่น login ซ้ำจากเครื่องอื่น) —
+// เปิดเป็นแท็บ/หน้าต่างใหม่ตั้งใจ (ไม่ใช่ full-screen overlay ทับหน้านี้) เพื่อให้ user สลับไปมาระหว่าง
+// My Type กับ Conversation Card ได้พร้อมกัน ไม่บัง UX กัน — conversationcard.html เช็คสิทธิ์ PRO เองอีกชั้น
+// ผ่าน getCardAccess (อ่าน session จาก localStorage ตรงๆ เพราะเป็น origin เดียวกัน) ไม่ต้องส่งอะไรผ่าน URL เลย
+function openConversationCards(){
+  if(!isLoggedIn()){ openLoginModal(); return; }
+  window.open('conversationcard.html', '_blank', 'noopener');
+}
+
 function renderView(data){
   document.getElementById('content').innerHTML = ''; // clear ก่อน (กัน id ซ้ำตอน re-render สลับภาษา)
 
@@ -858,6 +913,7 @@ function renderView(data){
   }
 
   document.getElementById('content').innerHTML = `
+    ${isOwner ? convoCardBannerHtml() : ''}
     <div class="card">
       <div class="profile-head">
         ${avatarHtml(data.user)}
@@ -881,6 +937,7 @@ function renderView(data){
 function renderEmptyState(data){
   const isOwner = data.is_owner;
   document.getElementById('content').innerHTML = `
+    ${isOwner ? convoCardBannerHtml() : ''}
     <div class="card">
       <div class="profile-head">
         ${avatarHtml(data.user)}
