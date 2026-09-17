@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="robots" content="noindex">
+<title>TOKBUD Conversation Cards</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@100;400;700&family=Lexend:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --primary:#2143C8; --primary-dark:#0B1D7F; --accent:#F5D149;
+  --bg:#0B1D7F; --surface:#FFFFFF; --text:#0B1D7F; --text-muted:#5C6B9E;
+  --line:#DCE4F7; --shadow:0 4px 20px rgba(11,29,127,0.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:'Inter',sans-serif; background:var(--bg); color:#fff; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+a{color:inherit;text-decoration:none;}
+.hidden{display:none !important;}
+
+.screen{
+  width:100vw; min-height:100vh; display:flex; flex-direction:column;
+  justify-content:center; align-items:center; padding:28px 20px; text-align:center;
+}
+.logo-word{ font-family:'Antonio',sans-serif; font-weight:700; font-size:40px; letter-spacing:2px; color:#fff; line-height:1; }
+.logo-sub{ font-family:'Lexend',sans-serif; font-weight:700; font-size:15px; letter-spacing:.5px; color:var(--accent); margin-top:6px; text-transform:uppercase; }
+.tagline{ margin-top:14px; font-size:13.5px; color:rgba(255,255,255,.75); max-width:320px; line-height:1.6; }
+
+.btn{ padding:15px 20px; border-radius:100px; font-size:15px; font-weight:700; font-family:'Lexend',sans-serif; color:#fff; transition:.15s ease; }
+.btn:active{ transform:scale(.96); }
+.button-group{ width:100%; max-width:320px; margin-top:46px; display:flex; flex-direction:column; gap:12px; }
+.btn-primary{ background:var(--accent); color:var(--primary-dark); }
+.btn-secondary{ background:rgba(255,255,255,.12); color:#fff; border:1.5px solid rgba(255,255,255,.25); }
+
+.category-grid{ width:100%; max-width:380px; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:26px; }
+.category-card{ border-radius:20px; padding:16px; min-height:120px; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; transition:.2s ease; text-align:left; }
+.category-card:active{ transform:scale(.97); }
+.category-card .cc-name{ font-family:'Lexend',sans-serif; font-weight:800; font-size:16px; }
+.category-card .cc-title{ margin-top:6px; font-size:11.5px; opacity:.8; line-height:1.4; }
+
+.back-link{ position:fixed; top:20px; left:20px; font-size:13px; color:rgba(255,255,255,.75); font-weight:600; z-index:60; }
+.back-link:active{ color:#fff; }
+
+.cards-screen{ padding-top:26px; padding-bottom:26px; justify-content:flex-start; }
+.cards-top{ text-align:center; margin-bottom:22px; }
+
+.belt-wrapper{ width:100vw; overflow:hidden; position:relative; margin:9px 0; }
+.belt{ display:flex; align-items:center; gap:14px; width:max-content; }
+.belt-r2l{ animation:scrollLeft 34s linear infinite; }
+.belt-l2r{ animation:scrollRight 34s linear infinite; }
+@keyframes scrollLeft{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+@keyframes scrollRight{ from{transform:translateX(-50%);} to{transform:translateX(0);} }
+@media (prefers-reduced-motion: reduce){ .belt-r2l,.belt-l2r{ animation:none; } }
+
+.mini-card{
+  width:150px; height:200px; border-radius:20px;
+  background:linear-gradient(165deg, var(--primary), var(--primary-dark));
+  color:#fff; padding:16px; display:flex; flex-direction:column; justify-content:space-between;
+  flex-shrink:0; cursor:pointer; box-shadow:0 14px 30px rgba(0,0,0,.28);
+  transition:transform .15s ease;
+}
+.mini-card:active{ transform:scale(.96); }
+.mini-cat-tag{ display:inline-block; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:100px; letter-spacing:.4px; align-self:flex-start; }
+.mini-card-center{ text-align:center; }
+.mini-spark{ font-size:26px; }
+.mini-tap{ margin-top:6px; font-size:11px; opacity:.85; font-weight:600; }
+.mini-brand{ text-align:center; font-family:'Antonio',sans-serif; font-size:14px; letter-spacing:1px; opacity:.9; }
+
+.overlay{ position:fixed; inset:0; background:rgba(11,29,127,.55); backdrop-filter:blur(10px); display:none; justify-content:center; align-items:center; padding:20px; z-index:999; }
+.overlay.open{ display:flex; }
+.reveal-card{
+  width:100%; max-width:380px; max-height:88vh; overflow-y:auto;
+  background:var(--surface); border-radius:28px; padding:28px 24px 24px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  box-shadow:0 25px 60px rgba(0,0,0,.35); position:relative; color:var(--text);
+}
+.close-btn-circle{
+  position:absolute; top:16px; right:16px; width:40px; height:40px; border-radius:50%;
+  border:1px solid var(--line); background:#fff; color:var(--primary-dark); opacity:.7;
+  font-size:22px; line-height:1; display:flex; justify-content:center; align-items:center;
+}
+.reveal-cat-tag{ display:inline-block; font-size:11px; font-weight:700; letter-spacing:.5px; padding:4px 10px; border-radius:100px; margin-bottom:18px; }
+.reveal-question{ font-family:'Lexend',sans-serif; font-size:23px; line-height:1.4; font-weight:700; color:var(--primary-dark); min-height:60px; }
+.reveal-footer{ margin-top:26px; display:flex; flex-direction:column; gap:10px; }
+.translate-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.translate-btn{ background:#EAF1FF; color:var(--primary); font-size:13px; font-weight:700; padding:9px 16px; border-radius:100px; }
+.current-lang-tag{ font-size:11.5px; color:var(--text-muted); }
+.reveal-brand{ text-align:center; font-family:'Antonio',sans-serif; font-size:22px; color:var(--primary); letter-spacing:1px; }
+
+.lang-modal{ position:fixed; inset:0; background:rgba(11,29,127,.55); display:none; justify-content:center; align-items:flex-end; z-index:1001; }
+.lang-modal.open{ display:flex; }
+.lang-sheet{ width:100%; max-width:420px; max-height:70vh; overflow-y:auto; background:#fff; border-radius:24px 24px 0 0; padding:20px; color:var(--text); }
+.lang-sheet-title{ font-family:'Lexend',sans-serif; font-weight:800; font-size:16px; margin-bottom:14px; }
+.lang-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.lang-pick-btn{ background:#F4F7FE; border:1.5px solid var(--line); border-radius:12px; padding:11px; font-size:14px; font-weight:600; color:var(--text); text-align:left; }
+.lang-pick-btn.active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+.lang-cancel-btn{ display:block; width:100%; margin-top:12px; text-align:center; padding:12px; color:var(--text-muted); font-weight:600; font-size:14px; }
+
+.demo-note{ background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:16px; padding:14px 16px; font-size:13px; line-height:1.55; color:rgba(255,255,255,.9); max-width:340px; margin:18px 0 26px; }
+.demo-note b{ color:var(--accent); }
+.demo-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; max-width:520px; }
+.upgrade-btn{ margin-top:24px; background:var(--accent); color:var(--primary-dark); }
+
+.state-msg{ font-size:14px; color:rgba(255,255,255,.85); }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="screen">
+  <div class="logo-word">TOKBUD</div>
+  <div class="state-msg" style="margin-top:16px;">Loading...</div>
+</div>
+
+<section id="home" class="screen hidden">
+  <div class="logo-word">TOKBUD</div>
+  <div class="logo-sub">Conversation Cards</div>
+  <div class="tagline">Spark real conversations. Get to know your team — and yourself — a little better, one card at a time.</div>
+  <div class="button-group">
+    <button class="btn btn-primary" onclick="openCategory()">Select a Category</button>
+    <button class="btn btn-secondary" onclick="openCards()">Mix All Categories</button>
+  </div>
+</section>
+
+<section id="demoHome" class="screen hidden">
+  <div class="logo-word">TOKBUD</div>
+  <div class="logo-sub">Conversation Cards</div>
+  <div class="demo-note">You're playing <b>3 free demo cards</b>. TOKBUD PRO unlocks <b>100+ cards</b> across 6 categories.</div>
+  <div class="demo-row" id="demoRow"></div>
+  <button class="btn upgrade-btn" onclick="goUpgrade()">✨ Upgrade to PRO</button>
+</section>
+
+<section id="category" class="screen hidden">
+  <a href="#" class="back-link" onclick="goHome();return false;">← Back</a>
+  <div class="logo-sub" style="margin-top:20px;">Choose a category</div>
+  <div class="category-grid" id="categoryGrid"></div>
+</section>
+
+<section id="cards" class="screen hidden cards-screen">
+  <a href="#" class="back-link" onclick="goHome();return false;">← Back</a>
+  <div class="cards-top">
+    <div class="logo-word" style="font-size:26px;">TOKBUD</div>
+    <div class="logo-sub" style="font-size:12px;">Conversation Cards</div>
+  </div>
+  <div class="belt-wrapper"><div class="belt belt-r2l" id="belt1"></div></div>
+  <div class="belt-wrapper"><div class="belt belt-l2r" id="belt2"></div></div>
+  <div class="belt-wrapper"><div class="belt belt-r2l" id="belt3"></div></div>
+</section>
+
+<div class="overlay" id="overlay">
+  <div class="reveal-card">
+    <button class="close-btn-circle" onclick="closeReveal()">×</button>
+    <div>
+      <div class="reveal-cat-tag" id="revealCatTag"></div>
+      <div class="reveal-question" id="revealQuestion"></div>
+    </div>
+    <div class="reveal-footer">
+      <div class="translate-row">
+        <button class="translate-btn" id="translateBtn" onclick="openLangPicker()">🌐 Translate</button>
+        <span class="current-lang-tag" id="currentLangTag">English</span>
+      </div>
+      <div class="reveal-brand">TOKBUD</div>
+    </div>
+  </div>
+</div>
+
+<div class="lang-modal" id="langModal">
+  <div class="lang-sheet">
+    <div class="lang-sheet-title">Translate this card</div>
+    <div class="lang-grid" id="langGrid"></div>
+    <button class="lang-cancel-btn" onclick="closeLangPicker()">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* ================= CONFIG ================= */
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbwH_KorLbUReFtJ0q3uxLBcc802Crm451rlc31PlOeBZCL2oL9bUu-Jlb3bJnMBQnlbgw/exec',
+  FRONTEND_URL: 'https://tokbud.vercel.app'
+};
+
+/* ต้อง sync กับ TRANSLATE_LANGS ฝั่ง appscript.txt/index.txt/profile.txt ทุกครั้งที่แก้ (รายชื่อ/ลำดับเดียวกันหมด) */
+const TRANSLATE_LANGS = [
+  {code:'en',    label:'English'},
+  {code:'zh-CN', label:'中文 (简体)'},
+  {code:'es',    label:'Español'},
+  {code:'hi',    label:'हिन्दी'},
+  {code:'ar',    label:'العربية'},
+  {code:'pt',    label:'Português'},
+  {code:'bn',    label:'বাংলা'},
+  {code:'ru',    label:'Русский'},
+  {code:'ja',    label:'日本語'},
+  {code:'de',    label:'Deutsch'},
+  {code:'fr',    label:'Français'},
+  {code:'ko',    label:'한국어'},
+  {code:'vi',    label:'Tiếng Việt'},
+  {code:'id',    label:'Bahasa Indonesia'},
+  {code:'th',    label:'ภาษาไทย'}
+];
+
+/* ================= Card content =================
+ * คำถามชุดเดิมจาก CLAIR ทั้งหมด (6 หมวด x 25 การ์ด, TH ต้นฉบับ + EN ต้นฉบับ) — เนื้อหาไม่เปลี่ยนแม้แต่ตัวเดียว
+ * ตามที่ Pop ยืนยัน เปลี่ยนแค่สี (color/textColor) ให้อยู่ในโทน TOKBUD (เดิมเป็นโทนน้ำตาล/เทอร์ราคอตต้าของ CLAIR) */
+const CARD_CATEGORIES = {
+SHADOW:{
+title:"ส่วนลึกที่แอบซ่อนอยู่",
+color:"#0B1D7F",
+textColor:"white",
+cards:[
+"อะไรที่คุณยังโกหกตัวเองอยู่จนถึงวันนี้?",
+"ความกลัวอะไรที่คุมชีวิตคุณอยู่โดยที่คุณไม่รู้ตัว?",
+"มีใครที่คุณยังไม่ยกโทษให้ แต่บอกตัวเองว่าให้อภัยแล้ว?",
+"สิ่งที่คุณอยากทำแต่กลัวคนอื่นจะตัดสิน คืออะไร?",
+"ความสำเร็จอะไรของคุณที่แอบรู้สึกว่าตัวเองไม่สมควรได้?",
+"ถ้าคนที่คุณรักที่สุดรู้ความคิดในหัวคุณทุกอย่าง เขาจะแปลกใจกับอะไรมากที่สุด?",
+"อะไรที่คุณทำอยู่ทุกวันแต่รู้ว่ามันไม่ดีกับตัวเอง?",
+"ช่วงไหนในชีวิตที่คุณรู้สึกว่าตัวเองเป็นคนที่แย่ที่สุด?",
+"มีความสัมพันธ์ไหนที่คุณยังค้างคาใจแต่ไม่กล้าไปจัดการ?",
+"ถ้ามีคนรู้จักคุณจริงๆทั้งหมด คุณกลัวเขาจะคิดยังไง?",
+"อะไรที่คุณอิจฉาคนอื่นแต่ไม่เคยยอมรับออกมาดังๆ?",
+"ความผิดพลาดอะไรที่คุณยังโทษตัวเองอยู่ทุกวัน?",
+"มีนิสัยอะไรของตัวเองที่คุณเกลียดมากที่สุด?",
+"อะไรที่คุณแกล้งทำเป็นว่าไม่แคร์ แต่จริงๆแคร์มาก?",
+"ถ้าพรุ่งนี้คุณหายไปจากโลกนี้ มีเรื่องอะไรที่ยังค้างใจไม่ได้พูด?",
+"ความต้องการอะไรของคุณที่รู้สึกอายที่จะบอกใคร?",
+"คุณเคยทำร้ายใครโดยที่เขาไม่รู้ตัว แล้วไม่เคยบอกเขาเลย?",
+"อะไรที่คุณหลีกเลี่ยงมานานเพราะกลัวจะเจอความจริง?",
+"ถ้าชีวิตคุณเป็นหนัง ฉากไหนที่คุณอยากตัดออก?",
+"ความสุขอะไรที่คุณรู้สึกผิดทุกครั้งที่รู้สึกมัน?",
+"มีบทบาทอะไรในชีวิตที่คุณแสดงอยู่แต่ข้างในไม่ได้เชื่อ?",
+"อะไรที่คุณพูดว่าไม่เป็นไร แต่จริงๆมันเป็นไรมาก?",
+"คนไหนในชีวิตที่คุณรู้สึกโล่งใจทุกครั้งที่เขาไม่อยู่?",
+"ความฝันอะไรที่คุณฝังดินไปแล้วเพราะกลัวล้มเหลว?",
+"ถ้าวันนี้คุณกล้าพูดความจริงได้ 1 เรื่อง คุณจะพูดอะไร?"
+],
+enCards:[
+"What are you still lying to yourself about to this day?",
+"What fear is controlling your life without you even realizing it?", 
+"Who have you not truly forgiven yet, despite telling yourself you have?", 
+"What is something you want to do but are too afraid of being judged for?", 
+"Which of your successes do you secretly feel you don't deserve?", 
+"If the person you love most knew every thought in your head, what would surprise them the most?", 
+"What is something you do every day even though you know it's bad for you?", 
+"At what point in your life did you feel like the worst version of yourself?", 
+"Which relationship is still lingering in your mind, yet you lack the courage to deal with it?", 
+"If someone truly knew everything about you, what are you afraid they would think?", 
+"What are you secretly envious of in others but have never admitted out loud?", 
+"What past mistake do you still blame yourself for every single day?", 
+"Which of your own habits do you dislike the most?", 
+"What is something you pretend not to care about, but actually care deeply?", 
+"If you were to disappear from this world tomorrow, what unsaid thing would still weigh on your mind?", 
+"What desire of yours makes you feel embarrassed to share with anyone?", 
+"Have you ever hurt someone without them knowing, and never told them?", 
+"What have you been avoiding for a long time out of fear of facing the truth?", 
+"If your life were a movie, which scene would you want to cut out?", 
+"What is a happiness that makes you feel guilty every time you experience it?", 
+"What role in your life are you currently acting out without truly believing in it?", 
+"What is something you said was 'fine', but in reality, it really wasn't?", 
+"Who in your life do you feel a sense of relief from every time they are not around?", 
+"What dream have you buried away simply out of fear of failure?", 
+"If you could courageously speak just one truth today, what would you say?"
+]
+},
+
+MIRROR:{
+title:"รู้จักตัวเองมากขึ้น",
+color:"#EAF1FF",
+textColor:"#0B1D7F",
+cards:[
+"คุณเป็นคนที่คุณอยากเป็นตอนเด็กไหม?",
+"ค่านิยมอะไรที่คุณบอกว่าสำคัญ แต่การกระทำไม่ได้สะท้อนมันเลย?",
+"คุณมีความสุขที่สุดตอนอยู่กับใคร หรืออยู่คนเดียว?",
+"ถ้าให้นิยามตัวเองด้วย 3 คำ คุณจะเลือกคำอะไร?",
+"pattern อะไรในชีวิตที่คุณวนซ้ำมาตลอดแต่ยังแก้ไม่ได้?",
+"คุณตัดสินใจด้วยหัวหรือหัวใจมากกว่ากัน แล้วมันทำให้เสียใจบ่อยไหม?",
+"สิ่งที่คุณต้องทำ กับสิ่งที่คุณอยากทำ ต่างกันแค่ไหน?",
+"ใครในชีวิตที่เข้าใจคุณมากที่สุด แล้วเขารู้จักคุณจริงๆไหม?",
+"คุณโกรธเรื่องอะไรได้เร็วที่สุด นั่นบอกอะไรเกี่ยวกับตัวคุณ?",
+"ถ้ามีคนสังเกตคุณมาทั้งปี เขาจะบอกว่าคุณให้ความสำคัญกับอะไรมากที่สุด?",
+"ตอนไหนที่คุณรู้สึกว่าตัวเองเป็นตัวเองมากที่สุด?",
+"สิ่งที่คนอื่นชมคุณบ่อย ตรงกับสิ่งที่คุณภูมิใจในตัวเองไหม?",
+"คุณกลัวความเงียบไหม แล้วทำไม?",
+"นิสัยอะไรของตัวเองที่คุณคิดว่าเป็นจุดแข็ง แต่บางทีมันทำร้ายคนอื่น?",
+"ถ้าชีวิตคุณมีธีมเพลง วันนี้มันจะเป็นเพลงแบบไหน?",
+"คุณให้อภัยตัวเองได้ง่ายกว่าหรือยากกว่าที่ให้อภัยคนอื่น?",
+"อะไรที่ทำให้คุณรู้สึกมีพลังที่สุด และคุณทำมันบ่อยแค่ไหน?",
+"ถ้าลบ social media และความคิดเห็นคนอื่นออกหมด คุณจะใช้ชีวิตต่างออกไปไหม?",
+"คุณเป็นคนที่รักษาสัญญากับตัวเองได้ดีแค่ไหน?",
+"อะไรที่คุณทำเพราะอยากทำจริงๆ ไม่ใช่เพราะใครคาดหวัง?",
+"ถ้าเพื่อนสนิทที่สุดต้องอธิบายจุดอ่อนคุณ เขาจะพูดว่าอะไร?",
+"คุณรู้สึกอยู่กับปัจจุบันได้ดีแค่ไหน หรือหัวอยู่ที่อื่นตลอด?",
+"สิ่งที่คุณ scroll หาในโซเชียลตอนเหงา บอกอะไรเกี่ยวกับตัวคุณ?",
+"ถ้าวันนี้เป็นวันสุดท้าย คุณจะเสียใจว่าใช้เวลาไปกับอะไรมากเกินไป?",
+"คุณรักตัวเองแบบเดียวกับที่รักคนที่คุณรักที่สุดไหม?"
+],
+enCards:[
+"Are you the person you wanted to be when you were a child?", 
+"What value do you say is important, but your actions fail to reflect it?", 
+"Are you happiest when you are with someone, or when you are alone?", 
+"If you had to define yourself in 3 words, what would they be?", 
+"What pattern in your life do you keep repeating but still can't seem to break?", 
+"Do you make decisions more with your head or your heart, and does it often lead to regret?", 
+"How different is what you have to do from what you actually want to do?", 
+"Who understands you the most in your life, and do they truly know the real you?", 
+"What makes you angry the fastest, and what does that say about you?", 
+"If someone observed you for an entire year, what would they say you prioritize the most?", 
+"When do you feel most like yourself?", 
+"Does what others frequently praise you for match what you are proud of in yourself?", 
+"Are you afraid of silence, and why?", 
+"Which of your habits do you consider a strength, but sometimes hurts others?", 
+"If your life had a theme song, what kind of song would it be today?", 
+"Do you find it easier or harder to forgive yourself compared to forgiving others?", 
+"What makes you feel most empowered, and how often do you do it?", 
+"If you removed social media and everyone else's opinions, would you live your life differently?",
+"How well do you keep promises to yourself?", 
+"What is something you do because you truly want to, not because anyone expects you to?", 
+"If your closest friend had to describe your weakness, what would they say?", 
+"How well do you stay in the present moment, or is your mind always somewhere else?", 
+"What you scroll for on social media when you are lonely, what does that say about you?", 
+"If today were your last day, what would you regret spending too much time on?", 
+"Do you love yourself in the same way you love the person you care about most?"
+]
+},
+
+REWIND:{
+title:"อดีตที่หล่อหลอมเรา",
+color:"#2143C8",
+textColor:"white",
+cards:[
+"ความทรงจำในวัยเด็กที่ยังรู้สึกได้ถึงทุกวันนี้คืออะไร?",
+"จุดเปลี่ยนที่สำคัญที่สุดในชีวิตคุณคือช่วงไหน?",
+"บทเรียนอะไรที่เจ็บปวดที่สุดแต่คุณขอบคุณมันมากที่สุด?",
+"มีใครในอดีตที่คุณอยากกลับไปขอโทษ?",
+"ตอนเด็กคุณฝันว่าจะเป็นอะไร แล้วทำไมถึงเปลี่ยน?",
+"ช่วงเวลาไหนในชีวิตที่คุณรู้สึกมีชีวิตชีวาที่สุด?",
+"ใครที่ไม่อยู่แล้วแต่ยังส่งผลกับการตัดสินใจของคุณทุกวันนี้?",
+"ถ้าย้อนกลับไปได้ คุณจะบอกอะไรกับตัวเองตอนอายุ 15?",
+"ความล้มเหลวอะไรที่ตอนนั้นเจ็บมาก แต่วันนี้รู้ว่ามันจำเป็น?",
+"มีใครเคยพูดประโยคหนึ่งที่เปลี่ยนมุมมองคุณไปตลอดชีวิต?",
+"ความสุขที่บริสุทธิ์ที่สุดในชีวิตคุณคือช่วงไหน?",
+"ถ้าชีวิตมีฉากที่อยากดูซ้ำอีกครั้ง คุณจะเลือกฉากไหน?",
+"มีความกลัวอะไรในวัยเด็กที่ยังติดตามคุณมาจนถึงตอนนี้?",
+"คนในครอบครัวคนไหนที่หล่อหลอมตัวตนคุณมากที่สุดโดยที่คุณไม่ทันสังเกต?",
+"ตัดสินใจอะไรในอดีตที่ดูผิดพลาดตอนนั้น แต่วันนี้รู้ว่าถูกต้องแล้ว?",
+"มิตรภาพอะไรที่คุณทิ้งไปแล้วเสียดายที่สุด?",
+"ช่วงเวลาไหนที่คุณรู้สึกว่าตัวเองกล้าหาญที่สุด?",
+"มีเรื่องอะไรในอดีตที่คุณยังบอกตัวเองว่า ถ้าตอนนั้น อยู่เลย?",
+"ประสบการณ์อะไรที่ทำให้คุณไม่เชื่อใจคนง่ายๆอีกต่อไป?",
+"รางวัลหรือคำชมอะไรในอดีตที่คุณภูมิใจที่สุดจนถึงวันนี้?",
+"มีเวอร์ชันของตัวเองในอดีตที่คุณคิดถึงและอยากเป็นอีกครั้งไหม?",
+"ความสัมพันธ์อะไรที่จบไปแล้วแต่ยังสอนอะไรคุณอยู่ทุกวัน?",
+"ถ้าอดีตคุณเป็นบทหนังสือ ชื่อบทที่ผ่านมาจะเป็นอะไร?",
+"มีช่วงเวลาไหนที่คุณรู้สึกว่าตัวเองหายไป ไม่รู้ว่าตัวเองเป็นใคร?",
+"สิ่งที่คนในวัยเด็กของคุณสอน ยังใช้ได้กับชีวิตทุกวันนี้ไหม?"
+],
+enCards:[
+"What is a childhood memory that you can still vividly feel to this day?", 
+"What was the most significant turning point in your life?", 
+"What lesson was the most painful, yet you are most grateful for?", 
+"Is there anyone from your past whom you wish you could go back and apologize to?", 
+"What did you dream of becoming when you were a child, and why did it change?", 
+"At what period in your life did you feel most alive?", 
+"Who is no longer here but still influences your decisions every day?", 
+"If you could go back in time, what would you tell your 15-year-old self?", 
+"What failure was deeply painful back then, but today you know was absolutely necessary?", 
+"Has anyone ever said a single sentence that changed your perspective forever?", 
+"When was the period of most pure happiness in your life?", 
+"If your life had a scene you could watch over again, which scene would you choose?", 
+"What childhood fear still follows you into your life today?", 
+"Which family member shaped who you are the most without you even noticing?", 
+"What past decision seemed like a mistake back then, but today you know was right?", 
+"Which friendship that you walked away from do you regret losing the most?", 
+"At what moment did you feel you were at your most courageous?", 
+"Is there something in your past where you still tell yourself, 'If only I had...'?", 
+"What experience made you stop trusting people so easily?", 
+"What award or compliment from the past are you most proud of to this day?", 
+"Is there a version of your past self that you miss and wish you could be again?", 
+"What relationship has ended but still teaches you something every day?", 
+"If your past were a book chapter, what would the title of that chapter be?", 
+"Was there a time when you felt completely lost, not knowing who you were?", 
+"Does what you were taught in childhood still apply to your life today?"
+]
+},
+
+FORWARD:{
+title:"มองไปยังอนาคต",
+color:"#F5D149",
+textColor:"#0B1D7F",
+cards:[
+"ถ้า 5 ปีข้างหน้าชีวิตดีที่สุดเท่าที่จินตนาการได้ มันหน้าตาเป็นยังไง?",
+"อะไรที่คุณรู้ว่าต้องเริ่มทำ แต่ยังหาข้อแม้ให้ตัวเองอยู่ทุกวัน?",
+"ถ้าเงินไม่ใช่ปัญหา คุณจะใช้ชีวิตต่างจากนี้ยังไง?",
+"ความฝันอะไรที่คุณไม่กล้าพูดออกไปเพราะกลัวว่าจะดูใหญ่เกินไป?",
+"คุณอยากให้คนจำคุณว่าอะไรหลังจากที่คุณไม่อยู่แล้ว?",
+"มีทักษะอะไรที่คุณอยากมีมานานแต่ยังไม่เริ่มเรียนสักที?",
+"ถ้าความกลัวหายไปหมดพรุ่งนี้ คุณจะทำอะไรเป็นอย่างแรก?",
+"เวอร์ชันที่ดีที่สุดของตัวคุณในอีก 10 ปีข้างหน้าเป็นคนยังไง?",
+"อะไรที่คุณต้องหยุดทำเพื่อให้ชีวิตดีขึ้น แต่ยังหยุดไม่ได้?",
+"ถ้าวันนี้กล้าเริ่มสิ่งที่กลัวที่สุด มันจะเป็นอะไร?",
+"ความสัมพันธ์แบบไหนที่คุณอยากมีในชีวิตแต่ยังไม่มี?",
+"คุณอยากเป็นพ่อแม่ เพื่อน หรือหัวหน้าแบบไหนในอีก 5 ปี?",
+"มีเรื่องอะไรที่คุณรู้ว่าถ้าไม่ทำตอนนี้จะเสียใจในภายหลัง?",
+"ถ้าชีวิตคุณเป็นหนังสือ บทต่อไปจะมีชื่อว่าอะไร?",
+"คุณอยากให้วันธรรมดาของคุณในอนาคตเป็นยังไง?",
+"มีคนแบบไหนที่คุณอยากมีในชีวิตมากกว่านี้?",
+"อะไรที่คุณทำอยู่ทุกวันนี้ที่ตัวเองในอนาคตจะขอบคุณ?",
+"ถ้าได้เริ่มต้นใหม่ได้ทุกอย่าง คุณจะเปลี่ยนอะไรและเก็บอะไรไว้?",
+"ความสำเร็จแบบไหนที่คุณไล่ตามอยู่เพราะอยากได้จริงๆ ไม่ใช่เพราะสังคมคาดหวัง?",
+"คุณอยากรู้สึกยังไงทุกเช้าที่ตื่นขึ้นมา?",
+"มีใครที่คุณอยากกลับไปหาและสร้างความสัมพันธ์ใหม่?",
+"ถ้าชีวิตมีเหลือแค่ 1 ปี คุณจะทำอะไรที่ยังไม่ได้ทำ?",
+"อะไรคือสิ่งเดียวที่ถ้าเปลี่ยนได้จะทำให้ชีวิตคุณดีขึ้นมากที่สุด?",
+"คุณนิยามชีวิตที่ดีว่าคืออะไร และตอนนี้ใกล้แค่ไหน?",
+"ถ้าพรุ่งนี้คุณกล้าขึ้นอีกหนึ่งระดับ คุณจะก้าวไปทางไหน?"
+],
+enCards:[
+"If your life 5 years from now was the absolute best you could imagine, what would it look like?", 
+"What do you know you need to start doing, yet you still make excuses for yourself every day?", 
+"If money were no object, how would you live your life differently?", 
+"What dream are you too afraid to speak out loud because you fear it might look too big?", 
+"What do you want people to remember about you after you are gone?", 
+"What skill have you wanted to have for a long time but still haven't started learning yet?", 
+"If all your fears completely disappeared tomorrow, what would be the very first thing you do?", 
+"What kind of person is the best version of yourself 10 years from now?", 
+"What do you need to stop doing to make your life better, but you still can't seem to quit?", 
+"If you courageously started the thing you fear most today, what would it be?", 
+"What kind of relationship do you want to have in your life but don't have yet?", 
+"What kind of parent, friend, or leader do you want to be in the next 5 years?", 
+"What is something you know that if you don't do right now, you will regret it later?", 
+"If your life were a book, what would the next chapter be titled?", 
+"What do you want your ordinary days in the future to look like?", 
+"What kind of people do you want to have more of in your life?", 
+"What are you doing today that your future self will thank you for?", 
+"If you could restart everything, what would you change and what would you keep?", 
+"What kind of success are you chasing because you truly want it, not because society expects it?", 
+"How do you want to feel every single morning when you wake up?", 
+"Is there anyone you want to go back to and rebuild a relationship with?", 
+"If you had only 1 year left to live, what would you do that you haven't done yet?", 
+"What is the single thing that, if changed, would improve your life the most?", 
+"How do you define a good life, and how close are you to it right now?", 
+"If you dared to step up to the next level tomorrow, which direction would you take?"
+]
+},
+
+HUMAN:{
+title:"ความเป็นมนุษย์ในตัวคุณ",
+color:"#5B7DE8",
+textColor:"white",
+cards:[
+"ใครในชีวิตที่คุณรักที่สุดแต่บอกเขาน้อยที่สุด?",
+"มีใครที่คุณอยากโทรหาตอนนี้แต่ยังลังเลอยู่?",
+"ความสัมพันธ์อะไรในชีวิตที่คุณลงทุนน้อยเกินไป?",
+"คนที่มีอิทธิพลกับความคิดคุณมากที่สุดตอนนี้คือใคร?",
+"เพื่อนแบบไหนที่คุณอยากมีแต่ยังไม่มีในชีวิต?",
+"มีใครที่คุณเอาเปรียบอยู่โดยไม่ตั้งใจ?",
+"ขอบเขตอะไรในความสัมพันธ์ที่คุณยังตั้งไม่ได้เพราะกลัวทำให้คนอื่นไม่พอใจ?",
+"ถ้าต้องเลือกคน 3 คนอยู่ด้วยตลอดชีวิต คุณจะเลือกใคร และทำไม?",
+"ความสัมพันธ์อะไรที่ดูดพลังคุณมากที่สุดแต่คุณยังไม่กล้าปล่อย?",
+"คุณรับความช่วยเหลือจากคนอื่นได้ดีใคร?",
+"มีใครที่คุณตัดสินไปแล้วโดยที่ยังไม่รู้จักเขาจริงๆ?",
+"ความรักแบบไหนที่คุณอยากให้และอยากได้รับมากที่สุด?",
+"คุณแสดงความขอบคุณคนที่รักคุณบ่อยแค่ไหน?",
+"มีใครที่คุณต้องการคำขอโทษจากเขาแต่คงไม่มีวันได้รับ?",
+"ถ้าคนที่คุณรักที่สุดจากไปพรุ่งนี้ มีเรื่องอะไรที่ยังไม่ได้พูด?",
+"คุณเลือกคนเข้ามาในชีวิตจากอะไร?",
+"มิตรภาพอะไรที่คุณอยากลงทุนเพิ่มแต่ชีวิตพาให้ห่างออกไป?",
+"คนในชีวิตคุณรู้ไหมว่าเขาสำคัญกับคุณแค่ไหน?",
+"ความขัดแย้งอะไรที่คุณหลีกเลี่ยงอยู่แต่รู้ว่าต้องคุยกันสักวัน?",
+"ถ้าให้อธิบายความรักของคุณด้วย 1 คำ คุณจะใช้คำอะไร?",
+"คุณเป็นคนที่คนอื่นรู้สึกปลอดภัยที่จะเปิดใจด้วยไหม?",
+"มีใครที่คุณรู้สึกอิจฉาความสัมพันธ์ที่เขามีกับคนอื่น?",
+"ถ้าคืนนี้นั่งคุยกับใครสักคนได้ 1 ชั่วโมงโดยไม่มีการตัดสิน คุณจะเลือกใคร?",
+"ความสัมพันธ์อะไรในชีวิตที่คุณภูมิใจที่สุดที่ได้สร้างมา?",
+"คุณรักตัวเองพอที่จะให้คนอื่นรักคุณได้เต็มที่ไหม?"
+],
+enCards:[
+"Who in your life do you love the most but tell them the least?", 
+"Is there anyone you want to call right now but are still hesitating?", 
+"Which relationship in your life have you invested too little in?", 
+"Who has the most influence over your thoughts right now?", 
+"What kind of friend do you wish you had but don't have in your life yet?", 
+"Is there anyone you are taking advantage of without intending to?", 
+"What boundary in a relationship are you still unable to set out of fear of upsetting others?", 
+"If you had to choose 3 people to be with for the rest of your life, who would they be and why?", 
+"Which relationship drains your energy the most, yet you still don't dare to let go?", 
+"How well do you accept help from others?", 
+"Is there anyone you have already judged without truly knowing them first?", 
+"What kind of love do you want to give and receive the most?", 
+"How often do you express gratitude to the people who love you?", 
+"Is there anyone you need an apology from but will likely never receive?", 
+"If the person you love most passed away tomorrow, what is something you still haven't said?", 
+"What do you choose people into your life based on?", 
+"Which friendship do you wish to invest more in, but life has pulled you apart?", 
+"Do the people in your life know how important they are to you?", 
+"What conflict are you avoiding even though you know you have to talk about it someday?", 
+"If you had to describe your love in just 1 word, what word would you use?", 
+"Are you someone others feel safe opening up their hearts to?", 
+"Is there anyone whose relationship with others you feel envious of?", 
+"If you could sit and talk with anyone tonight for 1 hour without any judgment, who would you choose?", 
+"What relationship in your life are you most proud of having built?", 
+"Do you love yourself enough to let others love you completely?"
+]
+},
+
+ABSURD:{
+title:"เรื่องไร้สาระที่ซ่อนความจริง",
+color:"#FFF6DC",
+textColor:"#0B1D7F",
+cards:[
+"ซีรีส์ Netflix เรื่องล่าสุดที่ดู ทำไมดูเรื่องนี้?",
+"ถ้าความเครียดของคุณมีรูปร่าง มันหน้าตาเป็นยังไง?",
+"ถ้าต้องเลือกระหว่างรู้ความจริงที่เจ็บปวด กับไม่รู้แต่มีความสุข คุณเลือกอะไร?",
+"ถ้าชีวิตมีปุ่ม pause ได้ คุณอยากหยุดตอนไหน?",
+"ถ้าความคิดในหัวคุณตอนนี้เป็นสภาพอากาศ มันเป็นอากาศแบบไหน?",
+"ถ้าคุณเป็นสัตว์ที่สะท้อนตัวตนจริงๆ คุณจะเป็นอะไร?",
+"ถ้าชีวิตมีเมนู reorder ได้ คุณจะสลับอะไรไปไว้ก่อน?",
+"ถ้าต้องอธิบายตัวเองให้คนแปลกหน้าเข้าใจใน 10 วินาที คุณจะพูดว่าอะไร?",
+"ถ้าความกังวลของคุณมีเสียง มันจะเป็นเสียงอะไร?",
+"ถ้าคุณเป็นแอปในมือถือ คุณจะเป็นแอปอะไร และคนใช้คุณบ่อยแค่ไหน?",
+"ถ้าต้องเลือกระหว่างฉลาดมากแต่ไม่มีเพื่อน กับธรรมดาแต่มีคนรัก คุณเลือกอะไร?",
+"ถ้าชีวิตคุณมีกลิ่น วันนี้มันจะหอมหรือเหม็น?",
+"ถ้าได้คุยกับเวอร์ชันตัวเองอีก 20 ปีข้างหน้า คำถามแรกที่จะถามคืออะไร?",
+"ถ้าความสุขของคุณเป็นอาหาร มันจะเป็นเมนูอะไร?",
+"ถ้าต้องลบความทรงจำ 1 เรื่องออกจากหัว คุณจะเลือกเรื่องอะไร?",
+"ถ้าชีวิตคุณเป็น soundtrack คืนนี้จะเป็นเพลงอะไร?",
+"ถ้าคุณเป็นสถานที่ คุณจะเป็นที่ไหน และทำไม?",
+"ถ้าได้ส่ง DM หาตัวเองเมื่อ 10 ปีที่แล้ว คุณจะส่งข้อความว่าอะไร?",
+"ถ้าความขี้เกียจของคุณมีชื่อ มันชื่ออะไร และหน้าตาเป็นยังไง?",
+"ถ้าต้องเลือกระหว่างเดินทางคนเดียวรอบโลก กับอยู่บ้านกับคนที่รักตลอดไป คุณเลือกอะไร?",
+"ถ้าชีวิตคุณเป็นเกม ตอนนี้ติดด่านอะไรอยู่?",
+"ถ้าความฝันของคุณส่งอีเมลหาคุณได้ มันจะเขียนว่าอะไร?",
+"ถ้าต้องอยู่กับคนคนเดียวบนเกาะร้างตลอดชีวิต คุณจะเลือกใคร และทำไมไม่ใช่คนอื่น?",
+"ถ้าตัวเองในวัยเด็กเห็นชีวิตคุณตอนนี้ เขาจะรู้สึกยังไง?",
+"ถ้าพรุ่งนี้ตื่นมาแล้วทุกอย่างรีเซตได้ใหม่หมด คุณจะเก็บอะไรไว้แค่อย่างเดียว?"
+],
+enCards:[
+"What is the latest Netflix series you watched, and why did you watch it?", 
+"If your stress had a shape, what would it look like?", 
+"If you had to choose between knowing a painful truth or being ignorant but happy, which would you choose?", 
+"If life had a pause button, at what moment would you want to stop?", 
+"If the thoughts in your head right now were the weather, what kind of weather would it be?", 
+"If you were an animal that truly reflects your inner self, what would you be?", 
+"If life had a reorder menu, what would you shuffle to the top?", 
+"If you had to describe yourself to a stranger in 10 seconds, what would you say?", 
+"If your anxiety had a sound, what would it sound like?", 
+"If you were an app on a smartphone, what app would you be, and how often would people use you?", 
+"If you had to choose between being incredibly smart but having no friends, or being ordinary but loved, which would you choose?", 
+"If your life had a scent today, would it smell sweet or foul?", 
+"If you could talk to the version of yourself 20 years from now, what is the very first question you would ask?", 
+"If your happiness were food, what dish would it be?", 
+"If you had to erase just 1 memory from your head, which one would you choose?", 
+"If your life were a soundtrack, what song would it be tonight?", 
+"If you were a place, where would you be and why?", 
+"If you could send a DM to your self from 10 years ago, what would the message say?", 
+"If your laziness had a name, what would it be, and what would it look like?", 
+"If you had to choose between traveling the world alone or staying home with the one you love forever, which would you choose?", 
+"If your life were a game, what level or stage are you currently stuck on?", 
+"If your dream could send you an email, what would it say?", 
+"If you had to live with just 1 person on a deserted island for the rest of your life, who would you choose, and why wouldn't it be anyone else?", 
+"If your childhood self saw your life right now, how would they feel?", 
+"If everything could reset brand new tomorrow, what is the single thing you would keep?"
+]
+}
+};
+
+/* การ์ด demo คงที่ 3 ใบเสมอ (ไม่สุ่ม ไม่สลับ ตามที่ Pop ต้องการ — เข้ามากี่รอบก็เจอ 3 ใบนี้เหมือนเดิม) เลือกจาก
+ * 3 หมวดที่เบาสบายเข้าถึงง่าย (เลี่ยง SHADOW/REWIND ที่เจาะลึกเรื่องเจ็บปวด/อดีต ให้ demo แรกที่คนเจอรู้สึกสนุกก่อน) */
+const DEMO_CARDS = [
+  { category:'MIRROR', index:3 },
+  { category:'HUMAN',  index:4 },
+  { category:'ABSURD', index:9 }
+];
+
+let STATE = { isPro:false, sessionToken:null };
+let TR_SESSION_LANG = null;      // ภาษาที่จำไว้ในเซสชันนี้ (การ์ดถัดไปใช้ภาษาเดิมได้ทันที กดปุ่ม Translate เพื่อเปลี่ยนได้เสมอ)
+let CURRENT_CARD = null;         // {category, index} ใบที่เปิดอยู่ตอนนี้ (ให้ language picker รู้ว่าจะแปลใบไหน)
+const TR_CACHE = {};             // key: category_index_lang -> translated text กันยิงแปลซ้ำถ้าสลับภาษาไปมาในเซสชันเดียว
+
+function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+async function api(action, params = {}, method = 'GET', _isRetry = false){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=> controller.abort(), 15000);
+  try{
+    let res;
+    if(method === 'GET'){
+      const qs = new URLSearchParams(Object.assign({action}, params)).toString();
+      res = await fetch(`${CONFIG.API_URL}?${qs}`, { signal: controller.signal });
+    } else {
+      res = await fetch(CONFIG.API_URL, { method:'POST', body: JSON.stringify(Object.assign({action}, params)), signal: controller.signal });
+    }
+    return await res.json();
+  }catch(err){
+    if(!_isRetry) return api(action, params, method, true); // retry เงียบๆ 1 ครั้งก่อนยอมแพ้
+    return { success:false, message:'Network error', _networkError:true };
+  }finally{ clearTimeout(timeoutId); }
+}
+
+/* ================= INIT: เช็คสิทธิ์ PRO ผ่าน session ที่อ่านจาก localStorage ตรงๆ =================
+ * หน้านี้เปิดเป็นแท็บ/หน้าต่างใหม่แยกจาก mytype.html (ตั้งใจ ไม่ใช่ full-screen overlay — ดูเหตุผลใน
+ * mytype.txt::openConversationCards()) เลยไม่มี JS runtime ร่วมกับหน้าที่เปิดมา อ่าน session_token จาก
+ * wz_session ใน localStorage เองตรงๆ (key เดียวกับทุกหน้าในระบบ, origin เดียวกันเลยอ่านได้) แล้วให้ backend
+ * เป็นคนตัดสินสิทธิ์ PRO ชั้นเดียว (ไม่เชื่อ flag ใดๆจาก URL หรือ localStorage เอง กันปลอมสิทธิ์ง่ายๆ) — ถ้าไม่ login
+ * หรือเน็ตมีปัญหา fallback เป็นโหมด demo เสมอ (ไม่ใช่ error state ที่ตันทางไป) */
+async function init(){
+  let sessionToken = null;
+  try{
+    const raw = localStorage.getItem('wz_session');
+    const session = raw ? JSON.parse(raw) : null;
+    sessionToken = (session && session.session_token) || null;
+  }catch(e){ /* localStorage พังหรือ parse ไม่ได้ ถือว่าไม่ login */ }
+  STATE.sessionToken = sessionToken;
+
+  const res = await api('getCardAccess', { session_token: sessionToken }, 'POST');
+  STATE.isPro = !!(res && res.success && res.is_pro);
+
+  document.getElementById('loadingScreen').classList.add('hidden');
+  if(STATE.isPro){
+    document.getElementById('home').classList.remove('hidden');
+  } else {
+    renderDemoHome();
+    document.getElementById('demoHome').classList.remove('hidden');
+  }
+}
+init();
+
+function goUpgrade(){
+  window.location.href = 'profile.html?tab=planbilling';
+}
+
+/* ================= Demo mode (non-PRO): 3 การ์ดคงที่ กดเปิดอ่าน/แปลได้จริงครบทุกฟังก์ชัน ไม่ใช่แค่ preview ================= */
+function renderDemoHome(){
+  const row = document.getElementById('demoRow');
+  row.innerHTML = DEMO_CARDS.map((item, i) => miniCardHtml(item.category, item.index, 'demo'+i)).join('');
+  bindMiniCardEvents(row);
+}
+
+/* ================= Category selection (PRO only) ================= */
+function openCategory(){
+  const grid = document.getElementById('categoryGrid');
+  grid.innerHTML = Object.keys(CARD_CATEGORIES).map(key=>{
+    const cat = CARD_CATEGORIES[key];
+    return `<div class="category-card" style="background:${cat.color};color:${cat.textColor};" onclick="openCards('${key}')">
+      <div class="cc-name">${key}</div>
+      <div class="cc-title">${escapeHtml(cat.title)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('category').classList.remove('hidden');
+}
+
+function goHome(){
+  document.getElementById('category').classList.add('hidden');
+  document.getElementById('cards').classList.add('hidden');
+  document.getElementById('home').classList.remove('hidden');
+  closeReveal();
+}
+
+/* ================= Cards screen: 3 แถว mini-card วิ่งสวนกัน (PRO only) =================
+ * แถวบน/ล่างวิ่งขวา->ซ้าย, แถวกลางวิ่งซ้าย->ขวา (ตามที่ Pop ระบุ) — สลับสับไพ่ deck ก่อนแบ่งเข้า 3 แถวด้วย
+ * index % 3 ให้แต่ละแถวมีการ์ดจากหลายหมวดคละกัน (ไม่ใช่แยกหมวดทีละแถว) แล้ว double รายการต่อแถวเพื่อให้ loop
+ * เนียนไม่มีรอยต่อ (เทคนิคเดิมจาก claircard.txt: เลื่อน translateX ไป -50% พอดี ครึ่งความยาว = ชุดที่ซ้ำ) */
+function openCards(categoryKey){
+  let deck = [];
+  if(categoryKey){
+    const cat = CARD_CATEGORIES[categoryKey];
+    cat.cards.forEach((_, idx) => deck.push({ category:categoryKey, index:idx }));
+  } else {
+    Object.keys(CARD_CATEGORIES).forEach(key=>{
+      CARD_CATEGORIES[key].cards.forEach((_, idx) => deck.push({ category:key, index:idx }));
+    });
+  }
+  deck = shuffleArray(deck);
+
+  const rows = [[], [], []];
+  deck.forEach((item, i) => rows[i % 3].push(item));
+
+  [1,2,3].forEach(n=>{
+    const belt = document.getElementById('belt'+n);
+    const rowDeck = rows[n-1];
+    const doubled = [...rowDeck, ...rowDeck];
+    belt.innerHTML = doubled.map((item,i)=> miniCardHtml(item.category, item.index, 'r'+n+'_'+i)).join('');
+    belt.style.animationPlayState = 'running';
+    bindMiniCardEvents(belt);
+  });
+
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('category').classList.add('hidden');
+  document.getElementById('cards').classList.remove('hidden');
+}
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function miniCardHtml(categoryKey, index, uid){
+  const cat = CARD_CATEGORIES[categoryKey];
+  return `<div class="mini-card" data-cat="${categoryKey}" data-idx="${index}" data-uid="${uid}">
+    <span class="mini-cat-tag" style="background:${cat.color};color:${cat.textColor};">${categoryKey}</span>
+    <div class="mini-card-center">
+      <div class="mini-spark">✦</div>
+      <div class="mini-tap">Tap to open</div>
+    </div>
+    <div class="mini-brand">TOKBUD</div>
+  </div>`;
+}
+
+function bindMiniCardEvents(container){
+  container.querySelectorAll('.mini-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      pauseBelts();
+      openReveal(card.dataset.cat, parseInt(card.dataset.idx,10));
+    });
+  });
+}
+
+function pauseBelts(){
+  ['belt1','belt2','belt3'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.animationPlayState = 'paused';
+  });
+}
+function resumeBelts(){
+  ['belt1','belt2','belt3'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.animationPlayState = 'running';
+  });
+}
+
+/* ================= Reveal + Translate =================
+ * EN เป็น default เสมอตอนเปิดการ์ดใหม่ ยกเว้นถ้าเซสชันนี้เคยเลือกภาษาอื่นไว้แล้ว (TR_SESSION_LANG) จะใช้ภาษาเดิม
+ * ต่อทันที ไม่ต้องเลือกซ้ำทุกใบ — กดปุ่ม Translate เพื่อเปลี่ยนภาษาได้ทุกเมื่อ (ปุ่มอยู่แถวล่างของการ์ด ตามที่ Pop ระบุ) */
+function openReveal(categoryKey, index){
+  CURRENT_CARD = { category:categoryKey, index:index };
+  const cat = CARD_CATEGORIES[categoryKey];
+  const tagEl = document.getElementById('revealCatTag');
+  tagEl.textContent = categoryKey;
+  tagEl.style.background = cat.color;
+  tagEl.style.color = cat.textColor;
+
+  showCardText(categoryKey, index, TR_SESSION_LANG || 'en');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeReveal(){
+  document.getElementById('overlay').classList.remove('open');
+  resumeBelts();
+}
+
+// EN/TH ไม่ต้องยิง backend เลย — EN คือต้นฉบับ enCards[] ในไฟล์นี้, TH คือต้นฉบับ cards[] ที่เขียนโดยคนจริง
+// (คุณภาพดีกว่า auto-translate กลับจาก EN ตามที่ Pop ยืนยัน) ภาษาอื่นนอกจากนี้เท่านั้นที่ต้องแปลผ่าน backend
+function cardSourceText(categoryKey, index, lang){
+  const cat = CARD_CATEGORIES[categoryKey];
+  if(lang === 'en') return cat.enCards[index];
+  if(lang === 'th') return cat.cards[index];
+  return null;
+}
+
+async function showCardText(categoryKey, index, lang){
+  const qEl = document.getElementById('revealQuestion');
+  const langTagEl = document.getElementById('currentLangTag');
+  const langLabel = (TRANSLATE_LANGS.find(l=>l.code===lang) || {}).label || lang;
+
+  const direct = cardSourceText(categoryKey, index, lang);
+  if(direct !== null){
+    qEl.textContent = direct;
+    langTagEl.textContent = langLabel;
+    return;
+  }
+
+  const cacheKey = categoryKey + '_' + index + '_' + lang;
+  if(TR_CACHE[cacheKey]){
+    qEl.textContent = TR_CACHE[cacheKey];
+    langTagEl.textContent = langLabel;
+    return;
+  }
+
+  qEl.textContent = '···';
+  langTagEl.textContent = langLabel;
+  const enText = CARD_CATEGORIES[categoryKey].enCards[index];
+  const res = await api('translateCardQuestion', { category:categoryKey, index:index, target_lang:lang, text:enText }, 'POST');
+  // การ์ดที่เปิดอยู่อาจถูกปิด/เปลี่ยนไปแล้วก่อนที่คำแปลจะกลับมา (กดเร็ว) — เช็คก่อน apply กันข้อความไปโผล่ผิดใบ
+  if(!CURRENT_CARD || CURRENT_CARD.category !== categoryKey || CURRENT_CARD.index !== index) return;
+  if(!res.success){
+    qEl.textContent = enText; // แปลไม่สำเร็จ fallback กลับ EN แทน ไม่ปล่อยการ์ดว่างเปล่า
+    langTagEl.textContent = 'English';
+    return;
+  }
+  TR_CACHE[cacheKey] = res.translated;
+  qEl.textContent = res.translated;
+}
+
+function openLangPicker(){
+  const grid = document.getElementById('langGrid');
+  const activeLang = TR_SESSION_LANG || 'en';
+  grid.innerHTML = TRANSLATE_LANGS.map(l=>
+    `<button type="button" class="lang-pick-btn${activeLang===l.code ? ' active' : ''}" data-lang="${l.code}">${escapeHtml(l.label)}</button>`
+  ).join('');
+  grid.querySelectorAll('.lang-pick-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const lang = btn.dataset.lang;
+      TR_SESSION_LANG = lang;
+      closeLangPicker();
+      if(CURRENT_CARD) showCardText(CURRENT_CARD.category, CURRENT_CARD.index, lang);
+    });
+  });
+  document.getElementById('langModal').classList.add('open');
+}
+function closeLangPicker(){
+  document.getElementById('langModal').classList.remove('open');
+}
+</script>
+</body>
+</html>
