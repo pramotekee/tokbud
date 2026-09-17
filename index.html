@@ -247,6 +247,10 @@
   }
   .empty-state{ text-align:center; padding:60px 20px; color:var(--text-muted); }
   .empty-state .emoji{ font-size:40px; margin-bottom:10px; }
+  /* P0-fix: ตอนอยู่โหมด view-carousel (.feed เปลี่ยนเป็น display:grid หลายคอลัมน์) empty-state/error state
+     จะกลายเป็นแค่ 1 grid cell แคบๆ ไปนอนอยู่คอลัมน์ซ้ายสุด แทนที่จะเต็มความกว้าง ทำให้ข้อความดูเบี้ยวไปทางซ้าย
+     ทั้งที่ text-align:center ทำงานถูกแล้ว (แค่ทำงานถูกในกล่องแคบๆนั้นเอง) — สั่งให้กินเต็มทุกคอลัมน์เสมอ */
+  .feed.view-carousel .empty-state{ grid-column:1 / -1; }
 
   /* ===== Line view (feature: View by Card/Line) ===== */
   .feed.view-line{ gap:8px; } /* แถบเส้นบางกว่าการ์ดเต็ม ใช้ gap แคบลงเพื่อไม่ให้ดูโล่งเกินไป */
