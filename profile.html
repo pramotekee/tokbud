@@ -1286,6 +1286,24 @@ function showConfirmPopup({ title, message, confirmLabel, cancelLabel, danger, o
  * ปุ่มกดได้เสมอแม้ N=0) — ใช้จากแท็บ My Topics เพื่อให้เจ้าของหัวข้อดูคอมเมนต์ที่ได้รับ แยก A/B */
 let CM_STATE = { topicId:null, side:null, page:0, totalPages:1, loading:false, observer:null };
 
+// FIX (ฟีเจอร์ที่ Pop ขอ): ลิงก์/ชื่อเว็บไซต์ที่ user พิมพ์ในคอมเมนต์ (เช่น "google.com" หรือ URL เต็ม)
+// ให้กลายเป็นลิงก์กดได้ เปิดแท็บใหม่ ให้คนอ่านกดตามไปดูได้เลยไม่ต้อง copy เอง ทำงานบนข้อความที่ escapeHtml()
+// แล้วเท่านั้น (กัน XSS — regex เห็นแค่ตัวอักษรธรรมดา ไม่มีทางเจอ raw <script> โผล่มาได้) แล้วห่อด้วย <a> เอง
+// (ก็อปมาจาก index.txt เป๊ะ — พลาดตอนพอร์ต Comment Modal มา profile.txt รอบก่อน ทำให้ My Company ไม่มีลิงก์)
+function linkifyEscapedText(escaped){
+  return escaped.replace(
+    /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<]*)?\b)/gi,
+    (match) => {
+      const trailMatch = match.match(/[.,!?;:)\]]+$/);
+      const trail = trailMatch ? trailMatch[0] : '';
+      const core = trail ? match.slice(0, -trail.length) : match;
+      if(!core) return match;
+      const href = /^https?:\/\//i.test(core) ? core : `https://${core}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer">${core}</a>${trail}`;
+    }
+  );
+}
+
 function formatCommentTime(dateStr){
   if(!dateStr) return '';
   const d = new Date(dateStr);
@@ -1327,7 +1345,7 @@ async function loadMoreComments(isFirst){
     listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
   } else {
     listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
-      <div class="comment-item">${escapeHtml(c.comment)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
+      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}${buildAnswerGridHTML(CM_STATE.side, c)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
     `).join(''));
   }
 
