@@ -2500,6 +2500,11 @@ const PRO_BENEFITS = [
   'Export comments people shared about any company to CSV — unlimited companies, unlimited exports',
   'Unlock TOKBUD Conversation Cards — 100+ prompts that help you and your team really get to know each other, build trust, and work better together. Great for 1-on-1s and team bonding.'
 ];
+function proBenefitsHtml(){
+  return `<div class="plan-benefits-list">${PRO_BENEFITS.map(b =>
+    `<div class="plan-benefit-item"><span class="plan-benefit-check">✓</span><span>${escapeHtml(b)}</span></div>`
+  ).join('')}</div>`;
+}
 
 function formatDateShort(dateStr){
   if(!dateStr) return '';
@@ -2532,16 +2537,17 @@ function renderPlanStatusCard(){
   if(isPro && pf.pro_until){
     const dateStr = formatDateShort(pf.pro_until);
     const key = pf.subscription_status === 'canceled' ? 'proUntilCanceledText' : 'proUntilActiveText';
-    const benefitsHtml = `<div class="plan-benefits-list">${PRO_BENEFITS.map(b =>
-      `<div class="plan-benefit-item"><span class="plan-benefit-check">✓</span><span>${escapeHtml(b)}</span></div>`
-    ).join('')}</div>`;
-    untilHtml = `<p class="plan-until-text">${t(key).replace('{date}', dateStr)}</p>${benefitsHtml}`;
+    untilHtml = `<p class="plan-until-text">${t(key).replace('{date}', dateStr)}</p>${proBenefitsHtml()}`;
   }
 
   let actionHtml = '';
   if(!isPro){
+    // P0-fix (feedback ของ Pop: เดิม FREE user เห็นแค่ย่อหน้าเดียว ไม่เห็น checklist แยกทีละฟีเจอร์ที่จะได้
+    // ทั้งที่ PRO_BENEFITS มี 2 ฟีเจอร์แล้ว (export data + conversation cards) — เอา checklist เดียวกับที่ PRO
+    // user เห็นมาโชว์ตรงนี้ด้วย ให้เห็นชัดเจนตั้งแต่ก่อนตัดสินใจอัปเกรด ไม่ต้องรอจ่ายเงินก่อนถึงจะเห็น)
     actionHtml = `
       <p class="plan-pitch-title">${t('planPitchTitle')}</p>
+      ${proBenefitsHtml()}
       <p class="plan-pitch-desc">${t('planPitchDesc')}</p>
       <p class="plan-price-tag">249 THB / month</p>
       <p class="plan-price-usd">${t('planPriceUsdHint')}</p>
