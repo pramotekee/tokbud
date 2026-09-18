@@ -254,6 +254,7 @@
   .dash-item-fill.zero{ background:var(--line) !important; }
   .dash-item-pct{ width:34px; flex-shrink:0; text-align:right; font-weight:600; color:var(--text); }
   .dash-empty{ text-align:center; color:var(--text-muted); font-size:13px; padding:16px 0; }
+  .retry-link-btn{ font-size:12.5px; color:var(--primary); font-weight:600; text-decoration:underline; }
 
   /* ===== My Topics ===== */
   .sort-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
@@ -921,9 +922,11 @@ const I18N = {
     chargeFailedToast: 'การตัดเงินรอบล่าสุดไม่สำเร็จ บัญชีถูกปรับเป็น FREE แล้ว — ไปที่แท็บ Plan & Billing เพื่อจ่ายเงินอีกครั้ง',
     billingHistoryTitle: 'ประวัติการชำระเงิน',
     billingHistoryEmpty: 'ยังไม่มีประวัติการชำระเงิน',
+    billingHistoryError: 'โหลดประวัติการชำระเงินไม่สำเร็จ',
+    retryBtn: 'ลองใหม่',
     planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อปลดล็อกฟีเจอร์เพิ่มเติม รวมถึงการ export ข้อมูลคำตอบจากคนที่แชร์ความคิดเห็นเกี่ยวกับบริษัทต่างๆ',
     planPitchDesc: 'เพียง 249 บาท/เดือน (นับ 30 วัน) เพื่อนำข้อมูลไปต่อยอด วิเคราะห์ สำรวจ หรือใช้งานต่อได้ตามต้องการ ยกเลิกได้ตลอดเวลา',
-    planPriceUsdHint: '(~$7.5 USD — เปรียบเทียบมูลค่าโดยประมาณ)',
+    planPriceUsdHint: 'เรียกเก็บเงินเป็นเงินบาทไทย (THB) — ~$7.5 USD ใช้อ้างอิงมูลค่าคร่าวๆ เท่านั้น',
     upgradeToProBtn: 'อัปเกรดเป็น PRO — 249 บาท/เดือน',
     currentPlanLabel: 'แผนที่คุณใช้งานอยู่ตอนนี้',
     proActiveLabel: 'PRO', freeLabel: 'FREE',
@@ -1038,9 +1041,11 @@ const I18N = {
     chargeFailedToast: 'Your last payment failed and your account is now on the FREE plan — go to Plan & Billing to pay again.',
     billingHistoryTitle: 'Payment History',
     billingHistoryEmpty: 'No payment history yet',
+    billingHistoryError: 'Couldn\'t load payment history',
+    retryBtn: 'Try again',
     planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who shared their opinions about a company.',
     planPitchDesc: 'Just 249 THB/month (30 days) to take the data further — analyze it, explore it, or use it for your own work. Cancel anytime.',
-    planPriceUsdHint: '(~$7.5 USD — approximate value comparison only, not the actual charged amount)',
+    planPriceUsdHint: 'Billed in Thai Baht (THB). ~$7.5 USD, for reference only.',
     upgradeToProBtn: 'Upgrade to PRO — 249 THB/month',
     currentPlanLabel: 'Your current plan',
     proActiveLabel: 'PRO', freeLabel: 'FREE',
@@ -2517,7 +2522,16 @@ async function loadPlanBilling(){
   renderPlanStatusCard();
   renderChargeFailedBanner();
   const res = await api('getBillingHistory', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return; }
+  if(!res.success){
+    // P0-fix (feedback ของ Pop: เดิม fail แล้วแค่ toast เฉยๆ แต่ #billingHistoryList ยังค้างเป็น spinner
+    // หมุนตลอดไป ไม่มีทางรู้ว่าพังแล้ว) โชว์ error state ใน section เอง พร้อมปุ่มลองใหม่ ไม่ต้องรอ reload หน้า
+    showToast(res.message);
+    const el = document.getElementById('billingHistoryList');
+    el.innerHTML = `<div class="dash-empty">${escapeHtml(t('billingHistoryError'))}<br><button type="button" class="retry-link-btn" id="retryBillingHistoryBtn" style="margin-top:8px;">${escapeHtml(t('retryBtn'))}</button></div>`;
+    const retryBtn = document.getElementById('retryBillingHistoryBtn');
+    if(retryBtn) retryBtn.addEventListener('click', loadPlanBilling);
+    return;
+  }
   STATE.billingHistory = res.history || [];
   renderBillingHistory(STATE.billingHistory);
 }
