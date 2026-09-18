@@ -92,9 +92,8 @@
     border-radius:24px; box-shadow:var(--shadow); padding:20px; margin-bottom:16px;
     color:#fff; position:relative; overflow:hidden;
   }
-  .convo-card-banner::after{
-    content:'🃏'; position:absolute; right:-10px; bottom:-18px; font-size:96px; opacity:.12; transform:rotate(-12deg);
-  }
+  /* P0-fix (feedback ของ Pop: รูปไพ่ 🃏 มุมขวาล่างดูเหมือนไพ่เล่นพนัน) — ตัด ::after ที่เคยวางรูปไพ่ทิ้ง
+     ตั้งใจไม่ใส่ decoration อื่นแทน ให้การ์ดดูสะอาดตา โฟกัสที่ข้อความ/ปุ่มแทน */
   .convo-card-head{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
   .convo-card-badge{
     background:linear-gradient(135deg,var(--accent),#FFA53C); color:var(--primary-dark);
@@ -442,6 +441,9 @@ const I18N = {
     convoCardBadge: 'PRO',
     convoCardTitle: 'TOKBUD Conversation Cards',
     convoCardDesc: 'การ์ดชวนคุยกว่า 100+ ใบ ช่วยให้คุณรู้จักเพื่อนร่วมทีมหรือใครก็ได้ให้ลึกขึ้น เหมาะทั้งเล่นสนุกๆ หรือใช้เป็นเครื่องมือคุย 1-on-1 กับทีมของคุณ',
+    // P0-fix (feedback ของ Pop: เดิมข้อความเดียวกันทั้ง FREE/PRO ทั้งที่ FREE เล่นได้แค่ demo 3 ใบ) — ข้อความกระตุ้นอัพเกรด
+    // เฉพาะ FREE เท่านั้น สลับแสดงตาม is_pro ที่เช็คจาก actionGetCardAccess (ดู updateConvoCardBannerAccess ด้านล่าง)
+    convoCardDescFree: 'ปลดล็อกการ์ดชวนคุยกว่า 100+ ใบ ช่วยละลายพฤติกรรม ทำให้รู้จักทีมของคุณมากขึ้น ค้นพบมุมใหม่ๆ ของกันและกัน หรือเปลี่ยนงานเลี้ยง/มื้ออาหารธรรมดาให้สนุกและน่าจดจำยิ่งขึ้น',
     convoCardBtn: '🃏 เล่นเลย'
   },
   en: {
@@ -478,6 +480,7 @@ const I18N = {
     convoCardBadge: 'PRO',
     convoCardTitle: 'TOKBUD Conversation Cards',
     convoCardDesc: '100+ conversation-starter cards to help you get to know your team (or anyone) on a deeper level. Great for icebreakers or 1-on-1 conversations.',
+    convoCardDescFree: 'Unlock 100+ conversation-starter cards to break the ice, get closer to your team, discover new sides of people, or turn a regular event or dinner into a more fun and memorable experience.',
     convoCardBtn: '🃏 Play now'
   }
 };
@@ -866,9 +869,30 @@ function convoCardBannerHtml(){
       <span class="convo-card-title">${t('convoCardTitle')}</span>
       <span class="convo-card-badge">${t('convoCardBadge')}</span>
     </div>
-    <div class="convo-card-desc">${t('convoCardDesc')}</div>
+    <div class="convo-card-desc" id="convoCardDescText">${t('convoCardDesc')}</div>
     <button type="button" class="btn convo-card-btn" onclick="openConversationCards()">${t('convoCardBtn')}</button>
   </div>`;
+}
+
+// P0-fix (feedback ของ Pop: banner นี้โชว์ข้อความเดียวกันทั้ง FREE/PRO) — เช็คสถานะจริงจาก backend ผ่าน
+// actionGetCardAccess (เชื่อ session_token ฝั่ง server เท่านั้น ไม่เดาจาก client) แล้วค่อยสลับข้อความทีหลัง
+// เพื่อไม่ต้องรอ API นี้ก่อน render banner หลัก (banner ขึ้นก่อนได้เลยด้วยข้อความ PRO แบบเดิมเป็นค่าเริ่มต้น
+// กัน layout shift ตอนโหลด แล้วค่อย swap เป็นข้อความ FREE ถ้าพบว่ายังไม่ได้อัพเกรด)
+let convoCardAccessReqId = 0; // กัน race condition ถ้า renderView ถูกเรียกซ้ำเร็วๆ (เช่นสลับภาษาไวๆ) ตอบกลับมาไม่เรียงคิว
+async function updateConvoCardBannerAccess(){
+  const myReqId = ++convoCardAccessReqId;
+  let res;
+  try{
+    res = await api('getCardAccess', {});
+  }catch(err){
+    return; // เงียบไว้พอ ไม่กระทบการใช้งานหลัก แค่ข้อความ upsell จะไม่เปลี่ยน (ยังเป็น default PRO copy)
+  }
+  if(myReqId !== convoCardAccessReqId) return; // มี request ใหม่กว่าแทรกมาแล้ว ทิ้งผลลัพธ์นี้
+  const descEl = document.getElementById('convoCardDescText');
+  if(!descEl) return; // DOM ถูก re-render ทับไปแล้วก่อนตอบกลับ
+  if(res && res.success && !res.is_pro){
+    descEl.textContent = t('convoCardDescFree');
+  }
 }
 
 // Login ปกติไม่ควรเป็นไปได้ที่ isOwner=true แล้วยังไม่ login (เพราะ isOwner ต้องมาจาก session ที่ตรงกับเจ้าของ
@@ -932,6 +956,7 @@ function renderView(data){
   document.querySelectorAll('#content .q-track:not(.game-track)').forEach(tr => positionHandle(tr));
   if(!isOwner && answerKeys.length) bindGameRowEvents();
   if(isOwner && MYTYPE_SHOW_GROUPING) bindGroupingEvents();
+  if(isOwner) updateConvoCardBannerAccess();
 }
 
 function renderEmptyState(data){
@@ -951,6 +976,7 @@ function renderEmptyState(data){
     </div>
     ${isOwner ? `<div class="btn-row"><button class="btn btn-primary full-btn" onclick="enterEditMode()">${t('setupBtn')}</button></div>` : ''}
   `;
+  if(isOwner) updateConvoCardBannerAccess();
 }
 
 /* ================= EDIT MODE ================= */
