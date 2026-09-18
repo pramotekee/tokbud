@@ -867,7 +867,7 @@ function convoCardBannerHtml(){
   return `<div class="convo-card-banner">
     <div class="convo-card-head">
       <span class="convo-card-title">${t('convoCardTitle')}</span>
-      <span class="convo-card-badge">${t('convoCardBadge')}</span>
+      <span class="convo-card-badge" id="convoCardBadge" style="display:none;">${t('convoCardBadge')}</span>
     </div>
     <div class="convo-card-desc" id="convoCardDescText">${t('convoCardDesc')}</div>
     <button type="button" class="btn convo-card-btn" onclick="openConversationCards()">${t('convoCardBtn')}</button>
@@ -890,8 +890,14 @@ async function updateConvoCardBannerAccess(){
   if(myReqId !== convoCardAccessReqId) return; // มี request ใหม่กว่าแทรกมาแล้ว ทิ้งผลลัพธ์นี้
   const descEl = document.getElementById('convoCardDescText');
   if(!descEl) return; // DOM ถูก re-render ทับไปแล้วก่อนตอบกลับ
-  if(res && res.success && !res.is_pro){
-    descEl.textContent = t('convoCardDescFree');
+  if(res && res.success){
+    if(res.is_pro){
+      // ป้าย PRO โชว์เฉพาะคนที่เป็น PRO จริงเท่านั้น (ซ่อนเป็นค่าเริ่มต้น กัน FREE user เข้าใจผิดว่าได้สิทธิ์แล้ว)
+      const badgeEl = document.getElementById('convoCardBadge');
+      if(badgeEl) badgeEl.style.display = '';
+    } else {
+      descEl.textContent = t('convoCardDescFree');
+    }
   }
 }
 
