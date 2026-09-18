@@ -80,6 +80,7 @@ a{color:inherit;text-decoration:none;}
 /* P0-fix (feedback ของ Pop: Loading... นิ่งๆ ดูเหมือนค้าง / จุดไข่ปลา ··· ตอนแปลภาษาก็เหมือนกัน)
    spinner เดียวใช้ร่วมกัน 2 จุด: #loadingScreen ตอนเปิดหน้าแรก และ reveal-question ตอนรอผลแปลภาษา */
 .spinner{
+  display:inline-block;
   width:28px; height:28px; border-radius:50%;
   border:3px solid rgba(255,255,255,.25); border-top-color:#fff;
   animation:spin .7s linear infinite; margin:0 auto;
@@ -667,7 +668,7 @@ async function goUpgrade(){
   errEl.classList.add('hidden');
   btn.disabled = true;
   const originalHtml = btn.innerHTML;
-  btn.innerHTML = '<span class="spinner"></span> Redirecting to checkout...';
+  btn.innerHTML = '<span class="spinner"></span> Taking you to checkout…';
 
   const res = await api('createCheckoutSession', { session_token: STATE.sessionToken }, 'POST');
 
