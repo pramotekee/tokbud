@@ -446,7 +446,6 @@
   .plan-benefit-item{ display:flex; align-items:flex-start; gap:8px; font-size:12.5px; color:var(--text-muted); line-height:1.5; }
   .plan-benefit-check{ color:#2C8A4B; font-weight:700; flex-shrink:0; }
   .plan-pitch-title{ font-size:15px; font-weight:700; margin:0 0 8px; }
-  .plan-pitch-desc{ font-size:13px; color:var(--text-muted); line-height:1.7; margin:0 0 18px; }
   .plan-price-tag{ font-family:'Antonio',sans-serif; font-size:26px; font-weight:700; color:var(--primary); margin:0 0 4px; }
   .plan-price-usd{ font-size:11.5px; color:var(--text-muted); margin:0 0 18px; }
   .billing-row{
@@ -924,8 +923,7 @@ const I18N = {
     billingHistoryEmpty: 'ยังไม่มีประวัติการชำระเงิน',
     billingHistoryError: 'โหลดประวัติการชำระเงินไม่สำเร็จ',
     retryBtn: 'ลองใหม่',
-    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อปลดล็อกฟีเจอร์เพิ่มเติม รวมถึงการ export ข้อมูลคำตอบจากคนที่แชร์ความคิดเห็นเกี่ยวกับบริษัทต่างๆ',
-    planPitchDesc: 'เพียง 249 บาท/เดือน (นับ 30 วัน) เพื่อนำข้อมูลไปต่อยอด วิเคราะห์ สำรวจ หรือใช้งานต่อได้ตามต้องการ ยกเลิกได้ตลอดเวลา',
+    planPitchTitle: 'อัปเกรดเป็น PRO plan เพื่อปลดล็อกฟีเจอร์เพิ่มเติม',
     planPriceUsdHint: 'เรียกเก็บเงินเป็นเงินบาทไทย (THB) — ~$7.5 USD ใช้อ้างอิงมูลค่าคร่าวๆ เท่านั้น',
     upgradeToProBtn: 'อัปเกรดเป็น PRO — 249 บาท/เดือน',
     currentPlanLabel: 'แผนที่คุณใช้งานอยู่ตอนนี้',
@@ -1043,8 +1041,7 @@ const I18N = {
     billingHistoryEmpty: 'No payment history yet',
     billingHistoryError: 'Couldn\'t load payment history',
     retryBtn: 'Try again',
-    planPitchTitle: 'Upgrade to PRO plan to unlock more features, including exporting response data from people who shared their opinions about a company.',
-    planPitchDesc: 'Just 249 THB/month (30 days) to take the data further — analyze it, explore it, or use it for your own work. Cancel anytime.',
+    planPitchTitle: 'Upgrade to PRO plan to unlock more features.',
     planPriceUsdHint: 'Billed in Thai Baht (THB). ~$7.5 USD, for reference only.',
     upgradeToProBtn: 'Upgrade to PRO — 249 THB/month',
     currentPlanLabel: 'Your current plan',
@@ -2505,6 +2502,17 @@ const PRO_BENEFITS = [
   'Export comments people shared about any company to CSV — unlimited companies, unlimited exports',
   'Unlock TOKBUD Conversation Cards — 100+ prompts that help you and your team really get to know each other, build trust, and work better together. Great for 1-on-1s and team bonding.'
 ];
+// สิทธิ์ PRO ฝั่งหน้าเว็บ (ใช้แสดงผลเท่านั้น) ต้องตรงกับ hasProAccess() ใน appscript.txt เสมอ — ฝั่ง backend คือผู้ตัดสินจริง
+// plan='pro' + (active หรือ canceled ที่ pro_until ยังไม่หมด)
+function hasProAccess(pf){
+  if(!pf || pf.plan !== 'pro') return false;
+  if(pf.subscription_status === 'active') return true;
+  if(pf.subscription_status === 'canceled' && pf.pro_until){
+    const until = new Date(pf.pro_until);
+    return !isNaN(until) && until.getTime() > Date.now();
+  }
+  return false;
+}
 function proBenefitsHtml(){
   return `<div class="plan-benefits-list">${PRO_BENEFITS.map(b =>
     `<div class="plan-benefit-item"><span class="plan-benefit-check">✓</span><span>${escapeHtml(b)}</span></div>`
@@ -2539,7 +2547,7 @@ async function loadPlanBilling(){
 function renderPlanStatusCard(){
   const el = document.getElementById('planStatusCard');
   const pf = STATE.profile;
-  const isPro = pf.plan === 'pro';
+  const isPro = hasProAccess(pf);
   const showCancelLink = isPro && pf.subscription_status === 'active';
   const badgeHtml = `<div class="plan-badge-row-left">
       <span class="plan-badge-label">${t('currentPlanLabel')}</span>
@@ -2562,7 +2570,6 @@ function renderPlanStatusCard(){
     actionHtml = `
       <p class="plan-pitch-title">${t('planPitchTitle')}</p>
       ${proBenefitsHtml()}
-      <p class="plan-pitch-desc">${t('planPitchDesc')}</p>
       <p class="plan-price-tag">249 THB / month</p>
       <p class="plan-price-usd">${t('planPriceUsdHint')}</p>
       <button class="btn btn-primary full-btn" id="upgradeProBtn">${t('upgradeToProBtn')}</button>`;
@@ -2580,7 +2587,7 @@ function renderPlanStatusCard(){
 // ล้มเหลวครั้งล่าสุดจริงๆ (last_charge_status=failed) และตอนนี้ยังเป็น free อยู่ (ยังไม่ได้แก้ไขสำเร็จ)
 function renderChargeFailedBanner(){
   const banner = document.getElementById('chargeFailedBanner');
-  banner.style.display = (STATE.profile.last_charge_status === 'failed' && STATE.profile.plan !== 'pro') ? 'flex' : 'none';
+  banner.style.display = (STATE.profile.last_charge_status === 'failed' && !hasProAccess(STATE.profile)) ? 'flex' : 'none';
 }
 
 function renderBillingHistory(list){
@@ -2626,7 +2633,7 @@ function showExportGatePopup(){
 }
 
 async function handleExportClick(topicId, btn){
-  if(!STATE.profile || STATE.profile.plan !== 'pro'){
+  if(!hasProAccess(STATE.profile)){
     showExportGatePopup();
     return;
   }
@@ -2818,7 +2825,7 @@ async function initProfilePage(){
 
   // ตัดเงินรอบล่าสุดล้มเหลว (sweepSubscriptions ปรับเป็น free อัตโนมัติไปแล้ว) -> เตือนทันทีตอนเข้าเว็บ
   // แม้ตอนนี้จะเปิดอยู่ที่แท็บ Dashboard ก็ตาม เพราะ user อาจไม่ได้กดไปดูแท็บ Plan & Billing เอง
-  if(STATE.profile.last_charge_status === 'failed' && STATE.profile.plan !== 'pro'){
+  if(STATE.profile.last_charge_status === 'failed' && !hasProAccess(STATE.profile)){
     showToast(t('chargeFailedToast'));
   }
 
