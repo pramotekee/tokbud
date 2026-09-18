@@ -19,7 +19,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;}
 body{
-  font-family:'Inter',sans-serif; background:var(--bg); color:#fff; overflow:hidden;
+  font-family:'Inter',sans-serif; background:var(--bg); color:#fff; overflow-x:hidden; overflow-y:auto;
   -webkit-font-smoothing:antialiased;
 }
 button{font-family:inherit;cursor:pointer;border:none;background:none;}
@@ -49,6 +49,11 @@ a{color:inherit;text-decoration:none;}
 .back-link{ position:fixed; top:20px; left:20px; font-size:13px; color:rgba(255,255,255,.75); font-weight:600; z-index:60; }
 .back-link:active{ color:#fff; }
 
+/* P0-fix (feedback ของ Pop: หลายคนไม่รู้ว่าหน้านี้เปิดเป็นแท็บใหม่ กลับไม่ถูก) — ปิดแท็บตัวเองกลับไปหา
+   mytype.html ที่เปิดค้างอยู่เบื้องหลัง (หน้านี้ถูก window.open() มาจาก mytype.html เสมอ ปิดตัวเองได้แม้ผ่าน noopener) */
+.back-to-mytype{ position:fixed; top:20px; left:20px; font-size:13px; color:rgba(255,255,255,.75); font-weight:600; z-index:60; }
+.back-to-mytype:active{ color:#fff; }
+
 .cards-screen{ padding-top:26px; padding-bottom:26px; justify-content:flex-start; }
 .cards-top{ text-align:center; margin-bottom:22px; }
 
@@ -68,11 +73,19 @@ a{color:inherit;text-decoration:none;}
   transition:transform .15s ease;
 }
 .mini-card:active{ transform:scale(.96); }
-.mini-cat-tag{ display:inline-block; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:100px; letter-spacing:.4px; align-self:flex-start; }
 .mini-card-center{ text-align:center; }
-.mini-spark{ font-size:26px; }
 .mini-tap{ margin-top:6px; font-size:11px; opacity:.85; font-weight:600; }
 .mini-brand{ text-align:center; font-family:'Antonio',sans-serif; font-size:14px; letter-spacing:1px; opacity:.9; }
+
+/* P0-fix (feedback ของ Pop: Loading... นิ่งๆ ดูเหมือนค้าง / จุดไข่ปลา ··· ตอนแปลภาษาก็เหมือนกัน)
+   spinner เดียวใช้ร่วมกัน 2 จุด: #loadingScreen ตอนเปิดหน้าแรก และ reveal-question ตอนรอผลแปลภาษา */
+.spinner{
+  width:28px; height:28px; border-radius:50%;
+  border:3px solid rgba(255,255,255,.25); border-top-color:#fff;
+  animation:spin .7s linear infinite; margin:0 auto;
+}
+.spinner.dark{ border-color:rgba(11,29,127,.15); border-top-color:var(--primary); }
+@keyframes spin{ to{ transform:rotate(360deg); } }
 
 .overlay{ position:fixed; inset:0; background:rgba(11,29,127,.55); backdrop-filter:blur(10px); display:none; justify-content:center; align-items:center; padding:20px; z-index:999; }
 .overlay.open{ display:flex; }
@@ -106,8 +119,11 @@ a{color:inherit;text-decoration:none;}
 
 .demo-note{ background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:16px; padding:14px 16px; font-size:13px; line-height:1.55; color:rgba(255,255,255,.9); max-width:340px; margin:18px 0 26px; }
 .demo-note b{ color:var(--accent); }
+.demo-note .demo-note-upsell{ display:block; margin-top:6px; }
 .demo-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; max-width:520px; }
-.upgrade-btn{ margin-top:24px; background:var(--accent); color:var(--primary-dark); }
+.upgrade-btn{ margin-top:24px; background:var(--accent); color:var(--primary-dark); display:flex; align-items:center; justify-content:center; gap:8px; }
+.upgrade-btn:disabled{ opacity:.75; }
+.upgrade-btn .spinner{ width:16px; height:16px; border-width:2px; margin:0; }
 
 .state-msg{ font-size:14px; color:rgba(255,255,255,.85); }
 </style>
@@ -116,10 +132,11 @@ a{color:inherit;text-decoration:none;}
 
 <div id="loadingScreen" class="screen">
   <div class="logo-word">TOKBUD</div>
-  <div class="state-msg" style="margin-top:16px;">Loading...</div>
+  <div class="spinner" style="margin-top:18px;"></div>
 </div>
 
 <section id="home" class="screen hidden">
+  <a href="#" class="back-to-mytype" onclick="window.close();return false;">← Back to My Type</a>
   <div class="logo-word">TOKBUD</div>
   <div class="logo-sub">Conversation Cards</div>
   <div class="tagline">Spark real conversations. Get to know your team — and yourself — a little better, one card at a time.</div>
@@ -130,11 +147,13 @@ a{color:inherit;text-decoration:none;}
 </section>
 
 <section id="demoHome" class="screen hidden">
+  <a href="#" class="back-to-mytype" onclick="window.close();return false;">← Back to My Type</a>
   <div class="logo-word">TOKBUD</div>
   <div class="logo-sub">Conversation Cards</div>
-  <div class="demo-note">You're playing <b>3 free demo cards</b>. TOKBUD PRO unlocks <b>100+ cards</b> across 6 categories.</div>
+  <div class="demo-note">You're playing <b>3 free demo cards</b>.<span class="demo-note-upsell">TOKBUD PRO unlocks <b>100+ cards</b> across 6 categories.</span></div>
   <div class="demo-row" id="demoRow"></div>
-  <button class="btn upgrade-btn" onclick="goUpgrade()">✨ Upgrade to PRO</button>
+  <button class="btn upgrade-btn" id="upgradeBtn" onclick="goUpgrade()">✨ Upgrade to PRO</button>
+  <div id="upgradeError" class="state-msg hidden" style="margin-top:10px;color:#FFC6C6;">Something went wrong starting checkout. Please try again.</div>
 </section>
 
 <section id="category" class="screen hidden">
@@ -151,7 +170,6 @@ a{color:inherit;text-decoration:none;}
   </div>
   <div class="belt-wrapper"><div class="belt belt-r2l" id="belt1"></div></div>
   <div class="belt-wrapper"><div class="belt belt-l2r" id="belt2"></div></div>
-  <div class="belt-wrapper"><div class="belt belt-r2l" id="belt3"></div></div>
 </section>
 
 <div class="overlay" id="overlay">
@@ -186,23 +204,25 @@ const CONFIG = {
   FRONTEND_URL: 'https://tokbud.vercel.app'
 };
 
-/* ต้อง sync กับ TRANSLATE_LANGS ฝั่ง appscript.txt/index.txt/profile.txt ทุกครั้งที่แก้ (รายชื่อ/ลำดับเดียวกันหมด) */
+/* ต้อง sync กับ TRANSLATE_LANGS ฝั่ง appscript.txt/index.txt/profile.txt ทุกครั้งที่แก้ (รายชื่อ/ลำดับเดียวกันหมด)
+   P0-fix (feedback ของ Pop: label เดิมเป็นอักษรของแต่ละชาติเอง คนอ่านไม่ออกก็ไม่รู้อยู่ดีว่าคือภาษาอะไร)
+   เปลี่ยน label เป็นชื่อภาษาอังกฤษล้วน อ่านเข้าใจได้ทุกคน — code ไม่เปลี่ยน ไม่กระทบ backend/translate API เลย */
 const TRANSLATE_LANGS = [
   {code:'en',    label:'English'},
-  {code:'zh-CN', label:'中文 (简体)'},
-  {code:'es',    label:'Español'},
-  {code:'hi',    label:'हिन्दी'},
-  {code:'ar',    label:'العربية'},
-  {code:'pt',    label:'Português'},
-  {code:'bn',    label:'বাংলা'},
-  {code:'ru',    label:'Русский'},
-  {code:'ja',    label:'日本語'},
-  {code:'de',    label:'Deutsch'},
-  {code:'fr',    label:'Français'},
-  {code:'ko',    label:'한국어'},
-  {code:'vi',    label:'Tiếng Việt'},
-  {code:'id',    label:'Bahasa Indonesia'},
-  {code:'th',    label:'ภาษาไทย'}
+  {code:'zh-CN', label:'Chinese'},
+  {code:'es',    label:'Spanish'},
+  {code:'hi',    label:'Hindi'},
+  {code:'ar',    label:'Arabic'},
+  {code:'pt',    label:'Portuguese'},
+  {code:'bn',    label:'Bengali'},
+  {code:'ru',    label:'Russian'},
+  {code:'ja',    label:'Japanese'},
+  {code:'de',    label:'German'},
+  {code:'fr',    label:'French'},
+  {code:'ko',    label:'Korean'},
+  {code:'vi',    label:'Vietnamese'},
+  {code:'id',    label:'Indonesian'},
+  {code:'th',    label:'Thai'}
 ];
 
 /* ================= Card content =================
@@ -210,8 +230,8 @@ const TRANSLATE_LANGS = [
  * ตามที่ Pop ยืนยัน เปลี่ยนแค่สี (color/textColor) ให้อยู่ในโทน TOKBUD (เดิมเป็นโทนน้ำตาล/เทอร์ราคอตต้าของ CLAIR) */
 const CARD_CATEGORIES = {
 SHADOW:{
-title:"ส่วนลึกที่แอบซ่อนอยู่",
-color:"#0B1D7F",
+title:"The hidden depths",
+color:"#171331",
 textColor:"white",
 cards:[
 "อะไรที่คุณยังโกหกตัวเองอยู่จนถึงวันนี้?",
@@ -270,7 +290,7 @@ enCards:[
 },
 
 MIRROR:{
-title:"รู้จักตัวเองมากขึ้น",
+title:"Know yourself better",
 color:"#EAF1FF",
 textColor:"#0B1D7F",
 cards:[
@@ -330,7 +350,7 @@ enCards:[
 },
 
 REWIND:{
-title:"อดีตที่หล่อหลอมเรา",
+title:"The past that shaped us",
 color:"#2143C8",
 textColor:"white",
 cards:[
@@ -390,7 +410,7 @@ enCards:[
 },
 
 FORWARD:{
-title:"มองไปยังอนาคต",
+title:"Looking ahead",
 color:"#F5D149",
 textColor:"#0B1D7F",
 cards:[
@@ -450,7 +470,7 @@ enCards:[
 },
 
 HUMAN:{
-title:"ความเป็นมนุษย์ในตัวคุณ",
+title:"The human in you",
 color:"#5B7DE8",
 textColor:"white",
 cards:[
@@ -510,7 +530,7 @@ enCards:[
 },
 
 ABSURD:{
-title:"เรื่องไร้สาระที่ซ่อนความจริง",
+title:"Nonsense that hides the truth",
 color:"#FFF6DC",
 textColor:"#0B1D7F",
 cards:[
@@ -631,8 +651,34 @@ async function init(){
 }
 init();
 
-function goUpgrade(){
-  window.location.href = 'profile.html?tab=planbilling';
+// P0-fix (feedback ของ Pop: เดิมพาไปหน้า Plan & Billing ก่อน ต้องกดอ้อม เสียเวลา + เจอ cold start บ่อย)
+// เรียก createCheckoutSession ตรงจากหน้านี้เลย ใช้ pattern เดียวกับ handleUpgradeClick() ใน profile.txt
+// หมายเหตุ: success/cancel URL ของ Stripe hardcode ไว้ที่ profile.html?tab=planbilling ฝั่ง backend เสมอ
+// (ดู createCheckoutSession() ใน appscript.txt) จ่ายเงินสำเร็จแล้ว user จะเห็นสถานะ PRO อัพเดทที่หน้า Profile
+// เลย (Pop confirm แล้วว่ารับได้ เพราะเห็น status ชัดเจนกว่า และ My Type ก็อยู่ในหน้า Profile อยู่แล้ว)
+async function goUpgrade(){
+  if(!STATE.sessionToken){
+    // ไม่ได้ login (ไม่ควรเกิดในโหมด demo ปกติเพราะ demo ไม่บังคับ login แต่กันไว้แบบ defensive)
+    window.location.href = 'profile.html?tab=planbilling';
+    return;
+  }
+  const btn = document.getElementById('upgradeBtn');
+  const errEl = document.getElementById('upgradeError');
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  const originalHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Redirecting to checkout...';
+
+  const res = await api('createCheckoutSession', { session_token: STATE.sessionToken }, 'POST');
+
+  if(res && res.success && res.checkout_url){
+    window.location.href = res.checkout_url;
+    return; // กำลังจะ navigate ออกจากหน้านี้อยู่แล้ว ไม่ต้องคืนสถานะปุ่ม
+  }
+  // ล้มเหลวจริง (api() retry เงียบให้ 1 ครั้งไปแล้วก่อนหน้านี้) — คืนปุ่มให้กดใหม่ได้ พร้อมบอก user ตรงๆ
+  btn.disabled = false;
+  btn.innerHTML = originalHtml;
+  errEl.classList.remove('hidden');
 }
 
 /* ================= Demo mode (non-PRO): 3 การ์ดคงที่ กดเปิดอ่าน/แปลได้จริงครบทุกฟังก์ชัน ไม่ใช่แค่ preview ================= */
@@ -663,10 +709,11 @@ function goHome(){
   closeReveal();
 }
 
-/* ================= Cards screen: 3 แถว mini-card วิ่งสวนกัน (PRO only) =================
- * แถวบน/ล่างวิ่งขวา->ซ้าย, แถวกลางวิ่งซ้าย->ขวา (ตามที่ Pop ระบุ) — สลับสับไพ่ deck ก่อนแบ่งเข้า 3 แถวด้วย
- * index % 3 ให้แต่ละแถวมีการ์ดจากหลายหมวดคละกัน (ไม่ใช่แยกหมวดทีละแถว) แล้ว double รายการต่อแถวเพื่อให้ loop
- * เนียนไม่มีรอยต่อ (เทคนิคเดิมจาก claircard.txt: เลื่อน translateX ไป -50% พอดี ครึ่งความยาว = ชุดที่ซ้ำ) */
+/* ================= Cards screen: 2 แถว mini-card วิ่งสวนกัน (PRO only) =================
+ * P0-fix (ตัดสินใจร่วมกับ Pop: เดิม 3 แถว บนจอมือถือเล็กแถวที่ 3 โดนตัดเห็นแค่ครึ่งใบ แม้จะแก้ scroll ได้แล้ว
+ * แต่ 2 แถวเห็นเต็มใบทั้งคู่พอดีจอ ดูเนี้ยบกว่า) แถวบนวิ่งขวา->ซ้าย, แถวล่างวิ่งซ้าย->ขวา — สลับสับไพ่ deck ก่อน
+ * แบ่งเข้า 2 แถวด้วย index % 2 ให้แต่ละแถวมีการ์ดจากหลายหมวดคละกัน (ไม่ใช่แยกหมวดทีละแถว) แล้ว double รายการ
+ * ต่อแถวเพื่อให้ loop เนียนไม่มีรอยต่อ (เทคนิคเดิมจาก claircard.txt: เลื่อน translateX ไป -50% พอดี ครึ่งความยาว = ชุดที่ซ้ำ) */
 function openCards(categoryKey){
   let deck = [];
   if(categoryKey){
@@ -679,10 +726,10 @@ function openCards(categoryKey){
   }
   deck = shuffleArray(deck);
 
-  const rows = [[], [], []];
-  deck.forEach((item, i) => rows[i % 3].push(item));
+  const rows = [[], []];
+  deck.forEach((item, i) => rows[i % 2].push(item));
 
-  [1,2,3].forEach(n=>{
+  [1,2].forEach(n=>{
     const belt = document.getElementById('belt'+n);
     const rowDeck = rows[n-1];
     const doubled = [...rowDeck, ...rowDeck];
@@ -705,12 +752,12 @@ function shuffleArray(arr){
   return a;
 }
 
+// P0-fix (feedback ของ Pop: ตัดป้ายชื่อหมวดมุมซ้ายบน + ตัดไอคอนดาว ✦ กลางการ์ด ดูเหมือนไอคอน Gemini) —
+// เหลือแค่ปุ่ม tap + brand ให้การ์ดดูสะอาดตาขึ้น (ชื่อหมวดยังเห็นได้ตอนเปิดอ่านการ์ดจริงผ่าน reveal-cat-tag)
 function miniCardHtml(categoryKey, index, uid){
-  const cat = CARD_CATEGORIES[categoryKey];
   return `<div class="mini-card" data-cat="${categoryKey}" data-idx="${index}" data-uid="${uid}">
-    <span class="mini-cat-tag" style="background:${cat.color};color:${cat.textColor};">${categoryKey}</span>
+    <div></div>
     <div class="mini-card-center">
-      <div class="mini-spark">✦</div>
       <div class="mini-tap">Tap to open</div>
     </div>
     <div class="mini-brand">TOKBUD</div>
@@ -727,13 +774,13 @@ function bindMiniCardEvents(container){
 }
 
 function pauseBelts(){
-  ['belt1','belt2','belt3'].forEach(id=>{
+  ['belt1','belt2'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.style.animationPlayState = 'paused';
   });
 }
 function resumeBelts(){
-  ['belt1','belt2','belt3'].forEach(id=>{
+  ['belt1','belt2'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.style.animationPlayState = 'running';
   });
@@ -787,7 +834,8 @@ async function showCardText(categoryKey, index, lang){
     return;
   }
 
-  qEl.textContent = '···';
+  // P0-fix (feedback ของ Pop: จุดไข่ปลา ··· นิ่งๆ ดูเหมือนค้าง/พัง) ใช้ spinner หมุนแทนระหว่างรอผลแปล
+  qEl.innerHTML = '<span class="spinner dark"></span>';
   langTagEl.textContent = langLabel;
   const enText = CARD_CATEGORIES[categoryKey].enCards[index];
   const res = await api('translateCardQuestion', { category:categoryKey, index:index, target_lang:lang, text:enText }, 'POST');
