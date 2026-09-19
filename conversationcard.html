@@ -127,6 +127,8 @@ a{color:inherit;text-decoration:none;}
 .upgrade-btn .spinner{ width:16px; height:16px; border-width:2px; margin:0; }
 
 .state-msg{ font-size:14px; color:rgba(255,255,255,.85); }
+.load-error-msg{ margin:26px 0 20px; font-size:17px; font-weight:600; color:#fff; max-width:320px; line-height:1.5; }
+.load-error-diag{ margin-top:16px; font-size:11px; color:rgba(255,255,255,.5); word-break:break-all; max-width:320px; }
 
 /* ================= Deeper Conversation (PRO): กำแพงการ์ดทอง 41 ใบ นิ่งๆ ไม่มีแอนิเมชัน ================= */
 .deep-promo{ width:100%; max-width:320px; margin-top:38px; padding-top:30px; border-top:1px solid rgba(245,209,73,.28); display:flex; flex-direction:column; gap:10px; text-align:center; }
@@ -168,6 +170,14 @@ a{color:inherit;text-decoration:none;}
   <div class="logo-word">TOKBUD</div>
   <div class="spinner" style="margin-top:18px;"></div>
 </div>
+
+<section id="loadError" class="screen hidden">
+  <div class="logo-word">TOKBUD</div>
+  <div class="logo-sub">Conversation Cards</div>
+  <div class="load-error-msg">Oops! Something went wrong. Please try again.</div>
+  <button class="btn btn-primary" onclick="retryInit()">Try again</button>
+  <div class="load-error-diag hidden" id="loadErrorDiag"></div>
+</section>
 
 <section id="home" class="screen hidden">
   <a href="#" class="back-to-mytype" onclick="window.close();return false;">← Back to My Type</a>
@@ -743,9 +753,11 @@ const TR_CACHE = {};             // key: category_index_lang -> translated text 
 
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
 
-async function api(action, params = {}, method = 'GET', _isRetry = false){
+async function api(action, params = {}, method = 'GET', _isRetry = false, _firstDiag = ''){
   const controller = new AbortController();
   const timeoutId = setTimeout(()=> controller.abort(), 15000);
+  const startedAt = Date.now();
+  let reason = '';
   try{
     let res;
     if(method === 'GET'){
@@ -754,19 +766,72 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
     } else {
       res = await fetch(CONFIG.API_URL, { method:'POST', body: JSON.stringify(Object.assign({action}, params)), signal: controller.signal });
     }
-    return await res.json();
+    try{ return await res.json(); }
+    catch(jsonErr){ reason = 'bad_response(http ' + res.status + ')'; throw jsonErr; }
   }catch(err){
-    if(!_isRetry) return api(action, params, method, true); // retry เงียบๆ 1 ครั้งก่อนยอมแพ้
-    return { success:false, message:'Network error', _networkError:true };
+    if(!reason) reason = (err && err.name === 'AbortError') ? 'timeout' : ('fetch_failed:' + ((err && err.message) || ''));
+    const diag = reason + ' ' + (Date.now() - startedAt) + 'ms';
+    console.warn('[api]', action, diag, _isRetry ? '(retry)' : '(1st attempt)');
+    if(!_isRetry) return api(action, params, method, true, diag); // retry เงียบๆ 1 ครั้งก่อนยอมแพ้
+    return { success:false, message:'Network error', _networkError:true,
+             _diag: action + ' | try1: ' + _firstDiag + ' | try2: ' + diag };
   }finally{ clearTimeout(timeoutId); }
+}
+
+/* ================= PRO hint: จำผล "เป็น PRO" ที่เซิร์ฟเวอร์เคยยืนยันไว้ในเบราว์เซอร์ (ใช้แสดงผลทันทีโดยไม่ต้องรอ) =================
+ * ใช้ร่วมกับ mytype.html (key เดียวกัน) — จดเฉพาะ "เป็น PRO" เท่านั้น (ไม่จด FREE เพื่อให้คนที่เพิ่งจ่ายเงินเห็น PRO ทันที)
+ * ผูกกับ session_token (จดแค่ 8 ตัวท้าย) ถ้า login ใหม่/เปลี่ยนบัญชี hint เดิมใช้ไม่ได้อัตโนมัติ · หมดอายุ 24 ชม.
+ * เป็นเรื่องการแสดงผลล้วนๆ: ทุกครั้งยังถามเซิร์ฟเวอร์ยืนยันเบื้องหลังเสมอ ถ้าไม่ใช่ PRO แล้วจะลบ hint และเปลี่ยนหน้าจอตาม
+ * (ไม่ใช่ชั้นความปลอดภัย — คำถามการ์ดอยู่ในโค้ดหน้านี้อยู่แล้วตามที่ Pop ตัดสินใจไว้) */
+const PRO_HINT_KEY = 'wz_card_pro';
+const PRO_HINT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+function tokenTag(token){ return token ? String(token).slice(-8) : ''; }
+function readProHint(token){
+  try{
+    const h = JSON.parse(localStorage.getItem(PRO_HINT_KEY) || 'null');
+    return !!(h && h.pro === true && h.tk === tokenTag(token) && (Date.now() - h.ts) < PRO_HINT_MAX_AGE_MS);
+  }catch(e){ return false; }
+}
+function writeProHint(token, isPro){
+  try{
+    if(isPro) localStorage.setItem(PRO_HINT_KEY, JSON.stringify({ pro:true, ts:Date.now(), tk:tokenTag(token) }));
+    else localStorage.removeItem(PRO_HINT_KEY);
+  }catch(e){ /* localStorage ใช้ไม่ได้ ไม่เป็นไร แค่ไม่มีของจำไว้ */ }
 }
 
 /* ================= INIT: เช็คสิทธิ์ PRO ผ่าน session ที่อ่านจาก localStorage ตรงๆ =================
  * หน้านี้เปิดเป็นแท็บ/หน้าต่างใหม่แยกจาก mytype.html (ตั้งใจ ไม่ใช่ full-screen overlay — ดูเหตุผลใน
  * mytype.txt::openConversationCards()) เลยไม่มี JS runtime ร่วมกับหน้าที่เปิดมา อ่าน session_token จาก
  * wz_session ใน localStorage เองตรงๆ (key เดียวกับทุกหน้าในระบบ, origin เดียวกันเลยอ่านได้) แล้วให้ backend
- * เป็นคนตัดสินสิทธิ์ PRO ชั้นเดียว (ไม่เชื่อ flag ใดๆจาก URL หรือ localStorage เอง กันปลอมสิทธิ์ง่ายๆ) — ถ้าไม่ login
- * หรือเน็ตมีปัญหา fallback เป็นโหมด demo เสมอ (ไม่ใช่ error state ที่ตันทางไป) */
+ * เป็นคนตัดสินสิทธิ์ PRO (ไม่เชื่อ flag จาก URL) — PRO hint ใน localStorage ใช้แค่แสดงผลก่อนระหว่างรอยืนยัน ไม่ใช่ตัวตัดสิน
+ * (ดูเหตุผลและกฎ 3 กรณีที่ init() ด้านล่าง: เน็ตช้า/ล้ม ไม่ถูกตีเป็น "ไม่ใช่ PRO" อีกต่อไป) */
+/* ตัดสินใจหน้าจอตามสิทธิ์ — หลักการ: "ไม่แสดงผลผิด" (เดิม: เซิร์ฟเวอร์ตอบช้า/เน็ตสะดุดจนหมดเวลา ถูกตีความว่า "ไม่ใช่ PRO" แล้วส่ง PRO
+ * เข้าโหมด demo ต้องรีเฟรชเอง) ตอนนี้แยก 3 กรณีชัดเจน:
+ *  1) ไม่ได้ login หรือเซิร์ฟเวอร์ยืนยันว่าไม่ใช่ PRO  -> demo
+ *  2) เซิร์ฟเวอร์ยืนยันว่าเป็น PRO (หรือมี PRO hint) -> หน้า PRO ทันที (มี hint = แสดงก่อนแล้วค่อยยืนยันเบื้องหลัง)
+ *  3) ยืนยันไม่ได้และไม่มี hint -> หน้า "Try again" (ไม่ใช่ demo) */
+function hideAllScreens(){
+  ['loadingScreen','loadError','home','demoHome','category','cards','deepWall'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.classList.add('hidden');
+  });
+  closeReveal();
+}
+function showHome(){ hideAllScreens(); document.getElementById('home').classList.remove('hidden'); }
+function showDemo(){ hideAllScreens(); renderDemoHome(); document.getElementById('demoHome').classList.remove('hidden'); }
+function showLoadError(diag){
+  hideAllScreens();
+  const dEl = document.getElementById('loadErrorDiag');
+  if(/[?&]debug=1/.test(location.search) && diag){ dEl.textContent = diag; dEl.classList.remove('hidden'); }
+  else { dEl.textContent = ''; dEl.classList.add('hidden'); }
+  document.getElementById('loadError').classList.remove('hidden');
+}
+function retryInit(){
+  hideAllScreens();
+  document.getElementById('loadingScreen').classList.remove('hidden');
+  init();
+}
+
 async function init(){
   let sessionToken = null;
   try{
@@ -776,16 +841,22 @@ async function init(){
   }catch(e){ /* localStorage พังหรือ parse ไม่ได้ ถือว่าไม่ login */ }
   STATE.sessionToken = sessionToken;
 
-  const res = await api('getCardAccess', { session_token: sessionToken }, 'POST');
-  STATE.isPro = !!(res && res.success && res.is_pro);
+  if(!sessionToken){ STATE.isPro = false; showDemo(); return; } // ไม่ login: demo ได้เลยไม่ต้องรอ API
 
-  document.getElementById('loadingScreen').classList.add('hidden');
-  if(STATE.isPro){
-    document.getElementById('home').classList.remove('hidden');
-  } else {
-    renderDemoHome();
-    document.getElementById('demoHome').classList.remove('hidden');
+  const hinted = readProHint(sessionToken);
+  if(hinted){ STATE.isPro = true; showHome(); } // แสดงหน้า PRO ทันที ยืนยันเบื้องหลังต่อ
+
+  const res = await api('getCardAccess', { session_token: sessionToken }, 'POST');
+
+  if(res && res.success){
+    const pro = !!res.is_pro;
+    writeProHint(sessionToken, pro);
+    if(pro && !hinted){ STATE.isPro = true; showHome(); }
+    else if(!pro){ STATE.isPro = false; showDemo(); } // ยืนยันแล้วว่าไม่ใช่ PRO (รวมกรณีสิทธิ์หมดหลังเคยมี hint)
+    return;
   }
+  // ยืนยันไม่ได้ (เชื่อมต่อไม่ทัน) — มี hint ก็ใช้หน้า PRO ต่อ ไม่มีก็ให้กดลองใหม่ ไม่ปล่อยเข้า demo ผิดๆ
+  if(!hinted) showLoadError(res && res._diag);
 }
 init();
 
