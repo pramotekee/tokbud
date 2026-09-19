@@ -1392,8 +1392,17 @@ function mteShrinkImageDataUri(dataUri, size){
         c.width = size; c.height = size;
         const ctx = c.getContext('2d');
         ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+        // วาดเป็นวงกลมสำเร็จรูปเลย (ตัดวงกลม + พื้นขาวรอบนอก) ให้ PDF ใส่เป็นรูปธรรมดาๆ ไม่ต้องพึ่ง CSS ตัดวงกลม/background-image
+        ctx.save();
+        ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI*2); ctx.closePath(); ctx.clip();
         ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-        const out = c.toDataURL('image/jpeg', 0.85);
+        ctx.restore();
+        // เช็คว่ารูปไม่ใช่ภาพว่าง/ขาวล้วน (กรณี decode พลาดเงียบๆ) — ถ้าว่างให้คืน '' เพื่อใช้วงกลมตัวอักษรแทน ดีกว่าโชว์ที่ว่างเปล่า
+        const px = ctx.getImageData(Math.floor(size*0.25), Math.floor(size*0.25), Math.floor(size*0.5), Math.floor(size*0.5)).data;
+        let minV = 255, maxV = 0;
+        for(let i = 0; i < px.length; i += 16){ const v = (px[i] + px[i+1] + px[i+2]) / 3; if(v < minV) minV = v; if(v > maxV) maxV = v; }
+        if(maxV - minV < 6 && minV > 240) throw new Error('avatar rendered blank');
+        const out = c.toDataURL('image/jpeg', 0.9);
         clearTimeout(timer);
         resolve(out.length < 200000 ? out : '');
       }catch(e){ console.warn('[myTypeExport] shrink avatar failed:', e); clearTimeout(timer); resolve(''); }
@@ -1428,7 +1437,7 @@ async function myTypeExportHtml(){
   let avatarSrc = '';
   if(user.profile_image_url){
     const rawAvatar = await proxyImg(user.profile_image_url, 'avatar');
-    avatarSrc = await mteShrinkImageDataUri(rawAvatar, 256);
+    avatarSrc = await mteShrinkImageDataUri(rawAvatar, 132);
   }
 
   const qrRawSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(profileUrl)}`;
@@ -1481,7 +1490,7 @@ async function myTypeExportHtml(){
       </div>
       <div class="mte-identity">
         <div class="mte-identity-left">
-          ${avatarSrc ? `<div class="mte-avatar" style="background-image:url('${avatarSrc}')"></div>` : `<div class="mte-avatar mte-avatar-fallback">${initial}</div>`}
+          ${avatarSrc ? `<img class="mte-avatar" src="${avatarSrc}" width="44" height="44" style="display:block;flex:none;width:44px;height:44px;border-radius:50%;">` : `<div class="mte-avatar mte-avatar-fallback" style="flex:none;">${initial}</div>`}
           <div class="mte-name">${escapeHtml(name)}</div>
         </div>
         <span class="mte-powered">Powered by tokbud.vercel.app</span>
