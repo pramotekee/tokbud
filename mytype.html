@@ -1373,6 +1373,36 @@ function renderMatchWall(results, mode){
   area.innerHTML = `<div class="match-count">${t('matchCountText', {n: results.length})}</div><div class="card"><div class="wall-grid">${items}</div></div>`;
 }
 
+/* ย่อรูปโปรไฟล์เหลือ 256x256 JPEG (~15-30KB) ก่อนฝังลง PDF sheet
+   เหตุผล: avatar เก็บเป็น Drive thumbnail กว้าง 1600px -> พอแปลงเป็น base64 ได้สตริงหลายร้อย KB ถึงหลาย MB
+   html2canvas รัน regex /^data:image\/.*;base64,/i ทับ data URI ทั้งก้อน — Safari (JavaScriptCore) บน iPhone
+   ล้ม stack ("RangeError: Maximum call stack size exceeded") กับสตริงยาวขนาดนี้ ส่วน Chrome บนคอมผ่านได้
+   ย่อเป็นสี่เหลี่ยมจัตุรัสตัดกลาง (เทียบเท่า background-size:cover ที่ใช้อยู่) — ถ้าย่อไม่สำเร็จให้คืน '' (ใช้ตัวอักษรแทนรูป) ดีกว่าเสี่ยงทำให้ทั้ง PDF พัง */
+function mteShrinkImageDataUri(dataUri, size){
+  return new Promise(resolve => {
+    if(!dataUri) return resolve('');
+    const timer = setTimeout(() => resolve(''), 8000);
+    const img = new Image();
+    img.onload = () => {
+      try{
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        if(!side) throw new Error('empty image');
+        const sx = (img.naturalWidth - side) / 2, sy = (img.naturalHeight - side) / 2;
+        const c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        const out = c.toDataURL('image/jpeg', 0.85);
+        clearTimeout(timer);
+        resolve(out.length < 200000 ? out : '');
+      }catch(e){ console.warn('[myTypeExport] shrink avatar failed:', e); clearTimeout(timer); resolve(''); }
+    };
+    img.onerror = () => { clearTimeout(timer); resolve(''); };
+    img.src = dataUri;
+  });
+}
+
 /* ================= MY TYPE PDF EXPORT (mte-, print-only, self-contained — does not touch any existing render/game logic) ================= */
 async function myTypeExportHtml(){
   const user = (currentProfile && currentProfile.user) || {};
@@ -1396,10 +1426,14 @@ async function myTypeExportHtml(){
   }
 
   let avatarSrc = '';
-  if(user.profile_image_url) avatarSrc = await proxyImg(user.profile_image_url, 'avatar');
+  if(user.profile_image_url){
+    const rawAvatar = await proxyImg(user.profile_image_url, 'avatar');
+    avatarSrc = await mteShrinkImageDataUri(rawAvatar, 256);
+  }
 
   const qrRawSrc = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(profileUrl)}`;
-  const qrSrc = await proxyImg(qrRawSrc, 'qr');
+  let qrSrc = await proxyImg(qrRawSrc, 'qr');
+  if(qrSrc.length > 100000) qrSrc = ''; // QR ปกติ ~3KB ถ้าใหญ่ผิดปกติไม่ฝัง (กัน data URI ยาวทำ html2canvas ล้มบน Safari)
 
   const topPicks = [];
   MYTYPE_QUESTIONS.forEach(q => {
@@ -1497,18 +1531,22 @@ async function downloadMyTypePdf(btn){
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   let blobUrl = null;
+  let stage = 'start'; // ไว้บอกตำแหน่งที่พังใน toast (หน้าจอมือถือดู console ไม่ได้)
 
   // บั๊กที่รู้จักกันดีของ html2canvas: capture element ที่เป็น position:fixed ผิดพลาด (ได้ภาพเปล่า)
   // ถ้าหน้าเว็บถูก scroll ลงมาตอนกดปุ่ม — บังคับกลับไปบนสุดก่อน capture (ปลอดภัยเพราะ overlay คลุมเต็มจอบังอยู่แล้ว)
   window.scrollTo(0, 0);
   await new Promise(r => setTimeout(r, 60)); // เผื่อเวลาให้ browser reflow/paint ก่อนเริ่ม capture
   try{
+    stage = 'load-libs';
     await mteEnsurePdfLibs();
     const container = document.getElementById('myTypeExportPrint');
 
     // หน้า 1 (เดิม, ไม่แตะ) + หน้า 2 (narrative, มาจาก mytype-narrative.txt — ไฟล์แยก
     // ตั้งใจ อนาคตจะตัด/ผูก paywall เฉพาะหน้า 2 ได้โดยไม่แตะโค้ดหน้า 1 เลย)
+    stage = 'build-page1';
     const page1Html = await myTypeExportHtml();
+    stage = 'build-page2';
     const narrativeName = (currentProfile && currentProfile.user && currentProfile.user.username) || '';
     const narrativeAnswers = (currentProfile && currentProfile.answers) || {};
     // กันทั้ง 2 เคส: ไฟล์ mytype-narrative โหลดไม่สำเร็จเลย (ไม่มีฟังก์ชันนี้) กับ
@@ -1576,6 +1614,7 @@ async function downloadMyTypePdf(btn){
       await Promise.race([ document.fonts.ready, new Promise(r => setTimeout(r, 2000)) ]);
     }catch(e){ /* เบราว์เซอร์เก่าบางตัวไม่มี document.fonts — ข้ามไปเลย ไม่ทำให้ทั้งฟังก์ชันพัง */ }
 
+    stage = 'capture';
     const pageEls = Array.from(container.querySelectorAll('.mte-page'));
     const pdfBuffers = [];
     // ลอง scale 2 (คมสุด เหมือนเดิม) ก่อน ถ้า capture พัง (มักเป็นเพราะแรม/canvas ของ Safari บนมือถือ)
@@ -1599,6 +1638,7 @@ async function downloadMyTypePdf(btn){
     }
 
     let pdfBlob;
+    stage = 'merge';
     let mergedOk = false;
     if(pdfBuffers.length > 1 && typeof PDFLib !== 'undefined'){
       try{
@@ -1621,6 +1661,7 @@ async function downloadMyTypePdf(btn){
       if(pdfBuffers.length > 1) showToast('Could not combine the pages this time — you got page 1 only. Please try again.');
     }
 
+    stage = 'preview';
     blobUrl = URL.createObjectURL(pdfBlob);
 
     if(isMobile){
@@ -1688,7 +1729,7 @@ async function downloadMyTypePdf(btn){
     overlay.classList.remove('show');
     console.error('[downloadMyTypePdf] FAILED:', err);
     const errCode = (err && (err.name || 'Error')) + (err && err.message ? ': ' + String(err.message).slice(0, 60) : '');
-    showToast('Could not create the PDF. Please try again. (' + errCode + ')');
+    showToast('Could not create the PDF. Please try again. (' + stage + ' / ' + errCode + ')');
     btn.disabled = false;
     btn.innerHTML = originalHtml;
   }finally{
