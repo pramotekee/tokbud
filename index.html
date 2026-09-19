@@ -1744,7 +1744,7 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   }
   saveSession(res);
   closeModal('loginModal');
-  showToast(`ยินดีต้อนรับ ${res.username}`);
+  showToast(`Hello, ${res.username}`); // ข้อความสากล ใช้เหมือนกันทุกภาษา (ไม่ผูกกับ TH/EN)
   // เดิม flow นี้เคย auto-vote ให้เงียบๆ เหมือนกับฝั่ง signup (บั๊กเดียวกัน) — แก้ตามหลักการเดียวกัน:
   // ไม่โหวตให้ แค่พา user กลับไปที่การ์ดหัวข้อที่ตั้งใจโหวตไว้ก่อน login ให้เขากดโหวตเองอีกครั้ง
   if(STATE.pendingVote){
