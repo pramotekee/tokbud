@@ -1460,6 +1460,30 @@ async function myTypeExportHtml(){
     </div>`;
 }
 
+// กัน CDN หลักโหลดไม่ขึ้น (ทำให้ html2pdf/PDFLib เป็น undefined -> ReferenceError -> toast "Could not create the PDF")
+// ถ้าตัวไหนหายไป ลองโหลดจาก CDN สำรอง (jsdelivr) 1 ครั้ง มี timeout 8 วิ ไม่ค้างตลอดไป
+function mteLoadScriptOnce(url){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    const t = setTimeout(() => { s.remove(); reject(new Error('script load timeout: ' + url)); }, 8000);
+    s.src = url;
+    s.onload = () => { clearTimeout(t); resolve(); };
+    s.onerror = () => { clearTimeout(t); s.remove(); reject(new Error('script load failed: ' + url)); };
+    document.head.appendChild(s);
+  });
+}
+async function mteEnsurePdfLibs(){
+  if(typeof html2pdf === 'undefined'){
+    console.warn('[downloadMyTypePdf] html2pdf missing, trying fallback CDN');
+    await mteLoadScriptOnce('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js');
+  }
+  if(typeof html2pdf === 'undefined') throw new Error('html2pdf not available');
+  if(typeof PDFLib === 'undefined'){
+    try{ await mteLoadScriptOnce('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js'); }
+    catch(e){ console.warn('[downloadMyTypePdf] PDFLib fallback failed:', e); } // ไม่ throw: จะไปตกที่ทาง fallback หน้า 1 เอง
+  }
+}
+
 async function downloadMyTypePdf(btn){
   const originalHtml = btn.innerHTML;
   const overlay = document.getElementById('myTypeExportOverlay');
@@ -1479,6 +1503,7 @@ async function downloadMyTypePdf(btn){
   window.scrollTo(0, 0);
   await new Promise(r => setTimeout(r, 60)); // เผื่อเวลาให้ browser reflow/paint ก่อนเริ่ม capture
   try{
+    await mteEnsurePdfLibs();
     const container = document.getElementById('myTypeExportPrint');
 
     // หน้า 1 (เดิม, ไม่แตะ) + หน้า 2 (narrative, มาจาก mytype-narrative.txt — ไฟล์แยก
@@ -1518,7 +1543,7 @@ async function downloadMyTypePdf(btn){
     // -> เลิกพึ่งกลไกนี้ทั้งหมด: capture ทีละหน้าแยกเป็น PDF คนละไฟล์ (วิธีเดียวกับที่หน้า 1
     // เดี่ยวๆ ทำงานถูกต้องอยู่แล้ว ไม่มีอะไรใหม่ที่เสี่ยง) แล้วต่อไฟล์ PDF เข้าด้วยกันด้วย pdf-lib
     // (ทำงานระดับไฟล์ PDF ตรงๆ ไม่ผ่านการตัด canvas เลย)
-    async function captureMtePageToPdfBytes(pageEl){
+    async function captureMtePageToPdfBytes(pageEl, scale){
       // +10px buffer กันเหนียว (ลดจาก 28px รอบก่อน — 28px มากเกินไปจนดันเนื้อหาที่พอดีอยู่แล้วให้
       // เกินขอบ 1 หน้าไป เกิดหน้าเปล่าที่ 3 ตามที่เจอ, บวกกับตัด padding แถวคำถามลง 1px/แถว
       // ด้านบนแล้วด้วย ทำให้มีที่ว่างจริงเหลือเผื่อพอสมควรแล้ว ไม่ต้อง buffer เยอะเท่าเดิม):
@@ -1534,7 +1559,7 @@ async function downloadMyTypePdf(btn){
         // legacy mode คือโหมดเดียวที่แบ่งหน้าอัตโนมัติตามความสูงเกิน ไม่ต้องพึ่ง marker/class ใดๆ
         pagebreak: { mode: ['legacy'] },
         html2canvas: {
-          scale: 2, useCORS: true,
+          scale: scale || 2, useCORS: true,
           scrollX: 0, scrollY: 0,
           windowWidth: w, windowHeight: h,
           width: w, height: h,
@@ -1553,19 +1578,44 @@ async function downloadMyTypePdf(btn){
 
     const pageEls = Array.from(container.querySelectorAll('.mte-page'));
     const pdfBuffers = [];
-    for(const el of pageEls){ pdfBuffers.push(await captureMtePageToPdfBytes(el)); }
+    // ลอง scale 2 (คมสุด เหมือนเดิม) ก่อน ถ้า capture พัง (มักเป็นเพราะแรม/canvas ของ Safari บนมือถือ)
+    // ค่อยลดเป็น 1.5 แล้ว 1 ทีละขั้น + พักให้ browser คืนแรมก่อนลองใหม่ — ไม่ใช่ลดคุณภาพตั้งแต่แรก
+    async function captureWithRetry(el){
+      const scales = [2, 1.5, 1];
+      let lastErr = null;
+      for(const sc of scales){
+        try{ return await captureMtePageToPdfBytes(el, sc); }
+        catch(e){
+          lastErr = e;
+          console.warn('[downloadMyTypePdf] capture failed at scale', sc, e);
+          await new Promise(r => setTimeout(r, 250));
+        }
+      }
+      throw lastErr;
+    }
+    for(const el of pageEls){
+      pdfBuffers.push(await captureWithRetry(el));
+      await new Promise(r => setTimeout(r, 150)); // พักระหว่างหน้า ให้ browser เคลียร์ canvas ของหน้าก่อน
+    }
 
     let pdfBlob;
+    let mergedOk = false;
     if(pdfBuffers.length > 1 && typeof PDFLib !== 'undefined'){
-      const merged = await PDFLib.PDFDocument.create();
-      for(const buf of pdfBuffers){
-        const src = await PDFLib.PDFDocument.load(buf);
-        const copiedPages = await merged.copyPages(src, src.getPageIndices());
-        copiedPages.forEach(p => merged.addPage(p));
+      try{
+        const merged = await PDFLib.PDFDocument.create();
+        for(const buf of pdfBuffers){
+          const src = await PDFLib.PDFDocument.load(buf);
+          const copiedPages = await merged.copyPages(src, src.getPageIndices());
+          copiedPages.forEach(p => merged.addPage(p));
+        }
+        const mergedBytes = await merged.save();
+        pdfBlob = new Blob([mergedBytes], { type: 'application/pdf' });
+        mergedOk = true;
+      }catch(mergeErr){
+        console.error('[downloadMyTypePdf] pdf-lib merge failed:', mergeErr);
       }
-      const mergedBytes = await merged.save();
-      pdfBlob = new Blob([mergedBytes], { type: 'application/pdf' });
-    } else {
+    }
+    if(!mergedOk){
       // มีแค่หน้าเดียว หรือ pdf-lib โหลดไม่สำเร็จ (เผื่อไว้ — ยังได้อย่างน้อยหน้า 1 ไม่พังทั้งฟังก์ชัน)
       pdfBlob = new Blob([pdfBuffers[0]], { type: 'application/pdf' });
       if(pdfBuffers.length > 1) showToast('Could not combine the pages this time — you got page 1 only. Please try again.');
@@ -1636,7 +1686,9 @@ async function downloadMyTypePdf(btn){
   }catch(err){
     if(blobUrl) URL.revokeObjectURL(blobUrl);
     overlay.classList.remove('show');
-    showToast('Could not create the PDF. Please try again.');
+    console.error('[downloadMyTypePdf] FAILED:', err);
+    const errCode = (err && (err.name || 'Error')) + (err && err.message ? ': ' + String(err.message).slice(0, 60) : '');
+    showToast('Could not create the PDF. Please try again. (' + errCode + ')');
     btn.disabled = false;
     btn.innerHTML = originalHtml;
   }finally{
