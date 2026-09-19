@@ -523,6 +523,7 @@
     <h3>Oops! Looks like our server's still asleep</h3>
     <p>This happens sometimes when it's been quiet for a bit — hit the button below to give it a nudge and wake it up.</p>
     <button class="btn btn-primary" id="loadErrorRetryBtn" style="margin-top:10px;">Try again</button>
+    <p id="loadErrorDiag" style="margin-top:14px;font-size:11px;color:var(--text-muted);word-break:break-all;"></p>
   </div>
 
   <!-- ===== เนื้อหาโปรไฟล์ (แสดงเมื่อ login แล้ว) ===== -->
@@ -935,6 +936,8 @@ const I18N = {
     cancelProConfirmMsg: 'แน่ใจนะว่าจะยกเลิก? คุณจะยังใช้ PRO ได้ถึงวันที่ {date} หลังจากนั้นจะกลับเป็น FREE plan อัตโนมัติ',
     cancelProConfirmBtn: 'ยืนยันยกเลิก',
     cancelProConfirmDismissBtn: 'ใช้ PRO ต่อ',
+    resumeProBtn: 'ต่ออายุ PRO ต่อ', resumeProLoading: 'กำลังต่ออายุ...',
+    resumeSuccessToast: 'ต่ออายุแล้ว รอบเดิมจะต่ออัตโนมัติตามเดิม',
     upgradeSuccessToast: 'อัพเกรดเป็น PRO สำเร็จ!',
     cancelSuccessToast: 'ยกเลิกการสมัครสมาชิกแล้ว',
     checkoutCanceledToast: 'ยกเลิกการชำระเงินแล้ว ยังไม่มีการตัดเงินใดๆ',
@@ -1053,6 +1056,8 @@ const I18N = {
     cancelProConfirmMsg: 'Are you sure you want to cancel? You can keep using PRO until {date}, after which your account will automatically switch to the FREE plan.',
     cancelProConfirmBtn: 'Confirm Cancel',
     cancelProConfirmDismissBtn: 'Keep Subscription',
+    resumeProBtn: 'Resume PRO', resumeProLoading: 'Resuming...',
+    resumeSuccessToast: 'Subscription resumed. It will renew as usual.',
     upgradeSuccessToast: 'Successfully upgraded to PRO!',
     cancelSuccessToast: 'Subscription canceled.',
     checkoutCanceledToast: 'Checkout canceled. You have not been charged.',
@@ -1142,7 +1147,7 @@ function setLang(lang){
   if(document.getElementById('editBirthMonth')) populateBirthMonths();
   // label ในบล็อก "เพศ/ช่วงอายุ" ของ My Dashboard เป็น dynamic HTML generate ผ่าน t() ตอน render
   // ไม่ผ่าน [data-i18n] loop ของ applyLang() จึงต้องโหลด dashboard ใหม่ทุกครั้งที่สลับภาษา
-  if(isLoggedIn()) loadDashboard();
+  if(isLoggedIn() && TAB_STATE.dashboard === 'done') loadDashboard(); // แท็บนี้ซ่อนอยู่ ยิงเฉพาะถ้าเคยโหลดแล้ว
   // เช่นเดียวกัน: การ์ดสถานะแพลนและประวัติการตัดเงินเป็น dynamic HTML ผ่าน t() — re-render จาก cache
   // (ไม่ยิง API ซ้ำ เพราะข้อมูลไม่ได้เปลี่ยน แค่ภาษาที่แสดงเปลี่ยน)
   if(isLoggedIn() && STATE.profile){
@@ -1180,9 +1185,11 @@ let STATE = {
 /* ---------- API helper ---------- 
  * timeout ลดเหลือ 15 วิ/ครั้ง (รวม retry แล้ว worst-case 30 วิ) + retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง
  * error จริง — Apps Script cold start ช้าเป็นพักๆ เป็นเรื่องปกติ แต่ปล่อยให้รอนานเกิน 30 วิ/คำขอจะยิ่งแย่กว่าเดิม */
-async function api(action, params = {}, method = 'GET', _isRetry = false){
+async function api(action, params = {}, method = 'GET', _isRetry = false, _firstDiag = ''){
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const startedAt = Date.now();
+  let reason = '';
   try{
     let res;
     if(method === 'GET'){
@@ -1195,13 +1202,24 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
         signal: controller.signal
       });
     }
-    return await res.json();
+    try{
+      return await res.json();
+    }catch(jsonErr){
+      reason = 'bad_response(http ' + res.status + ')'; // ตอบกลับมาแต่ไม่ใช่ JSON (เช่น หน้า error ของ Google)
+      throw jsonErr;
+    }
   }catch(err){
-    if(!_isRetry) return api(action, params, method, true); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
+    // เก็บสาเหตุจริงไว้วินิจฉัย (ไม่กระทบ user): timeout = รอครบ 15 วิแล้วไม่มีคำตอบ / fetch_failed = คำขอล้มทันที
+    // (เน็ต/CORS/หน้า error) / bad_response = ได้คำตอบแต่ไม่ใช่ JSON — ต่างกันมากในการหาต้นเหตุ "ต้องกดลองใหม่หลายรอบ"
+    if(!reason) reason = (err && err.name === 'AbortError') ? 'timeout' : ('fetch_failed:' + ((err && err.message) || ''));
+    const diag = reason + ' ' + (Date.now() - startedAt) + 'ms';
+    console.warn('[api]', action, diag, _isRetry ? '(retry)' : '(1st attempt)');
+    if(!_isRetry) return api(action, params, method, true, diag); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
     // _networkError:true แยกไว้ให้ต่างจาก success:false ปกติที่ backend ตอบกลับมาจริงว่า "ไม่ผ่าน"
     // (เช่น session หมดอายุจริง) เพราะ 2 เคสนี้ต้องจัดการต่างกัน — request ที่ยิงไม่สำเร็จเลย ไม่ควรถูกตีความ
     // ว่า "session ไม่ถูกต้อง" แล้วบังคับ logout ทั้งที่จริงๆ แค่เน็ต/เซิร์ฟเวอร์สะดุดชั่วคราว
-    return { success:false, message:'Oops! Something went wrong. Please try refreshing and try again.', _networkError:true };
+    return { success:false, message:'Oops! Something went wrong. Please try again.', _networkError:true,
+             _diag: action + ' | try1: ' + _firstDiag + ' | try2: ' + diag };
   }finally{
     clearTimeout(timeoutId);
   }
@@ -1513,13 +1531,32 @@ function populateBirthMonths(){
   if(prevValue) monthSel.value = prevValue;
 }
 
-/* ---------- Tabs ---------- */
+/* ---------- Tabs (โหลดข้อมูลของแท็บเมื่อ user กดเข้าไปดูเท่านั้น ไม่โหลดทุกแท็บพร้อมกันตอนเปิดหน้า) ----------
+   เดิมเปิดหน้าโปรไฟล์ปุ๊บยิงคำขอ 5 ตัวพร้อมกันไป Apps Script (getMyProfile + Dashboard + Company + Comment + Billing)
+   ทั้งที่แท็บ Dashboard ถูกซ่อนถาวรตามที่ตั้งใจไว้ (ตัวที่หนักสุดโหลดมาทิ้งเปล่าๆ) และ user ส่วนใหญ่ไม่ได้เปิดทุกแท็บ
+   -> ตอนนี้ตอนเปิดหน้ายิงแค่ getMyProfile ตัวเดียว ที่เหลือโหลดตอนกดแท็บ (ล้มเหลว = กดแท็บซ้ำแล้วลองใหม่ได้) */
+const TAB_STATE = {}; // tab -> 'loading' | 'done' (ไม่มีค่า = ยังไม่เคยโหลด/โหลดล้มเหลวรอบก่อน)
+const TAB_LOADERS = {
+  dashboard:   () => loadDashboard(),
+  mytopics:    () => loadMyTopics(),
+  mycomments:  () => loadMyComments(),
+  planbilling: () => loadPlanBilling()
+};
+async function ensureTabLoaded(tab){
+  const loader = TAB_LOADERS[tab];
+  if(!loader || TAB_STATE[tab]) return; // 'loading' หรือ 'done' แล้ว ไม่ยิงซ้ำ
+  TAB_STATE[tab] = 'loading';
+  let ok = false;
+  try{ ok = (await loader()) !== false; }catch(e){ ok = false; }
+  if(ok) TAB_STATE[tab] = 'done'; else delete TAB_STATE[tab];
+}
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=> b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p=> p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
+    ensureTabLoaded(btn.dataset.tab);
   });
 });
 
@@ -1547,10 +1584,11 @@ function renderProfileHead(){
 /* ---------- Dashboard tab ---------- */
 async function loadDashboard(){
   const res = await api('getMyDashboard', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return; }
+  if(!res.success){ showToast(res.message); return false; }
   document.getElementById('statTopics').textContent = res.total_topics;
   document.getElementById('statVoters').textContent = res.total_voters;
   renderDashboardBreakdown(res);
+  return true;
 }
 
 // สีเพศตายตัวเสมอ เหมือนกับที่ใช้ในการ์ดหัวข้อหน้าแรก (index.html) เพื่อให้ design alignment ตรงกันทั้งระบบ
@@ -1592,10 +1630,11 @@ function renderDashboardBreakdown(dash){
 /* ---------- My Topics tab ---------- */
 async function loadMyTopics(){
   const res = await api('getMyCompanies', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return; }
+  if(!res.success){ showToast(res.message); return false; }
   STATE.myTopics = res.companies || [];
   renderMyTopics();
   loadCommentCountsForMyTopics(); // lazy: ไม่บล็อกการโชว์ลิสต์หลัก เหมือน loadDashboards() ใน index.html
+  return true;
 }
 
 // หน้า My Company ไม่มี per-card dashboard fetch อยู่แล้ว (ต่างจาก index.html ที่มี loadDashboardFor ต่อการ์ดอยู่ก่อนแล้ว)
@@ -2012,9 +2051,10 @@ function validateVoteQuestionsAnswered(scopeSelector){
 
 async function loadMyComments(){
   const res = await api('getMyComments', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return; }
+  if(!res.success){ showToast(res.message); return false; }
   STATE.myComments = res.comments || [];
   renderMyComments();
+  return true;
 }
 
 function renderMyComments(){
@@ -2538,10 +2578,11 @@ async function loadPlanBilling(){
     el.innerHTML = `<div class="dash-empty">${escapeHtml(t('billingHistoryError'))}<br><button type="button" class="retry-link-btn" id="retryBillingHistoryBtn" style="margin-top:8px;">${escapeHtml(t('retryBtn'))}</button></div>`;
     const retryBtn = document.getElementById('retryBillingHistoryBtn');
     if(retryBtn) retryBtn.addEventListener('click', loadPlanBilling);
-    return;
+    return false;
   }
   STATE.billingHistory = res.history || [];
   renderBillingHistory(STATE.billingHistory);
+  return true;
 }
 
 function renderPlanStatusCard(){
@@ -2563,6 +2604,10 @@ function renderPlanStatusCard(){
   }
 
   let actionHtml = '';
+  // PRO ที่ยกเลิกไว้แต่ยังอยู่ในรอบ: ไม่โชว์ปุ่มซื้อใหม่ (กันจ่ายซ้ำ/รอบทับซ้อน) — ให้ "Resume" แทน รอบเดิมวิ่งต่อ ไม่เก็บเงินเพิ่มทันที
+  if(isPro && pf.subscription_status === 'canceled'){
+    actionHtml = `<button class="btn btn-primary full-btn" id="resumeProBtn" style="margin-top:14px;">${t('resumeProBtn')}</button>`;
+  }
   if(!isPro){
     // P0-fix (feedback ของ Pop: เดิม FREE user เห็นแค่ย่อหน้าเดียว ไม่เห็น checklist แยกทีละฟีเจอร์ที่จะได้
     // ทั้งที่ PRO_BENEFITS มี 2 ฟีเจอร์แล้ว (export data + conversation cards) — เอา checklist เดียวกับที่ PRO
@@ -2581,6 +2626,8 @@ function renderPlanStatusCard(){
   if(upgradeBtn) upgradeBtn.addEventListener('click', handleUpgradeClick);
   const cancelBtn = document.getElementById('cancelProBtn');
   if(cancelBtn) cancelBtn.addEventListener('click', handleCancelClick);
+  const resumeBtn = document.getElementById('resumeProBtn');
+  if(resumeBtn) resumeBtn.addEventListener('click', handleResumeClick);
 }
 
 // แจ้งเตือนแบบถาวรในแท็บ (ไม่ใช่ toast ที่หายไปเอง) พร้อม CTA พาไปจ่ายเงินใหม่ทันที — โชว์เฉพาะตอนตัดเงิน
@@ -2763,6 +2810,21 @@ async function doCancelSubscription(){
   showToast(t('cancelSuccessToast'));
 }
 
+async function handleResumeClick(){
+  const btn = document.getElementById('resumeProBtn');
+  if(btn) setBtnLoading(btn, true, t('resumeProLoading'));
+  const res = await api('resumeSubscription', { session_token: STATE.session.session_token }, 'POST');
+  if(!res.success){
+    if(btn) setBtnLoading(btn, false);
+    showToast(res.message);
+    return;
+  }
+  STATE.profile.subscription_status = 'active';
+  if(res.pro_until) STATE.profile.pro_until = res.pro_until;
+  renderPlanStatusCard();
+  showToast(t('resumeSuccessToast'));
+}
+
 /* ---------- Init ---------- */
 async function initProfilePage(){
   const initLoader = document.getElementById('pageInitLoading');
@@ -2794,6 +2856,8 @@ async function initProfilePage(){
     // แก้โดยเช็ค _networkError ก่อน — logout เฉพาะตอน backend ยืนยันจริงๆ ว่า session ไม่ถูกต้องเท่านั้น
     // ส่วนเน็ต/เซิร์ฟเวอร์สะดุด ให้โชว์ error state ที่กด "ลองใหม่" ได้ โดยไม่แตะ session เลย
     if(res._networkError){
+      // ข้อความวินิจฉัยเทคนิค โชว์เฉพาะตอนเปิดหน้าด้วย ?debug=1 เท่านั้น user ทั่วไปไม่เห็น
+      document.getElementById('loadErrorDiag').textContent = /[?&]debug=1/.test(location.search) ? (res._diag || '') : '';
       document.getElementById('loadErrorState').style.display = 'block';
       document.getElementById('loadErrorRetryBtn').addEventListener('click', ()=>{
         document.getElementById('loadErrorState').style.display = 'none';
@@ -2818,10 +2882,7 @@ async function initProfilePage(){
 
   renderProfileHead();
   populateEditForm();
-  loadDashboard();
-  loadMyTopics();
-  loadMyComments();
-  loadPlanBilling();
+  // ไม่โหลด Dashboard/Company/Comment/Billing ตรงนี้แล้ว — โหลดตอน user กดแท็บนั้นเอง (ดู ensureTabLoaded)
 
   // ตัดเงินรอบล่าสุดล้มเหลว (sweepSubscriptions ปรับเป็น free อัตโนมัติไปแล้ว) -> เตือนทันทีตอนเข้าเว็บ
   // แม้ตอนนี้จะเปิดอยู่ที่แท็บ Dashboard ก็ตาม เพราะ user อาจไม่ได้กดไปดูแท็บ Plan & Billing เอง
