@@ -1291,7 +1291,7 @@ const I18N = {
     errSignupGenderRequired: 'กรุณาเลือกเพศ', errSignupCountryRequired: 'กรุณาเลือกประเทศ',
     errSignupProvinceRequired: 'กรุณาเลือกจังหวัด', myAccountFallback: 'บัญชีของฉัน', loggedOutToast: 'ออกจากระบบแล้ว',
     imageLoadFailToast: 'โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง', imageUploadFailToast: 'อัพโหลดรูปไม่สำเร็จ',
-    loggingInText: 'กำลังเข้าสู่ระบบ...', signingUpText: 'กำลังสมัครสมาชิก...', submittingTopicText: 'กำลังส่งข้อมูล...',
+    loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ', loggingInText: 'กำลังเข้าสู่ระบบ...', signingUpText: 'กำลังสมัครสมาชิก...', submittingTopicText: 'กำลังส่งข้อมูล...',
     voteConfirmTitle: 'ยืนยันการเลือก', cancelBtn: 'ยกเลิก', voteConfirmBtnLabel: 'ยืนยันเลือก',
     okBtn: 'ตกลง', understandBtn: 'เข้าใจแล้ว', savingText: 'กำลังบันทึก...',
     sideLabelPrefix: 'ฝั่ง',
@@ -1383,7 +1383,7 @@ const I18N = {
     errSignupGenderRequired: 'Please select your gender', errSignupCountryRequired: 'Please select a country',
     errSignupProvinceRequired: 'Please select a province', myAccountFallback: 'My Account', loggedOutToast: 'Logged out',
     imageLoadFailToast: 'Failed to load image, please try uploading again', imageUploadFailToast: 'Image upload failed',
-    loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
+    loginErrorRequired: 'Please enter your phone number and Passcode.', loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
     voteConfirmTitle: 'Share my comment', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
     okBtn: 'OK', understandBtn: 'Got it', savingText: 'Saving...',
     sideLabelPrefix: 'Side',
@@ -1729,7 +1729,7 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'none';
   if(!phone || !passcode){
-    errEl.textContent = 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ';
+    errEl.textContent = t('loginErrorRequired');
     errEl.style.display = 'block';
     return;
   }
