@@ -657,14 +657,67 @@ function openImageZoom(url){
 }
 
 /* ================= LOAD & RENDER ================= */
-async function loadProfile(){
+/* ================= PRO hint + My Type cache (stale-while-revalidate) =================
+ * เป้าหมาย: เปิดหน้าแล้วเห็นข้อมูลทันที ไม่ต้องรอ Apps Script ทุกครั้ง (คำขอแต่ละตัวอาจช้าหรือหมดเวลาได้)
+ * 1) PRO hint (key wz_card_pro, ใช้ร่วมกับ conversationcard.html): จำผล "เป็น PRO" ที่เซิร์ฟเวอร์ยืนยันแล้ว — ผูกกับ session_token
+ *    (8 ตัวท้าย) หมดอายุ 24 ชม. ไม่จด FREE (คนเพิ่งอัปเกรดจะได้เห็น PRO ทันที) ใช้แสดงผลล้วนๆ ฝั่ง backend ยืนยันซ้ำเสมอ
+ * 2) แคช My Type ของ "ตัวเอง" เท่านั้น (ไม่แคชโปรไฟล์คนอื่น): แสดงของเดิมทันทีแล้วดึงของใหม่มาเทียบเบื้องหลัง — ผูกกับ
+ *    session_token เหมือนกัน (login ใหม่ = ใช้แคชเดิมไม่ได้) และไม่ใช้แคชหลัง Save/Login (ต้องเห็นข้อมูลล่าสุดจริงทันที) */
+const PRO_HINT_KEY = 'wz_card_pro';
+const PRO_HINT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const MYTYPE_CACHE_PREFIX = 'wz_mytype_cache_';
+function tokenTag(token){ return token ? String(token).slice(-8) : ''; }
+function currentToken(){ return isLoggedIn() ? STATE.session.session_token : ''; }
+function readProHint(token){
+  try{
+    const h = JSON.parse(localStorage.getItem(PRO_HINT_KEY) || 'null');
+    return !!(h && h.pro === true && h.tk === tokenTag(token) && (Date.now() - h.ts) < PRO_HINT_MAX_AGE_MS);
+  }catch(e){ return false; }
+}
+function writeProHint(token, isPro){
+  try{
+    if(isPro) localStorage.setItem(PRO_HINT_KEY, JSON.stringify({ pro:true, ts:Date.now(), tk:tokenTag(token) }));
+    else localStorage.removeItem(PRO_HINT_KEY);
+  }catch(e){}
+}
+function readMyTypeCache(id){
+  try{
+    const c = JSON.parse(localStorage.getItem(MYTYPE_CACHE_PREFIX + id) || 'null');
+    if(c && c.tk === tokenTag(currentToken()) && c.data && c.data.is_owner === true) return c.data;
+  }catch(e){}
+  return null;
+}
+function writeMyTypeCache(id, data){
+  try{ localStorage.setItem(MYTYPE_CACHE_PREFIX + id, JSON.stringify({ tk:tokenTag(currentToken()), ts:Date.now(), data })); }catch(e){}
+}
+function clearMyTypeCache(id){
+  try{ localStorage.removeItem(MYTYPE_CACHE_PREFIX + id); }catch(e){}
+}
+
+async function loadProfile(useCache = true){
   if(!profileId){ renderFatal(t('notFoundMsg')); return; }
+
+  // โปรไฟล์ของตัวเอง: มีแคชก็โชว์ทันที (ไม่ต้องรอเซิร์ฟเวอร์) แล้วดึงของใหม่มาเทียบเบื้องหลัง
+  const cached = (useCache && isOwnerOfCurrentPage()) ? readMyTypeCache(profileId) : null;
+  if(cached){ currentProfile = cached; renderView(cached); }
+
   const res = await api('getMyType', { id: profileId });
   if(!res.success){
+    if(cached) return; // มีของเดิมแสดงอยู่แล้ว เน็ตสะดุดก็ไม่ต้องทับด้วยหน้า error
     if(res._networkError){ renderLoadError(res.message, res._diag); return; }
     renderFatal(res.message || t('notFoundMsg'));
     return;
   }
+
+  if(res.is_owner === true){
+    writeMyTypeCache(profileId, res);
+    if(typeof res.card_is_pro === 'boolean') writeProHint(currentToken(), res.card_is_pro);
+  } else if(isOwnerOfCurrentPage()){
+    clearMyTypeCache(profileId); // session ไม่ใช่เจ้าของแล้ว (เช่น หลุดกลางอากาศ) ล้างของเดิมทิ้ง
+  }
+
+  // ข้อมูลเหมือนที่แสดงจากแคชอยู่แล้ว = ไม่ต้อง render ซ้ำ (กันจอกระพริบ/ทับสิ่งที่ user กำลังกดอยู่)
+  if(cached && JSON.stringify(cached) === JSON.stringify(res)){ currentProfile = res; return; }
   currentProfile = res;
   renderView(res);
 }
@@ -921,25 +974,28 @@ function convoCardBannerHtml(){
 // เพื่อไม่ต้องรอ API นี้ก่อน render banner หลัก (banner ขึ้นก่อนได้เลยด้วยข้อความ PRO แบบเดิมเป็นค่าเริ่มต้น
 // กัน layout shift ตอนโหลด แล้วค่อย swap เป็นข้อความ FREE ถ้าพบว่ายังไม่ได้อัพเกรด)
 let convoCardAccessReqId = 0; // กัน race condition ถ้า renderView ถูกเรียกซ้ำเร็วๆ (เช่นสลับภาษาไวๆ) ตอบกลับมาไม่เรียงคิว
-async function updateConvoCardBannerAccess(){
-  const myReqId = ++convoCardAccessReqId;
-  let res;
-  try{
-    res = await api('getCardAccess', {});
-  }catch(err){
-    return; // เงียบไว้พอ ไม่กระทบการใช้งานหลัก แค่ข้อความ upsell จะไม่เปลี่ยน (ยังเป็น default PRO copy)
-  }
-  if(myReqId !== convoCardAccessReqId) return; // มี request ใหม่กว่าแทรกมาแล้ว ทิ้งผลลัพธ์นี้
+function applyConvoCardAccess(isPro){
   const descEl = document.getElementById('convoCardDescText');
   if(!descEl) return; // DOM ถูก re-render ทับไปแล้วก่อนตอบกลับ
+  if(isPro){
+    // ป้าย PRO โชว์เฉพาะคนที่เป็น PRO จริงเท่านั้น (ซ่อนเป็นค่าเริ่มต้น กัน FREE user เข้าใจผิดว่าได้สิทธิ์แล้ว)
+    const badgeEl = document.getElementById('convoCardBadge');
+    if(badgeEl) badgeEl.style.display = '';
+  } else {
+    descEl.textContent = t('convoCardDescFree');
+  }
+}
+// ลำดับแหล่งข้อมูลสิทธิ์: (1) card_is_pro ที่ getMyType ส่งมาพร้อมกัน (ไม่ต้องยิงคำขอเพิ่ม) (2) PRO hint ในเบราว์เซอร์
+// (3) สำรอง: ถาม getCardAccess แยก — ใช้เฉพาะกรณี backend ยังเป็นเวอร์ชันเก่าที่ไม่ส่ง card_is_pro มา และไม่มี hint
+async function updateConvoCardBannerAccess(data){
+  if(data && typeof data.card_is_pro === 'boolean'){ applyConvoCardAccess(data.card_is_pro); return; }
+  if(readProHint(currentToken())){ applyConvoCardAccess(true); return; }
+  const myReqId = ++convoCardAccessReqId;
+  const res = await api('getCardAccess', {});
+  if(myReqId !== convoCardAccessReqId) return;
   if(res && res.success){
-    if(res.is_pro){
-      // ป้าย PRO โชว์เฉพาะคนที่เป็น PRO จริงเท่านั้น (ซ่อนเป็นค่าเริ่มต้น กัน FREE user เข้าใจผิดว่าได้สิทธิ์แล้ว)
-      const badgeEl = document.getElementById('convoCardBadge');
-      if(badgeEl) badgeEl.style.display = '';
-    } else {
-      descEl.textContent = t('convoCardDescFree');
-    }
+    writeProHint(currentToken(), !!res.is_pro);
+    applyConvoCardAccess(!!res.is_pro);
   }
 }
 
@@ -1004,7 +1060,7 @@ function renderView(data){
   document.querySelectorAll('#content .q-track:not(.game-track)').forEach(tr => positionHandle(tr));
   if(!isOwner && answerKeys.length) bindGameRowEvents();
   if(isOwner && MYTYPE_SHOW_GROUPING) bindGroupingEvents();
-  if(isOwner) updateConvoCardBannerAccess();
+  if(isOwner) updateConvoCardBannerAccess(data);
 }
 
 function renderEmptyState(data){
@@ -1024,7 +1080,7 @@ function renderEmptyState(data){
     </div>
     ${isOwner ? `<div class="btn-row"><button class="btn btn-primary full-btn" onclick="enterEditMode()">${t('setupBtn')}</button></div>` : ''}
   `;
-  if(isOwner) updateConvoCardBannerAccess();
+  if(isOwner) updateConvoCardBannerAccess(data);
 }
 
 /* ================= EDIT MODE ================= */
@@ -1164,7 +1220,7 @@ async function saveMyType(){
   if(!res.success){ showToast(res.message || t('saveFailToast')); return; }
   showToast(t('saveSuccessToast'));
   editMode = false;
-  await loadProfile();
+  await loadProfile(false);
 }
 
 /* ================= SHARE ================= */
@@ -1216,7 +1272,7 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   STATE.session = res;
   localStorage.setItem('wz_session', JSON.stringify(res));
   closeModal('loginModal');
-  await loadProfile(); // โหลดใหม่ทั้งหน้า จะได้ contact_links / is_owner / grouping ที่ถูกต้องตามสิทธิ์ใหม่
+  await loadProfile(false); // โหลดใหม่ทั้งหน้า จะได้ contact_links / is_owner / grouping ที่ถูกต้องตามสิทธิ์ใหม่
 });
 // P0-fix (UX สมัครสมาชิกจาก popup login ของหน้า My Type): เดิมเป็นลิงก์ข้อความพาไปหน้าแรกเฉยๆ ผู้ใช้ต้อง
 // กวาดสายตาหาปุ่มสมัครเองอีกที เปลี่ยนเป็นพาไปหน้าแรกพร้อม ?signup=1 ให้ index.html เปิดฟอร์มสมัครสมาชิกให้เลย
