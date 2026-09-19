@@ -127,6 +127,39 @@ a{color:inherit;text-decoration:none;}
 .upgrade-btn .spinner{ width:16px; height:16px; border-width:2px; margin:0; }
 
 .state-msg{ font-size:14px; color:rgba(255,255,255,.85); }
+
+/* ================= Deeper Conversation (PRO): กำแพงการ์ดทอง 41 ใบ นิ่งๆ ไม่มีแอนิเมชัน ================= */
+.deep-promo{ width:100%; max-width:320px; margin-top:38px; padding-top:30px; border-top:1px solid rgba(245,209,73,.28); display:flex; flex-direction:column; gap:10px; text-align:center; }
+.deep-promo-title{ font-family:'Lexend',sans-serif; font-weight:800; font-size:17px; line-height:1.35; color:#F8E7A8; }
+.deep-promo-desc{ font-size:13px; line-height:1.6; color:rgba(255,255,255,.75); }
+.btn-gold{ margin-top:8px; background:linear-gradient(150deg,#F8E7A8 0%,#E7C25A 45%,#C99A2E 100%); color:#3B2A00; box-shadow:0 8px 20px rgba(0,0,0,.3); }
+
+.deep-screen{ padding-top:26px; padding-bottom:44px; justify-content:flex-start; }
+.gold-wall{ width:100%; max-width:440px; display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:4px; }
+.gold-card{
+  position:relative; flex:0 0 calc((100% - 24px) / 3); aspect-ratio:2 / 3; border-radius:14px; cursor:pointer;
+  background:linear-gradient(150deg,#F8E7A8 0%,#E7C25A 34%,#C99A2E 68%,#EBCB6E 100%);
+  box-shadow:0 10px 22px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 4px rgba(120,80,0,.25);
+  color:#3B2A00; display:flex; flex-direction:column; justify-content:space-between; align-items:center;
+  padding:12px 6px 10px; transition:transform .15s ease; -webkit-tap-highlight-color:transparent;
+}
+.gold-card::before{ content:''; position:absolute; inset:6px; border:1px solid rgba(90,60,0,.42); border-radius:10px; pointer-events:none; }
+.gold-card::after{ content:''; position:absolute; inset:0; border-radius:14px; pointer-events:none;
+  background:linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.28) 46%, rgba(255,255,255,0) 60%); } /* เงาสะท้อนฟอยล์ นิ่ง ไม่ขยับ */
+.gold-card:active{ transform:scale(.96); }
+.gold-tap{ position:relative; z-index:1; font-size:11px; font-weight:600; opacity:.85; text-align:center; }
+.gold-brand{ position:relative; z-index:1; font-family:'Antonio',sans-serif; font-size:13px; letter-spacing:1px; opacity:.9; }
+@media (min-width:640px){ .gold-wall{ max-width:640px; } .gold-card{ flex-basis:calc((100% - 36px) / 4); } }
+@media (min-width:1024px){ .gold-wall{ max-width:980px; gap:16px; } .gold-card{ flex-basis:calc((100% - 80px) / 6); } }
+
+/* ป้ายคำถามที่เปิดแล้วของชุด Deeper (โทนน้ำเงินเข้ม+ทอง ต่อเนื่องกับกำแพงการ์ดทอง) — ชุดอื่นยังเป็นการ์ดขาวเหมือนเดิม */
+.reveal-card.deep{ background:linear-gradient(165deg,#12206F,#0B1D7F 60%,#08135A); border:1.5px solid #E0B84D; color:#F8E7A8; }
+.reveal-card.deep .reveal-question{ color:#F8E7A8; font-size:20px; }
+.reveal-card.deep .close-btn-circle{ background:rgba(248,231,168,.12); border-color:rgba(224,184,77,.55); color:#F8E7A8; opacity:1; }
+.reveal-card.deep .translate-btn{ background:rgba(248,231,168,.14); color:#F8E7A8; border:1px solid rgba(224,184,77,.45); }
+.reveal-card.deep .current-lang-tag{ color:rgba(248,231,168,.7); }
+.reveal-card.deep .reveal-brand{ color:#E0B84D; }
+.reveal-card.deep .spinner.dark{ border-color:rgba(248,231,168,.25); border-top-color:#F8E7A8; }
 </style>
 </head>
 <body>
@@ -144,6 +177,11 @@ a{color:inherit;text-decoration:none;}
   <div class="button-group">
     <button class="btn btn-primary" onclick="openCategory()">Select a Category</button>
     <button class="btn btn-secondary" onclick="openCards()">Mix All Categories</button>
+  </div>
+  <div class="deep-promo">
+    <div class="deep-promo-title">Go beyond small talk. Get to know the person behind the person.</div>
+    <div class="deep-promo-desc">These questions are designed to move the conversation from what you do to who you are, what you believe, and what really matters to you.</div>
+    <button class="btn btn-gold" onclick="openDeepWall()">Start a Deeper Conversation</button>
   </div>
 </section>
 
@@ -171,6 +209,15 @@ a{color:inherit;text-decoration:none;}
   </div>
   <div class="belt-wrapper"><div class="belt belt-r2l" id="belt1"></div></div>
   <div class="belt-wrapper"><div class="belt belt-l2r" id="belt2"></div></div>
+</section>
+
+<section id="deepWall" class="screen hidden deep-screen">
+  <a href="#" class="back-link" onclick="goHome();return false;">← Back</a>
+  <div class="cards-top">
+    <div class="logo-word" style="font-size:26px;">TOKBUD</div>
+    <div class="logo-sub" style="font-size:12px;">Deeper Conversation</div>
+  </div>
+  <div class="gold-wall" id="goldWall"></div>
 </section>
 
 <div class="overlay" id="overlay">
@@ -598,6 +645,97 @@ const DEMO_CARDS = [
   { category:'ABSURD', index:9 }
 ];
 
+/* ================= Deeper Conversation (PRO): 41 คำถาม EN+TH ต้นฉบับจาก Deeper_Conversation.pdf ของ Pop =================
+ * ชุดเดียว ไม่แบ่งหมวด ไม่อยู่ใน CARD_CATEGORIES (กันไปโผล่ใน Select a Category / Mix All Categories) — TH/EN ใช้ข้อความต้นฉบับ
+ * ทั้งประโยค ภาษาอื่นแปลผ่าน translateCardQuestion เดิม (category key = 'DEEP', index = ลำดับต้นฉบับ 0-40 ที่ไม่เปลี่ยนตามการสับ
+ * จึง cache คำแปลได้ถูกต้อง) หมายเหตุ: แก้ไขจากต้นฉบับ PDF 2 จุด — ข้อ 22 TH "ยังไม่ได้ท?" -> "ยังไม่ได้ทำ?" (ตัวสะกดขาด) และ
+ * ข้อ 41 EN เติม "?" ท้ายประโยค */
+const DEEP_CARDS = [
+  { en:"What’s something you’re working on right now that really excites you?",
+    th:"ตอนนี้มีอะไรที่คุณกำลังทำอยู่แล้วรู้สึกตื่นเต้นกับมันมากเป็นพิเศษไหม?" },
+  { en:"When was the last time you felt truly energized? What were you doing?",
+    th:"ครั้งล่าสุดที่คุณรู้สึกมีพลังและเต็มไปด้วยชีวิตชีวาคือเมื่อไหร่? ตอนนั้นคุณกำลังทำอะไรอยู่?" },
+  { en:"What’s one belief or value that guides most of your decisions?",
+    th:"มีความเชื่อหรือคุณค่าบางอย่างไหมที่มักเป็นเข็มทิศในการตัดสินใจของคุณ?" },
+  { en:"What’s a challenge you’ve overcome that shaped who you are?",
+    th:"มีความท้าทายอะไรที่คุณเคยก้าวผ่าน และมันหล่อหลอมให้คุณเป็นคนแบบที่เป็นอยู่ในวันนี้อย่างไร?" },
+  { en:"Who had a big impact on you growing up? How?",
+    th:"ตอนเด็ก ๆ มีใครที่ส่งอิทธิพลสำคัญต่อคุณบ้าง? และเขามีอิทธิพลต่อคุณอย่างไร?" },
+  { en:"What’s something people often misunderstand about you?",
+    th:"มีอะไรเกี่ยวกับตัวคุณที่คนอื่นมักเข้าใจผิดบ่อย ๆ ไหม?" },
+  { en:"What do you wish more people asked you about?",
+    th:"มีเรื่องอะไรเกี่ยวกับตัวคุณที่คุณอยากให้คนอื่นถามคุณมากกว่านี้ไหม?" },
+  { en:"If you had an extra free hour every day, how would you use it?",
+    th:"ถ้าทุกวันคุณมีเวลาว่างเพิ่มขึ้นอีก 1 ชั่วโมง คุณจะเอาเวลาไปทำอะไร?" },
+  { en:"Would you like to be famous? In what way?",
+    th:"ถ้าคุณเลือกได้ คุณอยากมีชื่อเสียงไหม? แล้วอยากให้คนรู้จักคุณในเรื่องอะไร?" },
+  { en:"Given the choice of anyone in the world, whom would you want as a dinner guest?",
+    th:"ถ้าคุณสามารถชวนใครก็ได้ในโลกมาร่วมโต๊ะอาหารกับคุณ 1 คน คุณจะเลือกใคร?" },
+  { en:"Before making a telephone call, do you ever rehearse what you are going to say? Why?",
+    th:"ก่อนโทรหาใคร คุณเคยซ้อมในหัวไหมว่าจะพูดอะไร? เพราะอะไร?" },
+  { en:"What would constitute a “perfect” day for you?",
+    th:"สำหรับคุณ วันที่เรียกได้ว่า “เป็นวันที่ดีมาก วันนี้สมบูรณ์แบบ” วันนั้น มันจะมีหน้าตาแบบไหน?" },
+  { en:"When did you last sing to yourself? To someone else?",
+    th:"ครั้งล่าสุดที่คุณร้องเพลงให้ตัวเองฟังคือเมื่อไหร่? แล้วเคยร้องให้ใครฟังบ้างไหม?" },
+  { en:"If you were able to live to the age of 100 and retain either the mind or body of a 30-year-old for the last 70 years of your life, which would you want?",
+    th:"ถ้าคุณมีอายุถึง 100 ปี และสามารถเลือกได้ว่าจะมีจิตใจหรือร่างกายแบบคนอายุ 30 ปีไปตลอด 70 ปีสุดท้ายของชีวิต คุณจะเลือกอะไร?" },
+  { en:"Do you have a secret hunch about how you will die?",
+    th:"คุณเคยมีลางสังหรณ์ลึก ๆ ไหมว่าตัวเองจะจากโลกนี้ไปอย่างไร?" },
+  { en:"Name three things you and your partner appear to have in common.",
+    th:"ลองบอก 3 อย่างที่คุณกับคนที่คุณกำลังคุยด้วย (หรือแฟน หรือสามีภรรยาก็ได้) มีอะไรเหมือนกันบ้าง" },
+  { en:"For what in your life do you feel most grateful?",
+    th:"ในชีวิตที่ผ่านมา มีเรื่องอะไรที่คุณรู้สึกขอบคุณมากที่สุด?" },
+  { en:"If you could change anything about the way you were raised, what would it be?",
+    th:"ถ้าคุณสามารถเปลี่ยนอะไรบางอย่างเกี่ยวกับวิธีที่คุณเติบโตมาได้ คุณอยากเปลี่ยนอะไร?" },
+  { en:"Take 2 minutes and tell your partner your life story in as much detail as possible.",
+    th:"ลองใช้เวลา 2 นาที เล่าเรื่องราวชีวิตของคุณให้อีกฝ่ายฟังให้มากที่สุดเท่าที่จะทำได้" },
+  { en:"If you could wake up tomorrow having gained any one quality or ability, what would it be?",
+    th:"ถ้าพรุ่งนี้คุณตื่นขึ้นมาแล้วมีความสามารถหรือคุณสมบัติใหม่เพิ่มขึ้นมา 1 อย่าง คุณอยากได้อะไร?" },
+  { en:"If a crystal ball could tell you the truth about yourself, your life, the future, or anything else, what would you want to know?",
+    th:"ถ้าลูกแก้ววิเศษสามารถบอกความจริงเกี่ยวกับตัวคุณ ชีวิต อนาคต หรืออะไรก็ได้ คุณอยากรู้เรื่องอะไรที่สุด?" },
+  { en:"Is there something that you’ve dreamed of doing for a long time? Why haven’t you done it?",
+    th:"มีอะไรที่คุณฝันอยากทำมานานแล้ว แต่ยังไม่ได้ทำไหม? ทำไมถึงยังไม่ได้ทำ?" },
+  { en:"What is the greatest accomplishment of your life?",
+    th:"ความสำเร็จครั้งไหนในชีวิตที่คุณภูมิใจที่สุด?" },
+  { en:"What do you value most in a friendship?",
+    th:"สำหรับคุณ สิ่งที่สำคัญที่สุดในเรื่องมิตรภาพคืออะไร?" },
+  { en:"What is your most treasured memory?",
+    th:"ความทรงจำไหนในชีวิตที่คุณหวงแหนมากที่สุด?" },
+  { en:"What is your most terrible memory?",
+    th:"ความทรงจำไหนที่คุณไม่อยากนึกถึงที่สุด?" },
+  { en:"If you knew that in one year you would die suddenly, would you change anything about the way you are now living? Why?",
+    th:"ถ้าคุณรู้ว่าคุณจะเสียชีวิตอย่างกะทันหันในอีก 1 ปีข้างหน้า คุณจะเปลี่ยนวิธีใช้ชีวิตของตัวเองตอนนี้ไหม? เพราะอะไร?" },
+  { en:"What does friendship mean to you?",
+    th:"สำหรับคุณ คำว่า “มิตรภาพ” หมายถึงอะไร?" },
+  { en:"What roles do love and affection play in your life?",
+    th:"ความรักและความผูกพันมีบทบาทอย่างไรในชีวิตของคุณ?" },
+  { en:"Alternate sharing something you consider a positive characteristic of your partner. Share a total of five items.",
+    th:"ผลัดกันบอกข้อดีของอีกฝ่ายที่คุณมองเห็น รวมทั้งหมดคนละ 5 ข้อ" },
+  { en:"How close and warm is your family? Do you feel your childhood was happier than most other people’s?",
+    th:"ครอบครัวของคุณสนิทสนมและอบอุ่นกันแค่ไหน? แล้วคุณรู้สึกว่าวัยเด็กของคุณมีความสุขกว่าคนส่วนใหญ่ไหม?" },
+  { en:"How do you feel about your relationship with your mother?",
+    th:"คุณรู้สึกอย่างไรกับความสัมพันธ์ระหว่างคุณกับแม่?" },
+  { en:"Make three true “we” statements each. For instance, “We are both in this room feeling...”",
+    th:"ลองพูดประโยคที่ขึ้นต้นด้วยคำว่า “เรา...” ที่เป็นความจริงเกี่ยวกับคุณทั้งคู่ คนละ 3 ประโยค เช่น “เราสองคนกำลังอยู่ในห้องนี้และกำลังรู้สึกว่า...”" },
+  { en:"Complete this sentence: “I wish I had someone with whom I could share...”",
+    th:"เติมประโยคนี้ให้สมบูรณ์: “ฉันอยากมีใครสักคนที่ฉันสามารถแบ่งปันเรื่อง...ได้”" },
+  { en:"If you were going to become a close friend with your partner, please share what would be important for them to know.",
+    th:"ถ้าคุณกำลังจะกลายเป็นเพื่อนสนิทกับคนที่คุณกำลังคุยด้วย มีเรื่องสำคัญอะไรเกี่ยวกับตัวคุณที่คุณอยากให้เขารู้?" },
+  { en:"Tell your partner what you like about them; be very honest this time, saying things that you might not say to someone you’ve just met.",
+    th:"บอกอีกฝ่ายอย่างตรงไปตรงมาว่าคุณชอบอะไรในตัวเขา พูดในสิ่งที่ปกติคุณอาจไม่กล้าพูดกับคนที่เพิ่งรู้จัก" },
+  { en:"Share with your partner an embarrassing moment in your life.",
+    th:"เล่าเหตุการณ์น่าอายเรื่องหนึ่งในชีวิตของคุณให้อีกฝ่ายฟัง" },
+  { en:"When did you last cry in front of another person? By yourself?",
+    th:"ครั้งล่าสุดที่คุณร้องไห้ต่อหน้าคนอื่นคือเมื่อไหร่? แล้วครั้งล่าสุดที่ร้องไห้อยู่คนเดียวล่ะ?" },
+  { en:"Tell your partner something that you like about them.",
+    th:"บอกอีกฝ่ายหนึ่งอย่างที่คุณชอบในตัวเขา" },
+  { en:"What, if anything, is too serious to be joked about?",
+    th:"มีเรื่องอะไรไหมที่คุณรู้สึกว่า “จริงจังเกินกว่าจะเอามาล้อเล่น”?" },
+  { en:"If you were to die this evening with no opportunity to communicate with anyone, what would you most regret not having told someone? Why haven’t you told them yet?",
+    th:"ถ้าคุณรู้ว่าคืนนี้คุณจะเสียชีวิต โดยไม่มีโอกาสได้พูดคุยกับใครอีก คุณจะเสียใจที่สุดที่ยังไม่ได้บอกอะไรกับใคร? และทำไมคุณถึงยังไม่ได้บอกเขา?" }
+];
+const DEEP_KEY = 'DEEP';
+
 let STATE = { isPro:false, sessionToken:null };
 let TR_SESSION_LANG = null;      // ภาษาที่จำไว้ในเซสชันนี้ (การ์ดถัดไปใช้ภาษาเดิมได้ทันที กดปุ่ม Translate เพื่อเปลี่ยนได้เสมอ)
 let CURRENT_CARD = null;         // {category, index} ใบที่เปิดอยู่ตอนนี้ (ให้ language picker รู้ว่าจะแปลใบไหน)
@@ -705,6 +843,7 @@ function openCategory(){
 function goHome(){
   document.getElementById('category').classList.add('hidden');
   document.getElementById('cards').classList.add('hidden');
+  document.getElementById('deepWall').classList.add('hidden');
   document.getElementById('home').classList.remove('hidden');
   closeReveal();
 }
@@ -786,11 +925,55 @@ function resumeBelts(){
   });
 }
 
+
+/* ================= Deeper Conversation wall (PRO only) =================
+ * กำแพงการ์ดทอง 41 ใบ นิ่งๆ ทุกใบเหมือนกันหมด ไม่ผูกกับคำถามใดเลย — ตอนแตะ "ค่อยจับสลาก" คำถามจากกอง (DEEP_QUEUE) ที่สับไว้แล้ว
+ * ทำให้ตำแหน่งการ์ดจำไม่ได้ว่าใบไหนคือคำถามไหน และทุกครั้งที่แตะ (ทุก action) ได้คำถามใหม่เสมอ ไม่มีแอนิเมชัน/ร่องรอยให้เห็นว่ามีการสับ
+ * กอง: ไม่ซ้ำจนกว่าจะครบทั้ง 41 ข้อ แล้วสับกองใหม่ (กันข้อสุดท้ายของกองเก่ามาซ้ำเป็นข้อแรกของกองใหม่) และสับใหม่ทุกครั้งที่เข้าหน้านี้ */
+let DEEP_QUEUE = [];
+let DEEP_LAST = -1;
+
+function refillDeepQueue(){
+  DEEP_QUEUE = shuffleArray(DEEP_CARDS.map((_, i) => i));
+  if(DEEP_QUEUE.length > 1 && DEEP_QUEUE[0] === DEEP_LAST){
+    const swapWith = 1 + Math.floor(Math.random() * (DEEP_QUEUE.length - 1));
+    [DEEP_QUEUE[0], DEEP_QUEUE[swapWith]] = [DEEP_QUEUE[swapWith], DEEP_QUEUE[0]];
+  }
+}
+
+function drawDeepQuestion(){
+  if(DEEP_QUEUE.length === 0) refillDeepQueue();
+  DEEP_LAST = DEEP_QUEUE.shift();
+  return DEEP_LAST;
+}
+
+function openDeepWall(){
+  if(!STATE.isPro) return; // ชั้นสิทธิ์จริงคือ backend (getCardAccess) — ตรงนี้กันไว้เฉยๆ ไม่ให้เรียกตรงจาก console แล้วเห็นหน้านี้
+  DEEP_LAST = -1;
+  refillDeepQueue();
+  const wall = document.getElementById('goldWall');
+  if(!wall.dataset.built){
+    wall.innerHTML = DEEP_CARDS.map(() => `<div class="gold-card">
+      <div></div>
+      <div class="gold-tap">Tap to open</div>
+      <div class="gold-brand">TOKBUD</div>
+    </div>`).join('');
+    wall.addEventListener('click', (e)=>{
+      if(e.target.closest('.gold-card')) openReveal(DEEP_KEY, drawDeepQuestion());
+    });
+    wall.dataset.built = '1';
+  }
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('deepWall').classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
 /* ================= Reveal + Translate =================
  * EN เป็น default เสมอตอนเปิดการ์ดใหม่ ยกเว้นถ้าเซสชันนี้เคยเลือกภาษาอื่นไว้แล้ว (TR_SESSION_LANG) จะใช้ภาษาเดิม
  * ต่อทันที ไม่ต้องเลือกซ้ำทุกใบ — กดปุ่ม Translate เพื่อเปลี่ยนภาษาได้ทุกเมื่อ (ปุ่มอยู่แถวล่างของการ์ด ตามที่ Pop ระบุ) */
 function openReveal(categoryKey, index){
   CURRENT_CARD = { category:categoryKey, index:index };
+  document.querySelector('#overlay .reveal-card').classList.toggle('deep', categoryKey === DEEP_KEY);
 
   showCardText(categoryKey, index, TR_SESSION_LANG || 'en');
   document.getElementById('overlay').classList.add('open');
@@ -804,6 +987,12 @@ function closeReveal(){
 // EN/TH ไม่ต้องยิง backend เลย — EN คือต้นฉบับ enCards[] ในไฟล์นี้, TH คือต้นฉบับ cards[] ที่เขียนโดยคนจริง
 // (คุณภาพดีกว่า auto-translate กลับจาก EN ตามที่ Pop ยืนยัน) ภาษาอื่นนอกจากนี้เท่านั้นที่ต้องแปลผ่าน backend
 function cardSourceText(categoryKey, index, lang){
+  if(categoryKey === DEEP_KEY){
+    const q = DEEP_CARDS[index];
+    if(lang === 'en') return q.en;
+    if(lang === 'th') return q.th;
+    return null;
+  }
   const cat = CARD_CATEGORIES[categoryKey];
   if(lang === 'en') return cat.enCards[index];
   if(lang === 'th') return cat.cards[index];
@@ -832,7 +1021,7 @@ async function showCardText(categoryKey, index, lang){
   // P0-fix (feedback ของ Pop: จุดไข่ปลา ··· นิ่งๆ ดูเหมือนค้าง/พัง) ใช้ spinner หมุนแทนระหว่างรอผลแปล
   qEl.innerHTML = '<span class="spinner dark"></span>';
   langTagEl.textContent = langLabel;
-  const enText = CARD_CATEGORIES[categoryKey].enCards[index];
+  const enText = (categoryKey === DEEP_KEY) ? DEEP_CARDS[index].en : CARD_CATEGORIES[categoryKey].enCards[index];
   const res = await api('translateCardQuestion', { category:categoryKey, index:index, target_lang:lang, text:enText }, 'POST');
   // การ์ดที่เปิดอยู่อาจถูกปิด/เปลี่ยนไปแล้วก่อนที่คำแปลจะกลับมา (กดเร็ว) — เช็คก่อน apply กันข้อความไปโผล่ผิดใบ
   if(!CURRENT_CARD || CURRENT_CARD.category !== categoryKey || CURRENT_CARD.index !== index) return;
