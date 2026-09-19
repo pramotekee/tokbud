@@ -106,6 +106,11 @@
     padding:11px 20px; border-radius:100px; position:relative; z-index:1;
   }
   .convo-card-btn:active{ transform:scale(.96); }
+  /* ลิงก์ไกด์บุ๊ก PDF (1-on-1) อยู่เหนือปุ่ม Play now — เป็นลิงก์รอง (ตัวหนังสือ+ขีดเส้น) ไม่แย่งความเด่นจากปุ่มหลัก */
+  .convo-card-guide{
+    display:inline-flex; align-items:center; gap:6px; margin:-4px 0 14px; position:relative; z-index:1;
+    font-size:13px; font-weight:600; color:var(--accent); text-decoration:underline; text-underline-offset:3px;
+  }
 
   .profile-head{ display:flex; align-items:center; gap:16px; margin-bottom:18px; }
   .avatar{ width:76px; height:76px; border-radius:50%; overflow:hidden; background:var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--text-muted); }
@@ -444,7 +449,8 @@ const I18N = {
     // P0-fix (feedback ของ Pop: เดิมข้อความเดียวกันทั้ง FREE/PRO ทั้งที่ FREE เล่นได้แค่ demo 3 ใบ) — ข้อความกระตุ้นอัพเกรด
     // เฉพาะ FREE เท่านั้น สลับแสดงตาม is_pro ที่เช็คจาก actionGetCardAccess (ดู updateConvoCardBannerAccess ด้านล่าง)
     convoCardDescFree: 'ปลดล็อกการ์ดชวนคุยกว่า 100+ ใบ ช่วยละลายพฤติกรรม ทำให้รู้จักทีมของคุณมากขึ้น ค้นพบมุมใหม่ๆ ของกันและกัน หรือเปลี่ยนงานเลี้ยง/มื้ออาหารธรรมดาให้สนุกและน่าจดจำยิ่งขึ้น',
-    convoCardBtn: '🃏 เล่นเลย'
+    convoCardBtn: '🃏 เล่นเลย',
+    convoGuideLink: '📘 คู่มือฟรี: ทำไม 1-on-1 ถึงสำคัญกับทีมของคุณ'
   },
   en: {
     backHome: '← Back to Home', backMyType: '← Back to My Type', loadingText: 'Loading...',
@@ -481,7 +487,8 @@ const I18N = {
     convoCardTitle: 'TOKBUD Conversation Cards',
     convoCardDesc: '100+ conversation-starter cards to help you get to know your team (or anyone) on a deeper level. Great for icebreakers or 1-on-1 conversations.',
     convoCardDescFree: 'Unlock 100+ conversation-starter cards to break the ice, get closer to your team, discover new sides of people, or turn a regular event or dinner into a more fun and memorable experience.',
-    convoCardBtn: '🃏 Play now'
+    convoCardBtn: '🃏 Play now',
+    convoGuideLink: '📘 Free guide: Why 1-on-1s matter for your team'
   }
 };
 // P0-fix (feedback ของ Pop: popup login เข้ามาจาก share link ยังขึ้นเป็นภาษาไทยทั้งที่เว็บนี้ตั้งใจให้ default
@@ -870,6 +877,7 @@ function convoCardBannerHtml(){
       <span class="convo-card-badge" id="convoCardBadge" style="display:none;">${t('convoCardBadge')}</span>
     </div>
     <div class="convo-card-desc" id="convoCardDescText">${t('convoCardDesc')}</div>
+    <div><a class="convo-card-guide" href="1on1_Conversation_Guidebook_by_TOKBUD.pdf" target="_blank" rel="noopener">${t('convoGuideLink')}</a></div>
     <button type="button" class="btn convo-card-btn" onclick="openConversationCards()">${t('convoCardBtn')}</button>
   </div>`;
 }
