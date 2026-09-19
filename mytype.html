@@ -75,9 +75,11 @@
   .btn-spinner{ display:inline-block; width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); border-top-color:#fff; animation:spin .7s linear infinite; margin-right:6px; vertical-align:-2px; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  .state-box{ text-align:center; padding:70px 20px; color:#6E6680; }
-  .state-box .spinner{ width:30px; height:30px; border:3px solid rgba(33,67,200,0.15); border-top-color:#2143C8; border-radius:50%; margin:0 auto 14px; animation:spin .8s linear infinite; }
-  .state-box .msg{ font-size:14.5px; }
+  .state-box{ text-align:center; padding:70px 20px; color:rgba(255,255,255,0.88); } /* พื้นหลังหน้านี้เป็นน้ำเงินเข้ม — เดิมเป็นเทา #6E6680 อ่านยาก */
+  .state-box .spinner{ width:30px; height:30px; border:3px solid rgba(255,255,255,0.2); border-top-color:var(--accent); border-radius:50%; margin:0 auto 14px; animation:spin .8s linear infinite; }
+  .state-box .msg{ font-size:15px; }
+  .state-box .load-error-msg{ font-size:17px; font-weight:600; color:#fff; margin-bottom:20px; }
+  .state-box .load-error-diag{ margin-top:16px; font-size:11px; color:rgba(255,255,255,0.5); word-break:break-all; }
   .state-box .empty-headline{ font-size:19px; font-weight:700; color:#fff; margin-bottom:10px; }
   .state-box .empty-desc{ font-size:13.5px; line-height:1.6; color:rgba(255,255,255,0.75); max-width:340px; margin:0 auto; }
 
@@ -596,9 +598,11 @@ function isOwnerOfCurrentPage(){ return isLoggedIn() && STATE.session.user_id ==
 /* ---------- API helper ----------
  * timeout ลดเหลือ 15 วิ/ครั้ง (รวม retry แล้ว worst-case 30 วิ แทนที่จะเป็น 60 วิ) + retry อัตโนมัติ
  * แบบเงียบๆ 1 ครั้งก่อนฟ้อง error จริง — ปล่อยให้รอนานเกินไปต่อคำขอทำให้หน้าเว็บดูค้างจนคนกดรีเฟรชซ้ำๆ เอง */
-async function api(action, params = {}, method = 'GET', _isRetry = false){
+async function api(action, params = {}, method = 'GET', _isRetry = false, _firstDiag = ''){
   const controller = new AbortController();
   const timeoutId = setTimeout(()=> controller.abort(), 15000);
+  const startedAt = Date.now();
+  let reason = '';
   const withSession = Object.assign({}, params);
   if(isLoggedIn() && withSession.session_token === undefined) withSession.session_token = STATE.session.session_token;
   try{
@@ -609,10 +613,20 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
     } else {
       res = await fetch(CONFIG.API_URL, { method:'POST', body: JSON.stringify(Object.assign({action}, withSession)), signal: controller.signal });
     }
-    return await res.json();
+    try{
+      return await res.json();
+    }catch(jsonErr){
+      reason = 'bad_response(http ' + res.status + ')';
+      throw jsonErr;
+    }
   }catch(err){
-    if(!_isRetry) return api(action, params, method, true); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
-    return { success:false, message: 'Oops! Something went wrong. Please try refreshing and try again.', _networkError:true };
+    // เก็บสาเหตุจริงไว้วินิจฉัย: timeout = รอครบ 15 วิไม่มีคำตอบ / fetch_failed = ล้มทันที / bad_response = ตอบมาไม่ใช่ JSON
+    if(!reason) reason = (err && err.name === 'AbortError') ? 'timeout' : ('fetch_failed:' + ((err && err.message) || ''));
+    const diag = reason + ' ' + (Date.now() - startedAt) + 'ms';
+    console.warn('[api]', action, diag, _isRetry ? '(retry)' : '(1st attempt)');
+    if(!_isRetry) return api(action, params, method, true, diag); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
+    return { success:false, message: 'Oops! Something went wrong. Please try again.', _networkError:true,
+             _diag: action + ' | try1: ' + _firstDiag + ' | try2: ' + diag };
   }finally{ clearTimeout(timeoutId); }
 }
 
@@ -645,9 +659,28 @@ function openImageZoom(url){
 async function loadProfile(){
   if(!profileId){ renderFatal(t('notFoundMsg')); return; }
   const res = await api('getMyType', { id: profileId });
-  if(!res.success){ renderFatal(res.message || t('notFoundMsg')); return; }
+  if(!res.success){
+    if(res._networkError){ renderLoadError(res.message, res._diag); return; }
+    renderFatal(res.message || t('notFoundMsg'));
+    return;
+  }
   currentProfile = res;
   renderView(res);
+}
+
+// คำขอโหลดหน้าล้ม (เน็ต/เซิร์ฟเวอร์สะดุด ไม่ใช่ "ไม่พบข้อมูล") — ข้อความสั้นอ่านง่ายบนพื้นน้ำเงิน + ปุ่มลองใหม่สีเหลืองใต้ข้อความ
+// ข้อความวินิจฉัยเทคนิคโชว์เฉพาะตอนเปิดหน้าด้วย &debug=1 เท่านั้น
+function renderLoadError(msg, diag){
+  const showDiag = /[?&]debug=1/.test(location.search) && diag;
+  document.getElementById('content').innerHTML = `<div class="state-box">
+    <div class="load-error-msg">${escapeHtml(msg)}</div>
+    <button type="button" class="btn convo-card-btn" id="loadRetryBtn">Try again</button>
+    ${showDiag ? `<div class="load-error-diag">${escapeHtml(diag)}</div>` : ''}
+  </div>`;
+  document.getElementById('loadRetryBtn').addEventListener('click', ()=>{
+    document.getElementById('content').innerHTML = `<div class="state-box"><div class="spinner"></div><div class="msg">${escapeHtml(t('loadingText'))}</div></div>`;
+    loadProfile();
+  });
 }
 
 function renderFatal(msg){
@@ -877,7 +910,7 @@ function convoCardBannerHtml(){
       <span class="convo-card-badge" id="convoCardBadge" style="display:none;">${t('convoCardBadge')}</span>
     </div>
     <div class="convo-card-desc" id="convoCardDescText">${t('convoCardDesc')}</div>
-    <div><a class="convo-card-guide" href="1on1_Conversation_Guidebook_by_TOKBUD.pdf" target="_blank" rel="noopener">${t('convoGuideLink')}</a></div>
+    <div><a class="convo-card-guide" href="1on1%20Conversation%20Guidebook%20by%20TOKBUD.pdf" target="_blank" rel="noopener">${t('convoGuideLink')}</a></div>
     <button type="button" class="btn convo-card-btn" onclick="openConversationCards()">${t('convoCardBtn')}</button>
   </div>`;
 }
