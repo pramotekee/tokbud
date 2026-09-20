@@ -214,6 +214,8 @@
   .tr-company-name{ font-size:14.5px; font-weight:700; margin:0 0 6px; }
   .tr-desc{ font-size:13px; color:var(--text-muted); line-height:1.6; margin:0 0 10px; }
   .tr-points{ margin:0 0 16px; padding-left:18px; font-size:13px; color:var(--text-muted); line-height:1.65; }
+  .tr-points b{ color:var(--text); font-weight:800; }
+  .tr-points u{ text-decoration-thickness:2px; text-underline-offset:2px; }
   .tr-link-box{ padding:11px 12px; background:var(--bg); border:1.5px dashed var(--line); border-radius:10px; font-size:12.5px; word-break:break-all; -webkit-user-select:all; user-select:all; }
   .tr-expiry{ margin:8px 2px 14px; font-size:11.5px; color:var(--text-muted); }
   .tr-link-actions{ display:flex; gap:10px; margin-bottom:10px; }
@@ -1062,8 +1064,8 @@ const I18N = {
     trTitle: "ส่งมอบบริษัทให้คนอื่นดูแลต่อ",
     trDesc: "สร้างลิงก์ให้ผู้ที่จะรับช่วงดูแลต่อ แล้วส่งผ่าน LINE หรือช่องทางที่คุณสะดวก",
     trPoint1: "คุณจะแก้ไข ซ่อน/เผยแพร่ หรือขอลบบริษัทนี้ไม่ได้อีก",
-    trPoint2: "คอมเมนต์และโหวตทั้งหมดอยู่กับบริษัทเหมือนเดิม และย้ายไปอยู่ใน My Company ของผู้รับ",
-    trPoint3: "ลิงก์ใช้ได้ครั้งเดียว หมดอายุใน 3 วัน และยกเลิกได้ทุกเมื่อก่อนมีคนกดรับ",
+    trPoint2: "คอมเมนต์ทั้งหมดอยู่กับบริษัทเหมือนเดิม และย้ายไปอยู่ใน My Company ของผู้รับ",
+    trPoint3: "ลิงก์ใช้ได้ครั้งเดียว <b><u>หมดอายุใน 3 วัน</u></b> และยกเลิกได้ทุกเมื่อก่อนมีคนกดรับ",
     trPasscodeLabel: "กรอก Passcode ของคุณเพื่อยืนยันการส่งมอบ",
     trSubmitBtn: "สร้างลิงก์ส่งมอบ",
     trLinkTitle: "ลิงก์ส่งมอบพร้อมแล้ว",
@@ -1203,8 +1205,8 @@ const I18N = {
     trTitle: "Transfer this company",
     trDesc: "Create a link for the person who will take over. Send it via LINE or any channel you like.",
     trPoint1: "You'll no longer be able to edit, hide/publish, or request deletion of this company.",
-    trPoint2: "All comments and votes stay with the company and move to the new owner's My Company.",
-    trPoint3: "The link works once, expires in 3 days, and you can cancel it any time before it's accepted.",
+    trPoint2: "All comments stay with the company and move to the new owner's My Company.",
+    trPoint3: "The link works once, <b><u>expires in 3 days</u></b>, and you can cancel it any time before it's accepted.",
     trPasscodeLabel: "Enter your passcode to confirm the transfer",
     trSubmitBtn: "Create transfer link",
     trLinkTitle: "Your transfer link is ready",
