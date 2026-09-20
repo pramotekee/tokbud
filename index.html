@@ -760,6 +760,21 @@
   .confetti-star{
     clip-path:polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
   }
+
+  /* ===== รับช่วงดูแลบริษัทจากลิงก์ (Transfer claim) ===== */
+  .tc-loading{ display:flex; align-items:center; justify-content:center; gap:10px; padding:26px 0; font-size:13.5px; color:var(--text-muted); }
+  .tc-preview{ display:flex; gap:14px; align-items:center; padding:14px; margin-bottom:12px; background:var(--bg); border-radius:14px; border-top:4px solid var(--card-color, var(--primary)); }
+  .tc-img{ flex:0 0 auto; width:60px; height:80px; border-radius:10px; object-fit:cover; background:#E8ECF7; }
+  .tc-name{ font-size:16px; font-weight:700; line-height:1.35; margin-bottom:4px; word-break:break-word; }
+  .tc-meta{ font-size:12.5px; color:var(--text-muted); line-height:1.6; }
+  .tc-meta b{ color:var(--text); }
+  .tc-hint{ font-size:13px; color:var(--text-muted); line-height:1.6; margin:0 0 16px; }
+  .tc-msg{ font-size:14px; line-height:1.6; margin:4px 0 18px; text-align:center; }
+  .tc-actions{ display:flex; gap:10px; }
+  .tc-success{ text-align:center; padding:6px 0 2px; }
+  .tc-success .tc-check{ font-size:38px; margin-bottom:6px; }
+  .tc-success h4{ margin:0 0 8px; font-size:16px; }
+  .tc-error{ margin:0 0 12px; font-size:13px; color:var(--danger, #D93025); text-align:center; }
 </style>
 </head>
 <body>
@@ -967,6 +982,18 @@
       <button type="button" class="btn btn-ghost" id="suBackBtn" data-i18n="suBackBtn" style="display:none;">ย้อนกลับ</button>
       <button type="button" class="btn btn-primary" id="suNextBtn" data-i18n="suNextBtn">ถัดไป</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== Transfer Claim Modal (รับช่วงดูแลบริษัทจากลิงก์ ?transfer=ID) =====
+     ปิดได้เฉพาะผ่านปุ่มของ modal เอง (อยู่ใน STRICT_CLOSE_MODALS) เพื่อล้างสถานะ pendingTransferId ให้ถูกต้อง -->
+<div class="modal-overlay" id="transferClaimModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="tcTitle">รับช่วงดูแลบริษัท</h3>
+      <button class="modal-close" type="button" id="tcCloseX">✕</button>
+    </div>
+    <div id="tcBody"></div>
   </div>
 </div>
 
@@ -1301,7 +1328,30 @@ const I18N = {
     dashGenderTitle: 'เพศ', dashAgeGroupTitle: 'ช่วงอายุ', dashLoadingText: 'กำลังโหลดข้อมูล...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'หากคุณมีความคิดเห็นเพิ่มเติม แบ่งปันมาได้เลย',
     commentEmptyMsg: 'ยังไม่มีความคิดเห็นในฝั่งนี้',
-    commentLoadingText: 'กำลังโหลดความคิดเห็น...'
+    commentLoadingText: 'กำลังโหลดความคิดเห็น...',
+    tcTitle: "รับช่วงดูแลบริษัท",
+    tcLoading: "กำลังตรวจสอบลิงก์...",
+    tcFrom: "ส่งมอบโดย",
+    tcComments: "ความคิดเห็น",
+    tcExpiresPrefix: "ลิงก์ใช้ได้ถึง",
+    tcLoginHint: "ต้องมีบัญชี TOKBUD เพื่อรับช่วงดูแล กรุณาเข้าสู่ระบบหรือสมัครสมาชิกก่อน",
+    tcLoginBtn: "เข้าสู่ระบบหรือสมัครสมาชิกเพื่อรับ",
+    tcAcceptHint: "เมื่อกดยอมรับ บริษัทและความคิดเห็นทั้งหมดจะย้ายไปอยู่ใน My Company ของคุณทันที คุณจะแก้ไข ซ่อน/เผยแพร่ และขอลบบริษัทนี้ได้",
+    tcAcceptBtn: "ยอมรับ",
+    tcAcceptingText: "กำลังดำเนินการ...",
+    tcNotNowBtn: "ไว้ก่อน",
+    tcOwnLink: "นี่คือลิงก์ที่คุณสร้างเอง กรุณาส่งต่อให้ผู้ที่จะรับช่วงดูแลแทน",
+    tcInvalid: "ลิงก์นี้ไม่ถูกต้อง",
+    tcExpired: "ลิงก์นี้หมดอายุแล้ว กรุณาขอลิงก์ใหม่จากผู้ส่ง",
+    tcCancelled: "ผู้ส่งยกเลิกลิงก์นี้แล้ว",
+    tcUsed: "ลิงก์นี้ถูกใช้ไปแล้ว",
+    tcUnavailable: "บริษัทนี้ไม่พร้อมให้ส่งมอบแล้ว",
+    tcSuccessTitle: "รับช่วงดูแลเรียบร้อย",
+    tcSuccessMsg: "ตอนนี้คุณดูแลบริษัทนี้แล้ว คอมเมนต์ทั้งหมดอยู่ใน My Company ของคุณ",
+    tcGoBtn: "ไปที่ My Company",
+    tcRetryBtn: "ลองอีกครั้ง",
+    tcCloseBtn: "ปิด",
+    tcNetError: "เชื่อมต่อไม่สำเร็จ กรุณาลองอีกครั้ง"
   },
   en: {
     createBtn: '＋ Company', createBtn2: 'Create Company', loginBtn: 'Log In',
@@ -1393,7 +1443,30 @@ const I18N = {
     dashGenderTitle: 'Gender', dashAgeGroupTitle: 'Age', dashLoadingText: 'Loading...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'Tell us more about your answer...',
     commentEmptyMsg: 'No comments on this side yet',
-    commentLoadingText: 'Loading comments...'
+    commentLoadingText: 'Loading comments...',
+    tcTitle: "Take over a company",
+    tcLoading: "Checking the link...",
+    tcFrom: "Handed over by",
+    tcComments: "comments",
+    tcExpiresPrefix: "Link valid until",
+    tcLoginHint: "You need a TOKBUD account to take over. Please log in or sign up first.",
+    tcLoginBtn: "Log in or sign up to accept",
+    tcAcceptHint: "When you accept, the company and all its comments move to your My Company right away. You'll be able to edit, hide/publish, and request deletion.",
+    tcAcceptBtn: "Accept",
+    tcAcceptingText: "Processing...",
+    tcNotNowBtn: "Not now",
+    tcOwnLink: "This is your own transfer link. Please send it to the person who will take over.",
+    tcInvalid: "This link is not valid.",
+    tcExpired: "This link has expired. Please ask the sender for a new one.",
+    tcCancelled: "The sender has cancelled this link.",
+    tcUsed: "This link has already been used.",
+    tcUnavailable: "This company is no longer available for transfer.",
+    tcSuccessTitle: "You're all set",
+    tcSuccessMsg: "You are now managing this company. All its comments are in your My Company.",
+    tcGoBtn: "Go to My Company",
+    tcRetryBtn: "Try again",
+    tcCloseBtn: "Close",
+    tcNetError: "Couldn't connect. Please try again."
   }
 };
 function getLang(){ return localStorage.getItem(LANG_KEY) === 'th' ? 'th' : 'en'; }
@@ -1419,6 +1492,7 @@ function applyLang(lang){
 function setLang(lang){
   localStorage.setItem(LANG_KEY, lang);
   applyLang(lang);
+  if(typeof tcRerender === 'function') tcRerender(); // หน้ารับช่วงดูแล (ถ้าเปิดอยู่) เป็น dynamic HTML ต้อง render ใหม่ตามภาษา
   // label ในการ์ด mini-dash (เพศ/ช่วงอายุ) เป็น dynamic HTML ที่ generate ผ่าน t() ตอน render
   // ไม่ผ่าน [data-i18n] loop ของ applyLang() จึงต้อง re-render ใหม่ทุกครั้งที่สลับภาษา — ใช้ cache ไม่ยิง API ใหม่
   rerenderLoadedDashboards();
@@ -1459,6 +1533,8 @@ let STATE = {
   totalCount: 0,
   totalPages: 1,
   pendingVote: null, // {topicId, side} ถ้าโหวตตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ
+  pendingTransferId: null, // id จากลิงก์ ?transfer= ที่ผู้ใช้กำลังจะรับช่วงดูแล (ล้างเมื่อรับสำเร็จ/กดปิด)
+  transferAwaitingLogin: false, // true = ผู้ใช้กดปุ่ม login จากหน้ารับช่วง -> login/signup เสร็จให้เปิดหน้ารับช่วงกลับมา
   pendingExport: null, // {companyId} ถ้ากด Export ตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ (ดู handleExportClick)
   // first-time (key ไม่มีเลย) = 'card' เสมอ — รองรับ 3 ค่า: 'card' | 'line' | 'carousel' (feature: View by Carousel)
   feedView: (()=>{ const v = localStorage.getItem(FEED_VIEW_KEY); return (v === 'line' || v === 'carousel') ? v : 'card'; })(),
@@ -1599,7 +1675,7 @@ document.querySelectorAll('[data-close]').forEach(btn=>{
   btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
 });
 // modal ที่เป็นฟอร์มยาว กรอกข้อมูลเยอะ ต้องกันพลาด: ปิดได้เฉพาะกดปุ่ม (x) เท่านั้น ห้ามปิดด้วยการแตะนอกกรอบ
-const STRICT_CLOSE_MODALS = ['createModal'];
+const STRICT_CLOSE_MODALS = ['createModal', 'transferClaimModal'];
 document.querySelectorAll('.modal-overlay').forEach(ov=>{
   if(STRICT_CLOSE_MODALS.includes(ov.id)) return;
   ov.addEventListener('click', (e)=>{ if(e.target === ov) ov.classList.remove('open'); });
@@ -1744,7 +1820,8 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   }
   saveSession(res);
   closeModal('loginModal');
-  showToast(`Hello, ${res.username}`); // ข้อความสากล ใช้เหมือนกันทุกภาษา (ไม่ผูกกับ TH/EN)
+  showToast(`Hello, ${res.username}`);
+  resumeTransferClaimAfterAuth(); // ถ้า login มาจากหน้ารับช่วงดูแล -> เปิดหน้านั้นกลับมา (ต่อจากจุดเดิม) // ข้อความสากล ใช้เหมือนกันทุกภาษา (ไม่ผูกกับ TH/EN)
   // เดิม flow นี้เคย auto-vote ให้เงียบๆ เหมือนกับฝั่ง signup (บั๊กเดียวกัน) — แก้ตามหลักการเดียวกัน:
   // ไม่โหวตให้ แค่พา user กลับไปที่การ์ดหัวข้อที่ตั้งใจโหวตไว้ก่อน login ให้เขากดโหวตเองอีกครั้ง
   if(STATE.pendingVote){
@@ -1758,6 +1835,170 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
     const { companyId } = STATE.pendingExport;
     STATE.pendingExport = null;
     scrollToTopicCard(companyId);
+  }
+});
+
+/* ================= Transfer claim (รับช่วงดูแลบริษัทจากลิงก์ ?transfer=ID) =================
+ * ผู้ส่งสร้างลิงก์ที่ profile.html (My Company > Transfer) แล้วส่งให้ผู้รับเอง; หน้านี้คือฝั่งผู้รับ
+ * ขั้นตอนผู้รับ: เปิดลิงก์ -> (ถ้ายังไม่ login: login/สมัคร แล้วกลับมาหน้านี้เอง) -> เห็นบริษัท+ผู้ส่ง -> กดยอมรับ 1 ครั้ง -> ไป My Company
+ * ไม่ต้องกรอก passcode ที่ฝั่งผู้รับ (การรับไม่ทำลายอะไร และ backend ตรวจสิทธิ์/สถานะซ้ำทุกครั้งใน LockService)
+ * getTransfer ใช้ POST เพราะ transfer_id เป็นกุญแจลับ ไม่ควรไปอยู่ใน query string ของ request/log
+ * state ของ modal: loading | message(ลิงก์ใช้ไม่ได้) | neterror | pending(login/own/accept) | success */
+let tcLastRender = null; // {state, data} -- เก็บไว้ render ใหม่ตอนสลับภาษา
+const TC_STATUS_KEY = { invalid:'tcInvalid', expired:'tcExpired', cancelled:'tcCancelled', accepted:'tcUsed', unavailable:'tcUnavailable' };
+
+function tcFormatDate(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return '';
+  return d.toLocaleString(getLang() === 'en' ? 'en-US' : 'th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+function tcSafeColor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(String(c || '')) ? c : 'var(--primary)'; }
+
+function tcPreviewHTML(res){
+  const c = res.company || {};
+  const img = c.image_url
+    ? `<img class="tc-img" src="${escapeHtml(c.image_url)}" alt="${escapeHtml(c.company_name || '')}">`
+    : `<div class="tc-img"></div>`;
+  const exp = tcFormatDate(res.expires_at);
+  return `
+    <div class="tc-preview" style="--card-color:${tcSafeColor(c.card_color)}">
+      ${img}
+      <div>
+        <div class="tc-name">${escapeHtml(c.company_name || '')}</div>
+        <div class="tc-meta">
+          ${res.from_username ? `${escapeHtml(t('tcFrom'))} <b>@${escapeHtml(res.from_username)}</b><br>` : ''}
+          ${Number(c.comment_count) || 0} ${escapeHtml(t('tcComments'))}
+          ${exp ? `<br>${escapeHtml(t('tcExpiresPrefix'))} ${escapeHtml(exp)}` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function tcRender(state, data){
+  tcLastRender = { state, data };
+  const body = document.getElementById('tcBody');
+  const closeBtn = `<button type="button" class="btn btn-primary full-btn" data-tc="close">${escapeHtml(t('tcCloseBtn'))}</button>`;
+  let html = '';
+  if(state === 'loading'){
+    html = `<div class="tc-loading"><span class="btn-spinner" style="border-color:rgba(0,0,0,.15);border-top-color:var(--primary);"></span>${escapeHtml(t('tcLoading'))}</div>`;
+  } else if(state === 'message'){
+    const text = data && data.text ? data.text : t((data && TC_STATUS_KEY[data.status]) || 'tcInvalid');
+    html = `<p class="tc-msg">${escapeHtml(text)}</p>${closeBtn}`;
+  } else if(state === 'neterror'){
+    html = `<p class="tc-msg">${escapeHtml(t('tcNetError'))}</p>
+      <div class="tc-actions">
+        <button type="button" class="btn btn-ghost full-btn" data-tc="close">${escapeHtml(t('tcCloseBtn'))}</button>
+        <button type="button" class="btn btn-primary full-btn" data-tc="retry">${escapeHtml(t('tcRetryBtn'))}</button>
+      </div>`;
+  } else if(state === 'pending'){
+    const res = data;
+    if(!res.logged_in){
+      html = `${tcPreviewHTML(res)}<p class="tc-hint">${escapeHtml(t('tcLoginHint'))}</p>
+        <button type="button" class="btn btn-primary full-btn" data-tc="login">${escapeHtml(t('tcLoginBtn'))}</button>`;
+    } else if(res.is_sender){
+      html = `${tcPreviewHTML(res)}<p class="tc-hint">${escapeHtml(t('tcOwnLink'))}</p>${closeBtn}`;
+    } else {
+      html = `${tcPreviewHTML(res)}<p class="tc-hint">${escapeHtml(t('tcAcceptHint'))}</p>
+        <div class="tc-error" id="tcInlineError" style="display:none;"></div>
+        <div class="tc-actions">
+          <button type="button" class="btn btn-ghost full-btn" data-tc="close">${escapeHtml(t('tcNotNowBtn'))}</button>
+          <button type="button" class="btn btn-primary full-btn" id="tcAcceptBtn" data-tc="accept">${escapeHtml(t('tcAcceptBtn'))}</button>
+        </div>`;
+    }
+  } else if(state === 'success'){
+    html = `<div class="tc-success">
+        <div class="tc-check">🎉</div>
+        <h4>${escapeHtml(t('tcSuccessTitle'))}</h4>
+        <p class="tc-hint" style="margin-bottom:6px;"><b>${escapeHtml((data && data.company_name) || '')}</b></p>
+        <p class="tc-hint">${escapeHtml(t('tcSuccessMsg'))}</p>
+      </div>
+      <button type="button" class="btn btn-primary full-btn" data-tc="go">${escapeHtml(t('tcGoBtn'))}</button>`;
+  }
+  body.innerHTML = html;
+}
+
+function tcRerender(){
+  const modal = document.getElementById('transferClaimModal');
+  if(!modal || !modal.classList.contains('open') || !tcLastRender) return;
+  if(tcLastRender.state === 'loading') return;
+  tcRender(tcLastRender.state, tcLastRender.data);
+}
+
+async function openTransferClaimModal(){
+  const id = STATE.pendingTransferId;
+  if(!id) return;
+  tcRender('loading');
+  openModal('transferClaimModal');
+  const res = await api('getTransfer', {
+    transfer_id: id,
+    session_token: isLoggedIn() ? STATE.session.session_token : ''
+  }, 'POST');
+  if(STATE.pendingTransferId !== id) return; // ผู้ใช้กดปิดระหว่างรอ -> ไม่ต้องวาดทับ
+  if(!res.success){ tcRender('neterror'); return; }
+  if(res.transfer_status === 'pending') tcRender('pending', res);
+  else tcRender('message', { status: res.transfer_status });
+}
+
+function dismissTransferClaim(){
+  STATE.pendingTransferId = null;
+  STATE.transferAwaitingLogin = false;
+  if(new URLSearchParams(location.search).has('transfer')) history.replaceState(null, '', location.pathname);
+  closeModal('transferClaimModal');
+}
+
+// เรียกหลัง login/signup สำเร็จ: ถ้ามาจากหน้ารับช่วงดูแล -> เปิดกลับมาต่อ (คืน true เพื่อให้ signup ข้าม welcome modal)
+function resumeTransferClaimAfterAuth(){
+  if(STATE.pendingTransferId && STATE.transferAwaitingLogin){
+    STATE.transferAwaitingLogin = false;
+    openTransferClaimModal();
+    return true;
+  }
+  return false;
+}
+
+async function acceptTransferClaim(btn){
+  const id = STATE.pendingTransferId;
+  if(!id || !isLoggedIn()) { openTransferClaimModal(); return; }
+  const errEl = document.getElementById('tcInlineError');
+  if(errEl) errEl.style.display = 'none';
+  setBtnLoading(btn, true, t('tcAcceptingText'));
+  const res = await api('acceptTransfer', { session_token: STATE.session.session_token, transfer_id: id }, 'POST');
+
+  if(res.success){
+    STATE.pendingTransferId = null;
+    STATE.transferAwaitingLogin = false;
+    if(new URLSearchParams(location.search).has('transfer')) history.replaceState(null, '', location.pathname);
+    tcRender('success', { company_name: res.company_name });
+    return;
+  }
+  setBtnLoading(btn, false);
+  const msg = res.message || '';
+  if(msg.indexOf('Please log in') !== -1){
+    // session หมดอายุ/ถูกล้าง: เคลียร์เงียบๆ แล้วแสดงหน้าที่ให้ login ใหม่ (ไม่ให้ค้างที่ปุ่มยอมรับที่กดไม่ได้)
+    STATE.session = null; localStorage.removeItem('wz_session'); renderHeaderAuth();
+    openTransferClaimModal();
+    return;
+  }
+  if(res._networkError){
+    if(errEl){ errEl.textContent = t('tcNetError'); errEl.style.display = 'block'; }
+    return; // คงปุ่มไว้ให้กดลองใหม่ (backend รับซ้ำได้อย่างปลอดภัย)
+  }
+  tcRender('message', { text: pickLang(msg) }); // เช่น ลิงก์ถูกใช้/ยกเลิก/หมดอายุตัดหน้า
+}
+
+document.getElementById('tcCloseX').addEventListener('click', dismissTransferClaim);
+document.getElementById('tcBody').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-tc]');
+  if(!btn) return;
+  const act = btn.dataset.tc;
+  if(act === 'close') dismissTransferClaim();
+  else if(act === 'retry') openTransferClaimModal();
+  else if(act === 'accept') acceptTransferClaim(btn);
+  else if(act === 'go') location.href = 'profile.html?tab=mytopics';
+  else if(act === 'login'){
+    STATE.transferAwaitingLogin = true;
+    closeModal('transferClaimModal'); // ปิดก่อนเปิด login กัน modal ซ้อน (STATE.pendingTransferId ยังอยู่ จึงกลับมาต่อได้)
+    openLoginModal('redirect');
   }
 });
 
@@ -1904,6 +2145,8 @@ document.getElementById('suNextBtn').addEventListener('click', async ()=>{
   // ไม่ auto-vote ให้ user แล้ว (เดิมเคยแอบโหวตให้เงียบๆ ตอนสมัครเสร็จ — พบว่า user งง เพราะไม่รู้ว่าระบบ
   // โหวตไปให้แล้วหรือยัง ไม่มี feedback อะไรเลยระหว่าง journey สมัครสมาชิก) เปลี่ยนเป็นแค่ "จำ" topicId ที่ตั้งใจโหวตไว้
   // ให้ user กดโหวตเองอีกครั้งตอนกด "กลับไปโหวต" — ชัดเจน ตรงไปตรงมา ไม่มีอะไรเกิดขึ้นโดยที่ user ไม่รู้ตัว
+  // สมัครมาจากลิงก์รับช่วงดูแล -> ข้าม welcome modal กลับไปที่หน้ารับช่วงต่อทันที (ไม่ให้ modal ซ้อนกัน)
+  if(resumeTransferClaimAfterAuth()) return;
   const hadPendingVote = !!STATE.pendingVote;
   if(hadPendingVote){
     lastVotedTopicId = STATE.pendingVote.topicId;
@@ -3984,6 +4227,15 @@ async function initFocusMode(topicId){
     if(!isLoggedIn()){
       setTimeout(()=> openSignupModalDirect(), 100);
     }
+  }
+
+  // ลิงก์รับช่วงดูแลบริษัท (?transfer=ID): เก็บ id ไว้ใน STATE และ *ไม่ลบ* query ออกจาก URL จนกว่าจะจบ flow
+  // (รับสำเร็จ/กดปิด) เพื่อให้ refresh แล้วกลับมาหน้าเดิมได้ -- เปิด modal หลังเช็ค session เสร็จ (เหมือน ?create=1)
+  // ไม่รอ loadHomeFeed() เพราะ Apps Script cold start อาจช้า ไม่ควรให้คนที่ถือลิงก์ต้องรอฟีดก่อน
+  const transferParam = params.get('transfer');
+  if(transferParam){
+    STATE.pendingTransferId = transferParam;
+    sessionCheckPromise.then(()=> setTimeout(()=> openTransferClaimModal(), 100), ()=> setTimeout(()=> openTransferClaimModal(), 100));
   }
 
   // P0-feature (hero banner -> การ์ดหัวข้อเดียว แม่นยำ 100%, ไอเดียของ Pop): เดิมโหลดฟีดทั้งหน้า + hero banner
