@@ -196,6 +196,27 @@
   .mt-action-btn.edit{ border-color:var(--primary); color:var(--primary); background:#fff; }
   .mt-action-btn.export{ border-color:#2C8A4B; color:#2C8A4B; background:#fff; }
   .mt-action-btn.delete{ border-color:var(--danger); color:var(--danger); background:#fff; }
+  .mt-action-btn.transfer{ border-color:#5B4BB0; color:#5B4BB0; background:#fff; }
+  .status-badge.pending{ background:#EAE6FA; color:#5B4BB0; }
+
+  /* ===== ส่งมอบบริษัท (Transfer) ===== */
+  .mt-transfer-note{ display:flex; align-items:center; justify-content:space-between; gap:8px 12px; flex-wrap:wrap; margin-top:10px; padding:9px 11px; background:#F3F0FB; border-radius:10px; }
+  .mt-transfer-note .tn-info{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .mt-transfer-note .tn-exp{ font-size:11.5px; color:var(--text-muted); }
+  .mt-transfer-note .tn-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .mt-transfer-note .tn-actions button{ font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:8px; border:1.5px solid #5B4BB0; color:#5B4BB0; background:#fff; }
+  .mt-transfer-note .tn-actions button.tn-cancel{ border-color:var(--line); color:var(--text-muted); }
+  .transferred-title{ margin:22px 2px 8px; font-size:12.5px; font-weight:700; color:var(--text-muted); }
+  .transferred-row{ display:flex; justify-content:space-between; align-items:baseline; gap:4px 10px; flex-wrap:wrap; padding:11px 14px; margin-bottom:8px; background:var(--surface); border-radius:12px; box-shadow:var(--shadow); }
+  .transferred-row .tr-name{ font-size:13.5px; font-weight:600; }
+  .transferred-row .tr-to{ font-size:12.5px; }
+  .transferred-row .tr-time{ flex-basis:100%; font-size:11px; color:var(--text-muted); }
+  .tr-company-name{ font-size:14.5px; font-weight:700; margin:0 0 6px; }
+  .tr-desc{ font-size:13px; color:var(--text-muted); line-height:1.6; margin:0 0 10px; }
+  .tr-points{ margin:0 0 16px; padding-left:18px; font-size:13px; color:var(--text-muted); line-height:1.65; }
+  .tr-link-box{ padding:11px 12px; background:var(--bg); border:1.5px dashed var(--line); border-radius:10px; font-size:12.5px; word-break:break-all; -webkit-user-select:all; user-select:all; }
+  .tr-expiry{ margin:8px 2px 14px; font-size:11.5px; color:var(--text-muted); }
+  .tr-link-actions{ display:flex; gap:10px; margin-bottom:10px; }
 
   /* ===== Layout ===== */
   .wrap{ max-width:640px; margin:0 auto; padding:24px 16px 70px; }
@@ -576,6 +597,7 @@
         </div>
       </div>
       <div id="myTopicsList"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
+      <div id="myTransferredList"></div>
     </div>
 
     <!-- ===== Tab: My Comment (ใหม่สำหรับ TOKBUD — แก้ไขคำตอบโหวต/คอมเมนต์ของตัวเองย้อนหลังได้ ผ่าน action 'vote'
@@ -795,6 +817,47 @@
   </div>
 </div>
 
+<!-- ===== Transfer Company Modal (ส่งมอบบริษัทให้คนอื่นดูแลต่อ): ขั้น 1 ยืนยันด้วย passcode -> ขั้น 2 ได้ลิงก์ให้ Copy/Share ===== -->
+<div class="modal-overlay" id="transferModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="trModalTitle" data-i18n="trTitle">ส่งมอบบริษัทให้คนอื่นดูแลต่อ</h3>
+      <button class="modal-close" data-close="transferModal">✕</button>
+    </div>
+
+    <div id="trFormStep">
+      <div class="tr-company-name" id="trCompanyName"></div>
+      <p class="tr-desc" data-i18n="trDesc"></p>
+      <ul class="tr-points">
+        <li data-i18n="trPoint1"></li>
+        <li data-i18n="trPoint2"></li>
+        <li data-i18n="trPoint3"></li>
+      </ul>
+      <div class="field">
+        <label data-i18n="trPasscodeLabel"></label>
+        <div class="passcode-wrap">
+          <input type="text" id="trPasscode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button type="button" class="passcode-toggle" data-target="trPasscode">👁️</button>
+        </div>
+      </div>
+      <div class="field-error" id="trError"></div>
+      <button class="btn btn-primary full-btn" id="trSubmitBtn" data-i18n="trSubmitBtn"></button>
+    </div>
+
+    <div id="trLinkStep" style="display:none;">
+      <div class="tr-company-name" id="trLinkCompanyName"></div>
+      <p class="tr-desc" data-i18n="trLinkDesc"></p>
+      <div class="tr-link-box" id="trLinkBox"></div>
+      <div class="tr-expiry" id="trExpiry"></div>
+      <div class="tr-link-actions">
+        <button class="btn btn-primary full-btn" id="trCopyBtn" data-i18n="trCopyBtn"></button>
+        <button class="btn btn-ghost full-btn" id="trShareBtn" data-i18n="trShareBtn"></button>
+      </div>
+      <button class="btn btn-ghost full-btn" data-close="transferModal" data-i18n="trDoneBtn"></button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Edit Company Modal (TOKBUD #7: ใช้ฟอร์มเดียวกับตอนสร้าง (createModal ใน index.html) ทั้งหมด
      ตาม feedback ของ Pop — เดิมแก้ได้แค่ชื่อ+โลโก้ ตอนนี้แก้ได้ทุก field เหมือนตอนสร้าง (pre-fill ข้อมูลเดิมเข้าไปก่อน)
      ตรงกับ actionEditCompany เวอร์ชันใหม่ฝั่ง backend ที่รับ field ครบชุดแล้ว ===== -->
@@ -994,7 +1057,36 @@ const I18N = {
     // ร่วมกับ popup อื่นๆ ทั่วไป — รู้สึกแข็งกระด้างเกินไปสำหรับจังหวะที่ user เพิ่งแก้ไขคอมเมนต์ของตัวเองเสร็จ
     // (ไม่ใช่ตอนส่งคอมเม้นท์ใหม่ครั้งแรก อันนั้นมี popup "Give my comment"/thank-you ของตัวเองแยกอยู่แล้ว) เลย
     // แยก key ใหม่เฉพาะจุดนี้ ให้เป็นโทนขอบคุณแทน ไม่กระทบ noticeTitle ที่จุดอื่นยังใช้ร่วมกันอยู่
-    editSuccessTitle: 'ขอบคุณ'
+    editSuccessTitle: 'ขอบคุณ',
+    trTransferBtn: "ส่งมอบ",
+    trTitle: "ส่งมอบบริษัทให้คนอื่นดูแลต่อ",
+    trDesc: "สร้างลิงก์ให้ผู้ที่จะรับช่วงดูแลต่อ แล้วส่งผ่าน LINE หรือช่องทางที่คุณสะดวก",
+    trPoint1: "คุณจะแก้ไข ซ่อน/เผยแพร่ หรือขอลบบริษัทนี้ไม่ได้อีก",
+    trPoint2: "คอมเมนต์และโหวตทั้งหมดอยู่กับบริษัทเหมือนเดิม และย้ายไปอยู่ใน My Company ของผู้รับ",
+    trPoint3: "ลิงก์ใช้ได้ครั้งเดียว หมดอายุใน 3 วัน และยกเลิกได้ทุกเมื่อก่อนมีคนกดรับ",
+    trPasscodeLabel: "กรอก Passcode ของคุณเพื่อยืนยันการส่งมอบ",
+    trSubmitBtn: "สร้างลิงก์ส่งมอบ",
+    trLinkTitle: "ลิงก์ส่งมอบพร้อมแล้ว",
+    trLinkDesc: "ส่งลิงก์นี้ให้ผู้ที่จะรับช่วงดูแล เมื่อเขาเปิดลิงก์และกดยอมรับ บริษัทจะย้ายไปอยู่ใน My Company ของเขาทันที",
+    trExpiresPrefix: "ลิงก์หมดอายุ",
+    trCopyBtn: "คัดลอกลิงก์",
+    trShareBtn: "แชร์",
+    trCopiedToast: "คัดลอกลิงก์แล้ว",
+    trCopyFailedToast: "คัดลอกอัตโนมัติไม่ได้ กรุณากดค้างที่ลิงก์เพื่อคัดลอก",
+    trDoneBtn: "เสร็จสิ้น",
+    trPendingBadge: "รอผู้รับยอมรับ",
+    trCancelLinkBtn: "ยกเลิก",
+    trCancelTitle: "ยกเลิกลิงก์ส่งมอบ?",
+    trCancelMsg: "ลิงก์เดิมจะใช้ไม่ได้อีก คุณยังเป็นเจ้าของบริษัทนี้ และสร้างลิงก์ใหม่ได้ทุกเมื่อ",
+    trKeepBtn: "ไว้ก่อน",
+    trCancelConfirmBtn: "ยกเลิกลิงก์",
+    trDeleteBlockedMsg: "บริษัทนี้มีลิงก์ส่งมอบที่ยังใช้ได้อยู่ กรุณายกเลิกลิงก์ก่อน จึงจะขอลบได้",
+    trBlockedByDeleteMsg: "บริษัทนี้มีคำขอลบค้างอยู่ กรุณายกเลิกคำขอลบก่อน จึงจะส่งมอบได้",
+    trHistoryTitle: "ส่งมอบแล้ว",
+    trTransferredLine: "ส่งมอบให้ {user} แล้ว",
+    trCompletedAt: "ส่งมอบเรียบร้อยเมื่อ",
+    trShareTitle: "ส่งมอบบริษัทบน TOKBUD",
+    trShareText: "ฉันขอส่งมอบบริษัท \"{name}\" บน TOKBUD ให้คุณดูแลต่อ เปิดลิงก์เพื่อดูรายละเอียดและกดยอมรับ"
   },
   en: {
     backHome: '← Back to Home', lockedTitle: 'Please log in first',
@@ -1106,7 +1198,36 @@ const I18N = {
     errMainReasonRequired: 'Please fill in your answer before saving', understandBtn: 'Got it', okBtn: 'OK',
     noticeTitle: 'Notice', confirmActionTitle: 'Confirm Action',
     cancelBtnGeneric: 'Cancel', confirmBtnGeneric: 'Confirm', reloginBtn: 'Log in again',
-    editSuccessTitle: 'Thank you'
+    editSuccessTitle: 'Thank you',
+    trTransferBtn: "Transfer",
+    trTitle: "Transfer this company",
+    trDesc: "Create a link for the person who will take over. Send it via LINE or any channel you like.",
+    trPoint1: "You'll no longer be able to edit, hide/publish, or request deletion of this company.",
+    trPoint2: "All comments and votes stay with the company and move to the new owner's My Company.",
+    trPoint3: "The link works once, expires in 3 days, and you can cancel it any time before it's accepted.",
+    trPasscodeLabel: "Enter your passcode to confirm the transfer",
+    trSubmitBtn: "Create transfer link",
+    trLinkTitle: "Your transfer link is ready",
+    trLinkDesc: "Send this link to the person who will take over. Once they open it and accept, the company moves to their My Company right away.",
+    trExpiresPrefix: "Link expires",
+    trCopyBtn: "Copy link",
+    trShareBtn: "Share",
+    trCopiedToast: "Link copied",
+    trCopyFailedToast: "Couldn't copy automatically. Please long-press the link to copy it",
+    trDoneBtn: "Done",
+    trPendingBadge: "Transfer pending",
+    trCancelLinkBtn: "Cancel",
+    trCancelTitle: "Cancel this transfer link?",
+    trCancelMsg: "The current link will stop working. You'll still own this company and can create a new link any time.",
+    trKeepBtn: "Keep it",
+    trCancelConfirmBtn: "Cancel link",
+    trDeleteBlockedMsg: "This company has an active transfer link. Please cancel the link before requesting deletion.",
+    trBlockedByDeleteMsg: "This company has a pending delete request. Please cancel the delete request before transferring it.",
+    trHistoryTitle: "Transferred",
+    trTransferredLine: "Transferred to {user}",
+    trCompletedAt: "Handed over on",
+    trShareTitle: "Company handover on TOKBUD",
+    trShareText: "I'd like to hand over the company \"{name}\" on TOKBUD to you. Open the link to review and accept."
   }
 };
 // P0-fix (feedback ของ Pop: พบ getLang() ที่นี่ default ผิดทิศ เหมือนบั๊กเดียวกันที่เจอใน mytype.txt — เทียบกับ
@@ -1158,6 +1279,7 @@ function setLang(lang){
   // เดียวกัน: การ์ด My Company (สถานะ/label ความคิดเห็น) เป็น dynamic HTML ผ่าน t18n() เหมือนกัน
   // แต่เดิมไม่ได้ re-render ตรงนี้ เลยค้างภาษาเดิมตอนสลับ TH/EN (บั๊กที่ Pop เจอ — แก้ต้นตอตรงนี้)
   if(STATE.myTopics && STATE.myTopics.length) renderMyTopics();
+  if(STATE.myTransferred && STATE.myTransferred.length) renderTransferred();
 }
 document.querySelectorAll('.lang-toggle button').forEach(b=>{
   b.addEventListener('click', ()=> setLang(b.dataset.lang));
@@ -1632,7 +1754,9 @@ async function loadMyTopics(){
   const res = await api('getMyCompanies', { session_token: STATE.session.session_token });
   if(!res.success){ showToast(res.message); return false; }
   STATE.myTopics = res.companies || [];
+  STATE.myTransferred = res.transferred_out || [];
   renderMyTopics();
+  renderTransferred();
   loadCommentCountsForMyTopics(); // lazy: ไม่บล็อกการโชว์ลิสต์หลัก เหมือน loadDashboards() ใน index.html
   return true;
 }
@@ -1735,8 +1859,10 @@ function renderMyTopics(){
           ${toggleBtn}
           <button class="mt-action-btn edit" data-action="edit" data-topic="${t.company_id}">Edit</button>
           <button class="mt-action-btn export" data-action="export" data-topic="${t.company_id}">${t18n('exportBtn')}</button>
+          ${t.transfer ? '' : `<button class="mt-action-btn transfer" data-action="transfer" data-topic="${t.company_id}">${t18n('trTransferBtn')}</button>`}
           <button class="mt-action-btn delete" data-action="delete" data-topic="${t.company_id}">Delete</button>
         </div>
+        ${transferNoteHTML(t)}
       </div>`;
   }).join('');
 }
@@ -1771,10 +1897,34 @@ document.getElementById('myTopicsList').addEventListener('click', (e)=>{
   } else if(btn.dataset.action === 'delete'){
     // #3 feedback ของ Pop: กันกดส่งคำขอลบซ้ำ เช็ค flag has_pending_delete_request ที่ backend คำนวณมาให้ตั้งแต่
     // ตอนโหลดลิสต์ (ดู actionGetMyCompanies) ถ้ามีคำขอค้างอยู่แล้ว โชว์ popup เตือนแทนที่จะเปิดฟอร์มขอลบซ้ำ
-    if(topic.has_pending_delete_request){
+    if(topic.transfer){
+      // มีลิงก์ส่งมอบที่ยังใช้ได้ -> บอกก่อนเลย ไม่ต้องให้กรอกฟอร์ม+passcode แล้วค่อยโดน backend ปฏิเสธ
+      showInfoPopup(t18n('trDeleteBlockedMsg'), t18n('okBtn'));
+    } else if(topic.has_pending_delete_request){
       showDeleteAlreadyPendingPopup(companyId);
     } else {
       openDeleteCompanyModal(companyId, topic.company_name);
+    }
+  } else if(btn.dataset.action === 'transfer'){
+    if(topic.has_pending_delete_request){
+      showInfoPopup(t18n('trBlockedByDeleteMsg'), t18n('okBtn'));
+    } else {
+      openTransferModal(companyId, topic.company_name);
+    }
+  } else if(btn.dataset.action === 'transfer-copy'){
+    if(topic.transfer) copyTransferLink(buildTransferUrl(topic.transfer.transfer_id), ()=> openTransferLinkModal(topic));
+  } else if(btn.dataset.action === 'transfer-share'){
+    if(topic.transfer) shareTransferLink(buildTransferUrl(topic.transfer.transfer_id), topic.company_name);
+  } else if(btn.dataset.action === 'transfer-cancel'){
+    if(topic.transfer){
+      showConfirmPopup({
+        title: t18n('trCancelTitle'),
+        message: t18n('trCancelMsg'),
+        cancelLabel: t18n('trKeepBtn'),
+        confirmLabel: t18n('trCancelConfirmBtn'),
+        danger: true,
+        onConfirm: ()=> doCancelTransfer(topic.transfer.transfer_id)
+      });
     }
   }
 });
@@ -1883,6 +2033,171 @@ async function doCancelDeleteRequest(companyId){
   showInfoPopup(pickLang(res.message), pickLang('ตกลง / OK'));
   // รีเฟรชลิสต์ให้ has_pending_delete_request กลับเป็น false ปุ่ม Delete เปิดให้ส่งคำขอใหม่ได้ตามปกติ
   loadMyTopics();
+}
+
+/* ================= Transfer Company (ส่งมอบบริษัทให้คนอื่นดูแลต่อ) =================
+ * ผู้ส่ง: กด Transfer -> อ่านผลที่ตามมา -> กรอก passcode -> ได้ลิงก์ index.html?transfer=ID (ใช้ครั้งเดียว อายุ 3 วัน)
+ *        -> Copy/Share ส่งให้ผู้รับเอง (LINE ฯลฯ)  ผู้รับเปิดลิงก์แล้วกดรับที่หน้า Home (ดู index.txt)
+ * การ์ดที่มีลิงก์ค้างอยู่จะโชว์แถบ "Transfer pending" + Copy/Share/Cancel; หลังมีคนรับ บริษัทจะหายจากลิสต์นี้
+ * (ownership ย้ายที่ backend) แล้วไปโผล่ในส่วน "Transferred" ใต้ลิสต์ พร้อมชื่อผู้รับและวัน-เวลาที่ส่งมอบสำเร็จ
+ * กติกา/การตรวจสอบทั้งหมดอยู่ฝั่ง backend (appscript.txt: createTransfer/cancelTransfer) -- ฝั่งนี้แค่ช่วยไม่ให้ user เสียเวลากรอกฟอร์มฟรี */
+let trCurrentCompanyId = '';
+let trCurrentCompanyName = '';
+let trCurrentUrl = '';
+
+function buildTransferUrl(transferId){
+  // profile.html กับ index.html อยู่โฟลเดอร์เดียวกัน -> resolve จาก URL ปัจจุบัน (ใช้ได้ทั้ง prod/preview)
+  return new URL('index.html?transfer=' + encodeURIComponent(transferId), location.href).href;
+}
+
+function transferShareText(companyName, url){
+  return t18n('trShareText').replace('{name}', companyName) + '\n' + url;
+}
+
+async function copyText(text){
+  try{
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); return true; }
+  }catch(e){ /* ไปลองวิธีสำรองด้านล่าง */ }
+  try{ // สำรอง: iOS/WebView เก่าที่ไม่มี clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, text.length);
+    const okCopy = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return !!okCopy;
+  }catch(e){ return false; }
+}
+
+async function copyTransferLink(url, onFail){
+  const copied = await copyText(url);
+  if(copied){ showToast(t18n('trCopiedToast')); return; }
+  showToast(t18n('trCopyFailedToast'));
+  if(onFail) onFail(); // เปิด modal ที่มีลิงก์ให้กดค้างคัดลอกเอง
+}
+
+async function shareTransferLink(url, companyName){
+  if(navigator.share){
+    try{
+      // ใส่ URL ไว้ใน text (ไม่ส่ง field url แยก) -- บางแอปอย่าง LINE ตัด/สลับ field url (pattern เดียวกับ share ใน index.txt)
+      await navigator.share({ title: t18n('trShareTitle'), text: transferShareText(companyName, url) });
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return; // ผู้ใช้ปิดหน้าต่างแชร์เอง ไม่ต้องทำอะไรต่อ
+    }
+  }
+  copyTransferLink(url); // เครื่องที่แชร์ไม่ได้/แชร์พลาด -> ตกมาที่คัดลอก
+}
+
+function showTransferStep(step){
+  const isLink = step === 'link';
+  document.getElementById('trFormStep').style.display = isLink ? 'none' : 'block';
+  document.getElementById('trLinkStep').style.display = isLink ? 'block' : 'none';
+  const titleEl = document.getElementById('trModalTitle');
+  const key = isLink ? 'trLinkTitle' : 'trTitle';
+  titleEl.setAttribute('data-i18n', key); // ให้ปุ่มสลับภาษาอัปเดตหัวข้อตามขั้นที่เปิดอยู่
+  titleEl.textContent = t18n(key);
+}
+
+function showTransferLink(transferId, expiresAt){
+  trCurrentUrl = buildTransferUrl(transferId);
+  document.getElementById('trLinkCompanyName').textContent = trCurrentCompanyName;
+  document.getElementById('trLinkBox').textContent = trCurrentUrl;
+  const exp = formatCommentTime(expiresAt);
+  document.getElementById('trExpiry').textContent = exp ? `${t18n('trExpiresPrefix')} ${exp}` : '';
+  document.getElementById('trShareBtn').style.display = navigator.share ? '' : 'none';
+  showTransferStep('link');
+}
+
+function openTransferModal(companyId, companyName){
+  trCurrentCompanyId = companyId;
+  trCurrentCompanyName = companyName || '';
+  document.getElementById('trCompanyName').textContent = trCurrentCompanyName;
+  document.getElementById('trPasscode').value = '';
+  document.getElementById('trError').style.display = 'none';
+  showTransferStep('form');
+  openModal('transferModal');
+}
+
+// เปิด modal ที่ขั้น "ลิงก์" ของบริษัทที่มีลิงก์ค้างอยู่แล้ว (ใช้เป็นทางสำรองเมื่อคัดลอกอัตโนมัติไม่ได้)
+function openTransferLinkModal(topic){
+  trCurrentCompanyId = topic.company_id;
+  trCurrentCompanyName = topic.company_name || '';
+  showTransferLink(topic.transfer.transfer_id, topic.transfer.expires_at);
+  openModal('transferModal');
+}
+
+document.getElementById('trSubmitBtn').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('trError');
+  errEl.style.display = 'none';
+  const passcode = document.getElementById('trPasscode').value.trim();
+  if(!passcode){ errEl.textContent = t18n('dcErrPasscodeRequired'); errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('trSubmitBtn');
+  setBtnLoading(btn, true, t18n('savingText'));
+  const res = await api('createTransfer', { session_token: STATE.session.session_token, company_id: trCurrentCompanyId, passcode }, 'POST');
+  setBtnLoading(btn, false);
+
+  if(!res.success){
+    errEl.textContent = pickLang(res.message);
+    errEl.style.display = 'block';
+    return;
+  }
+  document.getElementById('trPasscode').value = ''; // ไม่ทิ้ง passcode ค้างในหน้าเว็บ
+  showTransferLink(res.transfer_id, res.expires_at);
+  loadMyTopics(); // การ์ดจะขึ้นแถบ Transfer pending
+});
+
+document.getElementById('trCopyBtn').addEventListener('click', ()=> copyTransferLink(trCurrentUrl));
+document.getElementById('trShareBtn').addEventListener('click', ()=> shareTransferLink(trCurrentUrl, trCurrentCompanyName));
+
+async function doCancelTransfer(transferId){
+  const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+  const cancelBtn = document.getElementById('confirmModalCancelBtn');
+  if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = t18n('savingText'); }
+  if(cancelBtn) cancelBtn.disabled = true;
+
+  const res = await api('cancelTransfer', { session_token: STATE.session.session_token, transfer_id: transferId }, 'POST');
+  closeModal('confirmModal');
+  showInfoPopup(pickLang(res.message), t18n('okBtn'));
+  loadMyTopics(); // ไม่ว่าสำเร็จหรือไม่ (เช่น มีคนกดรับตัดหน้า) รีเฟรชให้ตรงความจริงเสมอ
+}
+
+// แถบใต้การ์ดที่มีลิงก์ส่งมอบค้างอยู่
+function transferNoteHTML(topic){
+  if(!topic.transfer) return '';
+  const exp = formatCommentTime(topic.transfer.expires_at);
+  const id = topic.company_id;
+  return `
+        <div class="mt-transfer-note">
+          <div class="tn-info">
+            <span class="status-badge pending">${escapeHtml(t18n('trPendingBadge'))}</span>
+            ${exp ? `<span class="tn-exp">${escapeHtml(t18n('trExpiresPrefix'))} ${escapeHtml(exp)}</span>` : ''}
+          </div>
+          <div class="tn-actions">
+            <button type="button" data-action="transfer-copy" data-topic="${id}">${escapeHtml(t18n('trCopyBtn'))}</button>
+            ${navigator.share ? `<button type="button" data-action="transfer-share" data-topic="${id}">${escapeHtml(t18n('trShareBtn'))}</button>` : ''}
+            <button type="button" class="tn-cancel" data-action="transfer-cancel" data-topic="${id}">${escapeHtml(t18n('trCancelLinkBtn'))}</button>
+          </div>
+        </div>`;
+}
+
+// ประวัติที่ส่งมอบสำเร็จแล้ว: ชื่อบริษัท + "ส่งมอบให้ @xxx แล้ว" + วัน-เวลาตัวเล็กสีเทา
+function renderTransferred(){
+  const el = document.getElementById('myTransferredList');
+  const list = STATE.myTransferred || [];
+  if(!list.length){ el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="transferred-title">${escapeHtml(t18n('trHistoryTitle'))}</div>` + list.map(x => {
+    const when = formatCommentTime(x.completed_at);
+    const line = t18n('trTransferredLine').replace('{user}', '@' + (x.to_username || '-'));
+    return `
+      <div class="transferred-row">
+        <span class="tr-name">${escapeHtml(x.company_name || '-')}</span>
+        <span class="tr-to">${escapeHtml(line)}</span>
+        ${when ? `<span class="tr-time">${escapeHtml(t18n('trCompletedAt'))} ${escapeHtml(when)}</span>` : ''}
+      </div>`;
+  }).join('');
 }
 
 /* ================= My Comment tab (ใหม่สำหรับ TOKBUD) =================
@@ -2895,6 +3210,10 @@ async function initProfilePage(){
   const urlParams = new URLSearchParams(window.location.search);
   if(urlParams.get('tab') === 'planbilling'){
     goToPlanBillingTab();
+  } else if(urlParams.get('tab') === 'mytopics'){
+    // หลังกดรับช่วงดูแลบริษัทจากลิงก์ (index.txt) -> มาโผล่ที่ My Company ทันที
+    const myTopicsTabBtn = document.querySelector('.tab-btn[data-tab="mytopics"]');
+    if(myTopicsTabBtn) myTopicsTabBtn.click();
   }
   if(urlParams.get('checkout')){
     confirmCheckoutIfNeeded();
