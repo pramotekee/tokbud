@@ -251,6 +251,9 @@
      จะกลายเป็นแค่ 1 grid cell แคบๆ ไปนอนอยู่คอลัมน์ซ้ายสุด แทนที่จะเต็มความกว้าง ทำให้ข้อความดูเบี้ยวไปทางซ้าย
      ทั้งที่ text-align:center ทำงานถูกแล้ว (แค่ทำงานถูกในกล่องแคบๆนั้นเอง) — สั่งให้กินเต็มทุกคอลัมน์เสมอ */
   .feed.view-carousel .empty-state{ grid-column:1 / -1; }
+  /* เหมือนกันกับ Loading placeholder ("Loading companies..." / "Loading topic..."): ใน carousel (grid 3-6 คอลัมน์) ถ้าไม่ให้กินทั้งแถว
+     มันจะตกอยู่ช่องแรก -> ชิดซ้าย + ข้อความถูกบีบหลายบรรทัด (renderFeed() ใส่คลาส view-carousel ไว้แล้วก่อนรอบโหลดถัดไป) */
+  .feed.view-carousel .area-loading{ grid-column:1 / -1; }
 
   /* ===== Line view (feature: View by Card/Line) ===== */
   .feed.view-line{ gap:8px; } /* แถบเส้นบางกว่าการ์ดเต็ม ใช้ gap แคบลงเพื่อไม่ให้ดูโล่งเกินไป */
