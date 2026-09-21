@@ -180,10 +180,33 @@
   .view-toggle{ display:flex; background:var(--surface); border:1.5px solid var(--line); border-radius:100px; padding:3px; }
   .view-toggle button{ padding:6px 12px; border-radius:100px; font-size:13px; color:var(--text-muted); }
   .view-toggle button.active{ background:var(--primary); color:#fff; }
-  #feedSortToggle{ width:fit-content; margin-bottom:10px; }
+  #feedSortToggle{ width:fit-content; max-width:100%; overflow-x:auto; scrollbar-width:none; }
+  #feedSortToggle::-webkit-scrollbar{ display:none; }
+  #feedSortToggle button{ white-space:nowrap; }
+  .sort-divider{ flex-shrink:0; width:1px; margin:5px 5px; background:var(--line); }
+  @media(max-width:380px){ #feedSortToggle button{ padding:6px 9px; } }
+  @media(max-width:340px){ #feedSortToggle button{ padding:6px 7px; font-size:12px; } }
 
-  .pill-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
-  .pill-row::-webkit-scrollbar{ display:none; }
+  /* แถว sort toggle + dropdown หมวดหมู่ — จอกว้างอยู่แถวเดียวกัน จอแคบ dropdown ตกลงมาเต็มความกว้าง */
+  .filter-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:2px; }
+  .category-select{
+    flex:1 1 200px; max-width:280px; min-width:0;
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    padding:9px 36px 9px 16px; border-radius:100px; font-size:13px; line-height:1.3;
+    background-color:var(--surface); color:var(--text-muted); border:1.5px solid var(--line);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%235C6B9E' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 15px center;
+    outline:none; cursor:pointer; text-overflow:ellipsis; transition:all .15s ease;
+  }
+  .category-select:focus-visible{ border-color:var(--primary); }
+  /* เลือกหมวดอยู่ (ไม่ใช่ All) -> ไฮไลต์เหมือน pill ที่ selected เดิม ให้เห็นทันทีว่ากำลังกรองอยู่ */
+  .category-select.has-value{
+    background-color:var(--primary); border-color:var(--primary); color:#fff; font-weight:500;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%23FFFFFF' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  }
+  /* option ต้องระบุสีเองเสมอ ไม่งั้นบาง browser สืบทอดสีขาวจาก .has-value ทำให้ตัวหนังสือในลิสต์มองไม่เห็น */
+  .category-select option{ color:var(--text); background:#fff; font-weight:400; }
+  @media(max-width:560px){ .category-select{ flex-basis:100%; max-width:none; } }
   .result-count-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:10px; }
   .result-count{ font-size:12.5px; color:var(--text-muted); padding:0 2px; }
   .result-count b{ color:var(--text); }
@@ -210,12 +233,6 @@
   .page-btn:disabled{ opacity:.4; cursor:not-allowed; }
   .page-ellipsis{ color:var(--text-muted); padding:0 2px; font-size:13px; }
   @media(max-width:480px){ .page-size-select{ margin-left:0; width:100%; order:10; } }
-  .category-pill{
-    flex-shrink:0; padding:8px 16px; border-radius:100px; font-size:13px;
-    background:var(--surface); border:1.5px solid var(--line); color:var(--text-muted);
-    white-space:nowrap; transition:all .15s ease;
-  }
-  .category-pill.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:500; }
 
   /* ===== Voter targeting checklist (สร้าง/แก้ไขหัวข้อ) ===== */
   /* หมายเหตุ: ต้อง prefix ด้วย .target-checklist เสมอ เพราะ .field label (specificity class+element)
@@ -815,12 +832,17 @@
       <input type="text" id="searchInput" placeholder="ค้นหาหัวข้อ, tag..." data-i18n-ph="searchPlaceholder">
     </div>
   </div>
-  <div class="view-toggle" id="feedSortToggle">
-    <button data-sort="shuffle" class="active" data-i18n="sortShuffle">Shuffle</button>
-    <button data-sort="latest" data-i18n="sortLatest">Latest</button>
-    <button data-sort="popular" data-i18n="sortPopular">Popular</button>
+  <div class="filter-row">
+    <div class="view-toggle" id="feedSortToggle">
+      <button data-sort="shuffle" class="active" data-i18n="sortShuffle">Shuffle</button>
+      <button data-sort="latest" data-i18n="sortLatest">Latest</button>
+      <button data-sort="popular" data-i18n="sortPopular">Popular</button>
+      <span class="sort-divider" aria-hidden="true"></span>
+      <button data-sort="name_asc" aria-label="Sort by company name A to Z" title="Company name A to Z">A–Z</button>
+      <button data-sort="name_desc" aria-label="Sort by company name Z to A" title="Company name Z to A">Z–A</button>
+    </div>
+    <select class="category-select" id="categorySelect" aria-label="Filter by category"></select>
   </div>
-  <div class="pill-row" id="categoryPills"></div>
   <div class="result-count-row">
     <div class="result-count" id="resultCount"></div>
     <div class="feed-view-toggle" id="feedViewToggle">
@@ -2321,38 +2343,38 @@ function populateBirthMonths(){
 
 // P0-fix (หน้าแรกโหลดช้า/error บ่อย): แยกส่วน render ออกจากส่วนยิง api() เพื่อให้ loadHomeFeed() (ดูด้านล่าง)
 // เอา categories ที่ได้มาจากคำขอ getHomeFeed คำขอเดียวมา render ตรงนี้ซ้ำได้ ไม่ต้องยิง getCategories แยก
-function renderCategoryPills(categories){
+function renderCategorySelect(categories){
   STATE.categories = categories || [];
-  const wrap = document.getElementById('categoryPills');
-  wrap.innerHTML = '';
-  const allPill = document.createElement('button');
-  allPill.className = 'category-pill selected';
-  allPill.textContent = 'All';
-  allPill.addEventListener('click', ()=> selectCategory('', allPill));
-  wrap.appendChild(allPill);
-
+  const sel = document.getElementById('categorySelect');
+  sel.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = 'All categories';
+  sel.appendChild(allOpt);
   STATE.categories.forEach(cat=>{
-    const pill = document.createElement('button');
-    pill.className = 'category-pill';
-    pill.textContent = cat;
-    pill.addEventListener('click', ()=> selectCategory(cat, pill));
-    wrap.appendChild(pill);
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat; // ใช้ textContent (ไม่ใช่ innerHTML) กันชื่อหมวดที่มีอักขระพิเศษเช่น & ทำ HTML พัง
+    sel.appendChild(opt);
   });
+  // คงค่าที่เลือกไว้แล้วถ้ายังมีอยู่ในลิสต์ (กันกรณี render ซ้ำแล้ว dropdown เด้งกลับเป็น All ทั้งที่ STATE ยังกรองหมวดอยู่)
+  if(STATE.activeCategory && STATE.categories.indexOf(STATE.activeCategory) === -1) STATE.activeCategory = '';
+  sel.value = STATE.activeCategory || '';
+  sel.classList.toggle('has-value', !!sel.value);
 }
 async function loadCategories(){
   const res = await api('getCategories');
-  renderCategoryPills(res.success ? res.categories : []);
+  renderCategorySelect(res.success ? res.categories : []);
 }
 
-function selectCategory(cat, el){
-  STATE.activeCategory = cat;
+document.getElementById('categorySelect').addEventListener('change', (e)=>{
+  STATE.activeCategory = e.target.value;
   STATE.page = 1;
-  document.querySelectorAll('.category-pill').forEach(p=> p.classList.remove('selected'));
-  if(el) el.classList.add('selected');
+  e.target.classList.toggle('has-value', !!e.target.value);
   loadTopics();
-}
+});
 
-// สลับโหมดเรียงฟีด (Shuffle/Latest/Popular) — เป็นอิสระจากหมวดหมู่/คำค้นหาที่เลือกไว้อยู่ ไม่รีเซ็ตตัวกรองอื่น
+// สลับโหมดเรียงฟีด (Shuffle/Latest/Popular/A-Z/Z-A) — เป็นอิสระจากหมวดหมู่/คำค้นหาที่เลือกไว้อยู่ ไม่รีเซ็ตตัวกรองอื่น
 // แค่เปลี่ยนลำดับการ์ดของหัวข้อที่ผ่าน filter เดิม แล้ว fetch หน้า 1 ใหม่
 document.getElementById('feedSortToggle').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-sort]');
@@ -2641,7 +2663,7 @@ async function loadHomeFeed(){
   renderResultCount();
   renderPagination();
 
-  renderCategoryPills(res.success ? res.categories : []);
+  renderCategorySelect(res.success ? res.categories : []);
   initHeroBanners(res.success ? res.banners : []);
   // FIX (feedback ของ Pop, ปุ่ม "+ Company" หมุนนาน): card colors พ่วงมากับ getHomeFeed แล้ว (ดู
   // actionGetHomeFeed ฝั่ง backend) loadCreateFormOptions() ด้านล่างเลยไม่ต้องยิง action=getCardColors
@@ -3949,7 +3971,7 @@ let heroPeriod = 0; // ความกว้างของ banner "1 ชุด"
 let heroDragging = false, heroStartX = 0, heroStartOffset = 0, heroUserOffset = 0, heroAutoOffset = 0;
 let heroRafStarted = false, heroDragBound = false;
 
-// P0-fix (หน้าแรกโหลดช้า/error บ่อย): แยกส่วน render/init ออกจากส่วนยิง api() เหมือน renderCategoryPills()
+// P0-fix (หน้าแรกโหลดช้า/error บ่อย): แยกส่วน render/init ออกจากส่วนยิง api() เหมือน renderCategorySelect()
 // ด้านบน ให้ loadHomeFeed() เอา banners ที่ได้จากคำขอ getHomeFeed คำขอเดียวมาสร้าง track ตรงนี้ซ้ำได้
 function initHeroBanners(banners){
   STATE.heroBanners = banners || [];
