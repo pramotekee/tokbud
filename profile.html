@@ -1055,6 +1055,10 @@ const I18N = {
     // t18n() แทนการ hardcode ในทุกจุดที่เจอ (ทั้งฟังก์ชัน default และจุดเรียกตรงๆ เช่น force_logout popup)
     noticeTitle: 'แจ้งให้ทราบ', confirmActionTitle: 'ยืนยันการทำรายการ',
     cancelBtnGeneric: 'ยกเลิก', confirmBtnGeneric: 'ยืนยัน', reloginBtn: 'เข้าสู่ระบบใหม่',
+    // FIX (feedback ของ Pop): เดิมข้อความ network error hardcode เป็น EN ตรงๆ ใน api() ไม่ผ่าน t() เลย
+    // ย้ายมาเป็น i18n key ตรงนี้ + เปลี่ยนเป็นข้อความมิตรกว่าเดิม ตั้งใจให้เป็น EN ล้วนทั้ง th/en block เหมือน
+    // apiErrorMsg ของ index.txt (ธรรมเนียมเดียวกัน — ข้อความ error ทางเทคนิคใช้ EN แม้ user ตั้งภาษาเป็นไทย)
+    apiErrorMsg: 'Oops! That took a little too long — please try again.',
     // FIX (feedback ของ Pop): popup ตอนแก้ไข "My Comment" สำเร็จ เดิมใช้หัวข้อ default "แจ้งให้ทราบ" (noticeTitle)
     // ร่วมกับ popup อื่นๆ ทั่วไป — รู้สึกแข็งกระด้างเกินไปสำหรับจังหวะที่ user เพิ่งแก้ไขคอมเมนต์ของตัวเองเสร็จ
     // (ไม่ใช่ตอนส่งคอมเม้นท์ใหม่ครั้งแรก อันนั้นมี popup "Give my comment"/thank-you ของตัวเองแยกอยู่แล้ว) เลย
@@ -1200,6 +1204,7 @@ const I18N = {
     errMainReasonRequired: 'Please fill in your answer before saving', understandBtn: 'Got it', okBtn: 'OK',
     noticeTitle: 'Notice', confirmActionTitle: 'Confirm Action',
     cancelBtnGeneric: 'Cancel', confirmBtnGeneric: 'Confirm', reloginBtn: 'Log in again',
+    apiErrorMsg: 'Oops! That took a little too long — please try again.',
     editSuccessTitle: 'Thank you',
     trTransferBtn: "Transfer",
     trTitle: "Transfer this company",
@@ -1308,7 +1313,14 @@ let STATE = {
 
 /* ---------- API helper ---------- 
  * timeout ลดเหลือ 15 วิ/ครั้ง (รวม retry แล้ว worst-case 30 วิ) + retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง
- * error จริง — Apps Script cold start ช้าเป็นพักๆ เป็นเรื่องปกติ แต่ปล่อยให้รอนานเกิน 30 วิ/คำขอจะยิ่งแย่กว่าเดิม */
+ * error จริง — Apps Script cold start ช้าเป็นพักๆ เป็นเรื่องปกติ แต่ปล่อยให้รอนานเกิน 30 วิ/คำขอจะยิ่งแย่กว่าเดิม
+ * FIX (feedback ของ Pop, บั๊กข้อมูลซ้ำ — เจอจริงจาก createCompany ในหน้าแรก แต่ profile.txt มี action ที่เปลี่ยน
+ * ข้อมูล (POST, ไม่ idempotent) เยอะพอกัน เช่น vote/editCompany/createTransfer/deleteAccount/updateProfile ฯลฯ
+ * เสี่ยงบั๊กแบบเดียวกันได้ถ้าไม่แก้คู่กัน) -> เฉพาะ action ที่รู้แน่ชัดว่าแค่ "อ่าน" ข้อมูล (ใน
+ * RETRYABLE_POST_ACTIONS) เท่านั้นที่ retry ซ้ำได้อย่างปลอดภัย ส่วน POST ที่เปลี่ยนข้อมูลจริง ถ้าพังจะฟ้อง error
+ * ทันทีโดยไม่ retry ซ้ำ กันได้ทั้งบั๊กบริษัทซ้ำ/โหวตซ้ำ/transfer ซ้ำ ฯลฯ ในคราวเดียวกัน */
+const RETRYABLE_POST_ACTIONS = ['exportCompanyVotes'];
+
 async function api(action, params = {}, method = 'GET', _isRetry = false, _firstDiag = ''){
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -1338,11 +1350,16 @@ async function api(action, params = {}, method = 'GET', _isRetry = false, _first
     if(!reason) reason = (err && err.name === 'AbortError') ? 'timeout' : ('fetch_failed:' + ((err && err.message) || ''));
     const diag = reason + ' ' + (Date.now() - startedAt) + 'ms';
     console.warn('[api]', action, diag, _isRetry ? '(retry)' : '(1st attempt)');
-    if(!_isRetry) return api(action, params, method, true, diag); // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง
+    // retry เงียบๆ 1 ครั้งก่อนฟ้อง error จริง — เฉพาะ action ที่ retry ซ้ำได้อย่างปลอดภัยเท่านั้น (ดูคอมเมนต์
+    // RETRYABLE_POST_ACTIONS ด้านบน) กัน POST ที่เปลี่ยนข้อมูลจริงถูกยิงซ้ำจนได้ข้อมูลซ้ำ 2 รอบ
+    const canRetry = method === 'GET' || RETRYABLE_POST_ACTIONS.indexOf(action) !== -1;
+    if(canRetry && !_isRetry) return api(action, params, method, true, diag);
     // _networkError:true แยกไว้ให้ต่างจาก success:false ปกติที่ backend ตอบกลับมาจริงว่า "ไม่ผ่าน"
     // (เช่น session หมดอายุจริง) เพราะ 2 เคสนี้ต้องจัดการต่างกัน — request ที่ยิงไม่สำเร็จเลย ไม่ควรถูกตีความ
     // ว่า "session ไม่ถูกต้อง" แล้วบังคับ logout ทั้งที่จริงๆ แค่เน็ต/เซิร์ฟเวอร์สะดุดชั่วคราว
-    return { success:false, message:'Oops! Something went wrong. Please try again.', _networkError:true,
+    // FIX: เดิม hardcode ข้อความ EN ตรงนี้ตรงๆ ไม่ผ่าน t() เลย (ไม่รู้จัก TH/EN toggle) — ย้ายไปเป็น i18n key
+    // apiErrorMsg (เพิ่มใหม่ใน I18N ด้านล่าง) พร้อมเปลี่ยนเป็นข้อความที่เป็นมิตรกว่าเดิม (feedback ของ Pop)
+    return { success:false, message: t('apiErrorMsg'), _networkError:true,
              _diag: action + ' | try1: ' + _firstDiag + ' | try2: ' + diag };
   }finally{
     clearTimeout(timeoutId);
