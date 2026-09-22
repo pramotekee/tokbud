@@ -1349,7 +1349,7 @@ const I18N = {
     sideLabelPrefix: 'ฝั่ง',
     voteConfirmMsg: 'คุณกำลังเลือก "{side}" เมื่อยืนยันแล้วคำตอบของคุณจะถูกบันทึกทันที และสามารถกลับมาแก้ไขภายหลังได้ที่หน้า "ความคิดเห็นของฉัน"',
     voteAnonymityNotice: 'ตัวตนของคุณจะถูกเก็บเป็นความลับ คำตอบของคุณไม่ระบุตัวตน 100% <strong><u>เบอร์โทร อีเมล และชื่อผู้ใช้ของคุณจะไม่ถูกแสดงให้ใครเห็น</u></strong> คุณจึงแชร์ประสบการณ์จริงได้อย่างสบายใจ',
-    apiErrorMsg: 'Oops! Something went wrong. Please try again.',
+    apiErrorMsg: 'Oops! That took a little too long — please try again.',
     dashGenderTitle: 'เพศ', dashAgeGroupTitle: 'ช่วงอายุ', dashLoadingText: 'กำลังโหลดข้อมูล...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'หากคุณมีความคิดเห็นเพิ่มเติม แบ่งปันมาได้เลย',
     commentEmptyMsg: 'ยังไม่มีความคิดเห็นในฝั่งนี้',
@@ -1464,7 +1464,7 @@ const I18N = {
     sideLabelPrefix: 'Side',
     voteConfirmMsg: 'Once confirmed, your answer is saved immediately and you can come back to edit it anytime from "My Comment".',
     voteAnonymityNotice: 'Your identity stays private. Your answers are 100% anonymous. <strong><u>Your phone number, email, and username are never shown</u></strong>, so you can share your honest experience freely.',
-    apiErrorMsg: 'Oops! Something went wrong. Please try again.',
+    apiErrorMsg: 'Oops! That took a little too long — please try again.',
     dashGenderTitle: 'Gender', dashAgeGroupTitle: 'Age', dashLoadingText: 'Loading...', dashLoadFailedText: 'Couldn\'t load', dashRetryBtn: 'Try again',
     commentPlaceholder: 'Tell us more about your answer...',
     commentEmptyMsg: 'No comments on this side yet',
@@ -1580,6 +1580,15 @@ let STATE = {
 let EXPANDED_TOPIC_ID = null;
 
 /* ---------- API helper ---------- */
+// FIX (feedback ของ Pop, บั๊กบริษัทซ้ำ): เดิม retry เงียบๆ ใช้กับทุก action เหมือนกันหมด รวมถึง POST ที่ "เปลี่ยน"
+// ข้อมูลจริง (ไม่ idempotent เช่น createCompany/vote/editCompany) — ถ้าคำขอแรกจริงๆ สำเร็จไปแล้วฝั่ง backend
+// (แค่ response ตอบกลับมาไม่ทันตอน cold start) แต่ client เจอ timeout คิดว่า fail แล้วยิง retry ซ้ำ -> ได้ข้อมูล
+// ซ้ำ 2 แถวในชีท (ยืนยันแล้วจากเคสจริงของ Pop — บริษัทเดียวถูกสร้างซ้ำหลายรอบ) ทั้งที่ user กดปุ่มแค่ครั้งเดียว
+// -> action ที่เป็น POST และ "เปลี่ยน" ข้อมูล จะไม่ retry อัตโนมัติอีกต่อไป (ปลอดภัยกว่า แลกกับ user อาจเจอ error
+// เร็วขึ้นเล็กน้อยตอน cold start แทนที่จะรอ 30 วิให้ retry ช่วย) ส่วน GET (อ่านอย่างเดียว เสมอ idempotent) และ
+// POST ที่รู้แน่ชัดว่าแค่ "อ่าน" ข้อมูล (อยู่ใน RETRYABLE_POST_ACTIONS) ยัง retry ได้ตามเดิม ปลอดภัย
+const RETRYABLE_POST_ACTIONS = ['exportCompanyVotes'];
+
 async function api(action, params = {}, method = 'GET', _isRetry = false){
   // ลด timeout ต่อครั้งเหลือ 15 วิ (จากที่เคยขยับเป็น 30 วิ) เพราะรวมกับ retry 1 ครั้งแล้ว worst-case
   // จะยาวถึง 30 วิต่อ 1 คำขอ — ตอน init หน้าแรกมีหลายคำขอยิงพร้อมกัน (hero banner/categories/topics/session)
@@ -1601,8 +1610,10 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
     }
     return await res.json();
   }catch(err){
-    // retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง error จริงให้ user เห็น — ช่วยลด error หลอกจาก cold start/เน็ตสะดุดชั่วครู่
-    if(!_isRetry) return api(action, params, method, true);
+    // retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง error จริงให้ user เห็น — เฉพาะ action ที่ retry ซ้ำได้อย่างปลอดภัยเท่านั้น
+    // (ดูคอมเมนต์ RETRYABLE_POST_ACTIONS ด้านบน) ช่วยลด error หลอกจาก cold start/เน็ตสะดุดชั่วครู่ โดยไม่เสี่ยงข้อมูลซ้ำ
+    const canRetry = method === 'GET' || RETRYABLE_POST_ACTIONS.indexOf(action) !== -1;
+    if(canRetry && !_isRetry) return api(action, params, method, true);
     // _networkError:true = ยิง request ไม่สำเร็จเลย (timeout/เน็ตหลุด/response ไม่ใช่ JSON) แยกไว้ให้ต่างจาก
     // res.success===false ปกติที่ backend ตอบกลับมาจริงๆ ว่า "ไม่ผ่าน" (เช่น session หมดอายุจริง) — เพราะ 2 เคสนี้
     // ต้องจัดการต่างกัน จุดที่เรียก validateSession ต้อง "ไม่" logout ถ้าสาเหตุคือเน็ตสะดุด ไม่ใช่ session ไม่ถูกต้องจริง
