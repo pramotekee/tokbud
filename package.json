@@ -1,0 +1,8 @@
+{
+  "name": "tokbud",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "googleapis": "^173.0.0"
+  }
+}
