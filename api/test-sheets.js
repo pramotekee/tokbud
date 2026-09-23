@@ -1,8 +1,9 @@
 // ไฟล์ทดสอบเชื่อมต่อ Google Sheets ก่อนเริ่มเขียน backend จริง
-// v2: เปลี่ยนมาอ่านค่าจาก GOOGLE_SERVICE_ACCOUNT_JSON (ทั้งไฟล์ JSON วางเป็นค่าเดียว) แทนการแยก
-// EMAIL/PRIVATE_KEY เป็น 2 ตัวแปร — เดิมเสี่ยง private_key เพี้ยนตอน copy-paste บางส่วน (\n หาย/เกิน)
-// จนยืนยันตัวตนไม่ผ่านแบบเงียบๆ (error "unregistered callers") วิธีนี้ให้ JSON.parse() จัดการ escaping
-// ให้ทั้งหมด ตราบใดที่ copy ทั้งไฟล์มาวางครบ ไม่มีจุดเสี่ยงคนตัดข้อความเองผิดอีก
+// v3: FIX บั๊กจริง — เดิมสร้าง JWT client แบบเรียงตำแหน่ง (email, null, key, scopes) ซึ่งเป็นรูปแบบเก่า
+// ที่ google-auth-library เวอร์ชันใหม่ (ที่มากับ googleapis ตัวล่าสุด) ไม่รับค่า key ที่ส่งแบบนี้แล้ว
+// (เงียบๆ ไม่ error ตอนสร้าง แต่พอขอ token จริงจะฟ้อง "No key or keyFile set.") ยืนยันจากผล debug-auth.js
+// จริงที่ private_key ถูกต้องสมบูรณ์ทุกอย่าง แต่ authorize() ยัง fail อยู่ดี — เปลี่ยนมาส่งเป็น object แทน
+// ซึ่งเป็นรูปแบบที่ถูกต้องสำหรับเวอร์ชันปัจจุบัน ไม่มีปัญหาความเข้ากันได้แบบนี้อีก
 // ทดสอบได้โดยเปิด URL: https://tokbud.vercel.app/api/test-sheets
 
 const { google } = require('googleapis');
@@ -29,16 +30,16 @@ module.exports = async (req, res) => {
     } catch (e) {
       return res.status(500).json({
         success: false,
-        error: 'GOOGLE_SERVICE_ACCOUNT_JSON ไม่ใช่ JSON ที่ถูกต้อง — เช็คว่าคัดลอกไฟล์ .json ทั้งไฟล์มาวางครบหรือเปล่า (ต้องขึ้นต้นด้วย { และปิดท้ายด้วย })'
+        error: 'GOOGLE_SERVICE_ACCOUNT_JSON ไม่ใช่ JSON ที่ถูกต้อง — เช็คว่าคัดลอกไฟล์ .json ทั้งไฟล์มาวางครบหรือเปล่า'
       });
     }
 
-    const auth = new google.auth.JWT(
-      creds.client_email,
-      null,
-      creds.private_key,
-      ['https://www.googleapis.com/auth/spreadsheets.readonly']
-    );
+    // FIX: ส่งเป็น options object แทนการเรียงตำแหน่ง — แก้บั๊ก "No key or keyFile set."
+    const auth = new google.auth.JWT({
+      email: creds.client_email,
+      key: creds.private_key,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    });
 
     const sheets = google.sheets({ version: 'v4', auth });
     const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId });
