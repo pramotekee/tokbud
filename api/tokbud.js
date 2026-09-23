@@ -9,6 +9,8 @@
 // อ่าน Sheet สดใหม่ทุกครั้งที่มีคำขอเข้ามา — ถ้าข้อมูลโตจนรู้สึกช้าจริงค่อยกลับมาเพิ่ม cache ทีหลัง
 
 const { google } = require('googleapis');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 const SHEETS = {
   USERS: 'users',
@@ -17,6 +19,11 @@ const SHEETS = {
   CATEGORIES: 'categories',
   DELETEREQUESTS: 'deleterequests'
 };
+
+// หมายเหตุ: ลำดับคอลัมน์จริงของ tab users ไม่ได้ fix ไว้ในโค้ดแล้ว — ทุกจุดที่เขียน/หาตำแหน่งคอลัมน์
+// จะอ่านชื่อ header จากแถวแรกของชีทสดๆ ทุกครั้ง (ดู parseRowsWithHeaders/colIndexByName ด้านล่าง)
+// ตรงตามหลักการเดิมของ appscript.txt (getHeaders()+colIndex()) — สลับลำดับคอลัมน์ในชีทเองได้อิสระ
+// ไม่ต้องมาคอยเช็ค/ล็อคลำดับให้ตรงกับโค้ดอีกต่อไป
 
 // พอร์ตตรงจาก appscript.txt บรรทัด 146-159 เป๊ะๆ ห้ามเปลี่ยนลำดับ/ค่าสี เพราะ index ของสีผูกกับข้อมูลเดิมในชีท
 const CARD_COLORS = [
@@ -52,16 +59,22 @@ function getSheetsClient() {
 }
 
 // เทียบเท่า rowsToObjects() เดิมใน appscript.txt (บรรทัด 200-210) — แปลง 2D array (แถวแรก=header)
-// เป็น array of object โดยใช้ header เป็น key
+// เป็น array of object โดยใช้ header เป็น key (คืน headers จริงที่อ่านเจอมาด้วย ไม่สมมติลำดับตายตัว —
+// ตรงตามหลักการเดิมของ getHeaders()/colIndex() ใน appscript.txt ที่หาตำแหน่งคอลัมน์จากชื่อสดทุกครั้ง)
 function rowsToObjects(rows) {
-  if (!rows || rows.length < 2) return [];
+  const parsed = parseRowsWithHeaders(rows);
+  return parsed.objects;
+}
+function parseRowsWithHeaders(rows) {
+  if (!rows || rows.length < 1) return { headers: [], objects: [] };
   const headers = rows[0].map(h => String(h || '').trim());
-  return rows.slice(1).map((r, i) => {
+  const objects = rows.slice(1).map((r, i) => {
     const obj = {};
     headers.forEach((h, ci) => { obj[h] = r[ci] !== undefined ? r[ci] : ''; });
-    obj._row = i + 2; // เลขแถวจริงในชีท (เผื่อ action เขียนข้อมูลใช้ต่อในอนาคต)
+    obj._row = i + 2;
     return obj;
   });
+  return { headers, objects };
 }
 
 // อ่าน tab ที่ต้องใช้ทั้งหมดในคำขอเดียว (batchGet) แทนที่จะยิงแยกทีละ tab เหมือน Apps Script เดิม
@@ -184,6 +197,89 @@ function paginate(list, p) {
 function ok(data) { return Object.assign({ success: true }, data); }
 function fail(message) { return { success: false, message }; }
 
+// อ่าน tab เดียวแบบเบาที่สุด (ไม่พ่วง tab อื่นเหมือน loadAllSheetsData) — ใช้กับ action ที่ต้องการแค่ users
+// เท่านั้น (signup/login) จะได้ไม่ต้องแบกภาระอ่าน companies/votes/categories ที่ไม่เกี่ยวข้องไปด้วยทุกครั้ง
+async function getSheetRows(tabName) {
+  const sheets = getSheetsClient();
+  const spreadsheetId = process.env.TOKBUD_SHEET_ID;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: tabName });
+  return res.data.values || [];
+}
+
+// แปลงเลขคอลัมน์ (1-based) เป็นตัวอักษรคอลัมน์สเปรดชีต เช่น 1 -> A, 13 -> M, 27 -> AA
+function colLetter(n) {
+  let s = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+// เทียบเท่า colIndex() เดิม (บรรทัด 194-198) — หาตำแหน่งคอลัมน์จากชื่อ header จริง ไม่สมมติลำดับ
+// throw ถ้าหาไม่เจอ (เช่น พิมพ์ชื่อคอลัมน์ผิด หรือ Pop ลบคอลัมน์นั้นออกจากชีทไปแล้วจริงๆ) เหมือนต้นฉบับ
+function colIndexByName(headers, name) {
+  const idx = headers.indexOf(name);
+  if (idx === -1) throw new Error('ไม่พบคอลัมน์ "' + name + '" ในชีท (header row)');
+  return idx + 1; // คืนเป็น 1-based
+}
+function normalizePhone(phone) {
+  let p = String(phone).trim().replace(/[^0-9]/g, '');
+  if (p.length === 9 && p.charAt(0) !== '0') p = '0' + p;
+  return p;
+}
+
+// พอร์ตตรงจาก calculateAge() เดิม (บรรทัด 271-278) — คำนวณไว้เผื่อใช้ในอนาคต แต่ไม่ได้เซฟลงชีท
+// (ชีทจริงไม่มีคอลัมน์ age ดูคอมเมนต์ที่ USERS_HEADERS ด้านบน — พฤติกรรมเดิมเป๊ะ ไม่ได้ตกหล่นใหม่)
+function calculateAge(birthday) {
+  const b = new Date(birthday);
+  const today = new Date();
+  let age = today.getFullYear() - b.getFullYear();
+  const m = today.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < b.getDate())) age--;
+  return age;
+}
+
+// พอร์ตตรงจาก validateCountryCityState() เดิม (บรรทัด 822-830)
+function validateCountryCityState(country, rawCityState) {
+  const cityState = String(rawCityState || '').trim().slice(0, 100);
+  if (country !== 'Thailand' && !cityState) {
+    return { ok: false, message: 'Please enter your city/state' };
+  }
+  return { ok: true, cityState };
+}
+
+// พอร์ตตรงจาก driveThumbUrl()/normalizeImageUrl() เดิม (บรรทัด 303-316)
+function driveThumbUrl(fileId) {
+  return 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w1600';
+}
+function normalizeImageUrl(url) {
+  if (!url) return '';
+  url = String(url).trim();
+  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return driveThumbUrl(m[1]);
+  m = url.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return driveThumbUrl(m[1]);
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return driveThumbUrl(m[1]);
+  return url;
+}
+
+// พอร์ตตรงจาก generateCode()/generateUniqueCode() เดิม (บรรทัด 251-267) — รหัส 8 หลัก ตัวพิมพ์ใหญ่
+// ตัดตัวที่สับสน (0,O,1,I,L) เช็คไม่ให้ชนกับ user_id ที่มีอยู่แล้วในชีทจริง (ไม่ใช่แค่สุ่มมั่ว)
+function generateCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  return code;
+}
+function generateUniqueUserId(existingIds) {
+  let code;
+  do { code = generateCode(); } while (existingIds.indexOf(code) !== -1);
+  return code;
+}
+
 // ===== Actions =====
 
 async function actionGetCategories() {
@@ -259,6 +355,108 @@ async function actionGetCompanies(p) {
   return ok({ companies: result, count: total, page, page_size: pageSize, total_pages: totalPages });
 }
 
+// พอร์ตตรงจาก actionSignup() เดิม (บรรทัด 832-892) — ข้ามส่วน LockService (ตกลงกับ Pop แล้วว่าข้ามไปก่อน
+// ตอนนี้ traffic ยังน้อยมาก) จุดที่ต่างจากต้นฉบับจริงๆ คือ passcode ตอนนี้ hash ด้วย bcrypt ก่อนเก็บ
+// (ตัดสินใจร่วมกับ Pop — ยังไม่มี user จริงเลยตอนนี้ ทำตั้งแต่ต้นดีกว่ารอ migrate ทีหลัง)
+async function actionSignup(p) {
+  const required = ['username', 'email', 'phone', 'passcode', 'birthday', 'gender', 'country'];
+  for (const f of required) {
+    if (!p[f]) return fail('กรุณากรอก ' + f + ' ให้ครบ');
+  }
+  if (p.country === 'Thailand' && !p.province) {
+    return fail('กรุณาเลือกจังหวัด / Please select a province');
+  }
+  const cityStateCheck = validateCountryCityState(p.country, p.city_state);
+  if (!cityStateCheck.ok) return fail(cityStateCheck.message);
+
+  if (String(p.email).indexOf('@') === -1) {
+    return fail('อีเมลไม่ถูกต้อง กรุณาใส่ @ ด้วย / Invalid email, please include an @');
+  }
+
+  const rows = await getSheetRows(SHEETS.USERS);
+  const { headers, objects: users } = parseRowsWithHeaders(rows);
+  const phone = normalizePhone(p.phone);
+
+  if (users.some(u => normalizePhone(u.phone) === phone)) {
+    return fail('เบอร์นี้เคยสมัครแล้ว กรุณา login แทน / This phone number is already registered, please log in instead');
+  }
+
+  const existingIds = users.map(u => u.user_id);
+  const userId = generateUniqueUserId(existingIds);
+  const sessionToken = crypto.randomUUID();
+  const profileImageUrl = normalizeImageUrl(p.profile_image_url || '');
+  const nowIso = new Date().toISOString();
+  // bcrypt.hash ครั้งเดียว ได้ string ที่เก็บทั้ง algorithm/cost/salt/hash รวมกันในตัว (ขึ้นต้น $2a$หรือ $2b$)
+  // ไม่ต้องเก็บ salt แยกคอลัมน์เอง bcrypt.compare() ตอน login จะแกะ salt จากในนี้ให้เองอัตโนมัติ
+  const passcodeHash = await bcrypt.hash(String(p.passcode), 10);
+
+  // ใช้ header จริงที่อ่านจากแถวแรกของชีท (headers) ไม่ใช่ลำดับตายตัวในโค้ด — สลับลำดับคอลัมน์ในชีท
+  // เองได้อิสระ ไม่กระทบ คอลัมน์ไหนที่ไม่มีค่าที่ต้องเซฟ (เช่น plan/stripe ที่ยังไม่ใช้ตอนสมัคร) จะเว้นว่างไว้
+  const rowMap = {
+    user_id: userId,
+    username: p.username,
+    email: p.email,
+    phone: phone,
+    passcode: passcodeHash,
+    birthday: p.birthday,
+    gender: p.gender,
+    province: p.country === 'Thailand' ? p.province : '',
+    country: p.country,
+    city_state: cityStateCheck.cityState,
+    profile_image_url: profileImageUrl,
+    created_at: nowIso,
+    session_token: sessionToken,
+    account_status: 'active'
+  };
+  const rowValues = headers.map(h => (rowMap[h] !== undefined ? rowMap[h] : ''));
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: SHEETS.USERS,
+    valueInputOption: 'RAW', // RAW = เก็บ string ตามที่ส่งไปเป๊ะ ไม่ auto-parse เลขนำหน้า 0 ของเบอร์โทรทิ้ง
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [rowValues] }
+  });
+
+  return ok({ user_id: userId, session_token: sessionToken, username: p.username, profile_image_url: profileImageUrl });
+}
+
+// พอร์ตตรงจาก actionLogin() เดิม (บรรทัด 895-912) — เทียบ passcode ด้วย bcrypt.compare() แทนการเทียบ
+// string ตรงๆ (ดูคอมเมนต์ที่ actionSignup ด้านบน)
+async function actionLogin(p) {
+  if (!p.phone || !p.passcode) {
+    return fail('กรุณากรอกเบอร์โทรและ Passcode / Please enter your phone number and Passcode');
+  }
+
+  const rows = await getSheetRows(SHEETS.USERS);
+  const { headers, objects: users } = parseRowsWithHeaders(rows);
+  const phone = normalizePhone(p.phone);
+  const user = users.find(u => normalizePhone(u.phone) === phone);
+
+  // เช็คแยกจากการหา user ก่อน (ไม่รวมเงื่อนไขเดียวกับ .find) เพราะ bcrypt.compare() เป็น async รอผลได้
+  // ต้องมี user ตัวจริงให้เทียบ hash ด้วยก่อน ถ้าไม่เจอเบอร์เลยให้ fail ทันทีไม่ต้องเรียก bcrypt เปล่าๆ
+  if (!user) return fail('เบอร์โทรหรือ Passcode ไม่ถูกต้อง / Incorrect phone number or Passcode');
+
+  const passcodeMatches = await bcrypt.compare(String(p.passcode), String(user.passcode || ''));
+  if (!passcodeMatches) return fail('เบอร์โทรหรือ Passcode ไม่ถูกต้อง / Incorrect phone number or Passcode');
+  if (user.account_status === 'deleted') return fail('บัญชีนี้ถูกปิดใช้งานไปแล้ว / This account has been closed');
+
+  const newToken = crypto.randomUUID();
+  const sessionTokenCol = colIndexByName(headers, 'session_token');
+  const cellRange = SHEETS.USERS + '!' + colLetter(sessionTokenCol) + user._row;
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: cellRange,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[newToken]] }
+  });
+
+  return ok({ user_id: user.user_id, session_token: newToken, username: user.username, profile_image_url: user.profile_image_url || '' });
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -280,6 +478,12 @@ module.exports = async (req, res) => {
         break;
       case 'getCompanies':
         result = await actionGetCompanies(p);
+        break;
+      case 'signup':
+        result = await actionSignup(p);
+        break;
+      case 'login':
+        result = await actionLogin(p);
         break;
       default:
         result = fail('ไม่รู้จัก action นี้ / Unknown action: ' + action);
