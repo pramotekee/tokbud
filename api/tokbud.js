@@ -457,6 +457,82 @@ async function actionLogin(p) {
   return ok({ user_id: user.user_id, session_token: newToken, username: user.username, profile_image_url: user.profile_image_url || '' });
 }
 
+// action ให้ user ตั้ง passcode ใหม่ได้เอง 100% ไม่ต้องผ่าน Pop/LINE/email service ใดๆ เลย — เช็คตัวตนด้วย
+// "เบอร์โทร + อีเมล" ที่กรอกไว้ตอนสมัครต้องตรงกันทั้งคู่ (ข้อมูลที่มีอยู่แล้ว ไม่ต้องเพิ่มช่องใหม่ตอนสมัคร)
+// หมายเหตุด้านความปลอดภัย (แจ้งไว้ตรงๆ ไม่ใช่ตัดสินใจเงียบๆ): นี่ไม่ใช่การยืนยันตัวตนแบบ verified
+// จริงจัง (อีเมล/เบอร์ไม่เคยถูกยืนยันว่าเป็นของจริงตั้งแต่ตอนสมัครอยู่แล้ว) เป็นแค่ "รู้ข้อมูล 2 อย่างพร้อมกัน"
+// ซึ่งยากกว่ารู้แค่เบอร์อย่างเดียว แต่ไม่ได้ปลอดภัยระดับธนาคาร เหมาะกับสเกลปัจจุบัน ถ้า TOKBUD โตขึ้นเยอะ
+// ค่อยพิจารณากลับมาทำ email verification link จริงจังทีหลังได้
+async function actionResetPasscode(p) {
+  if (!p.phone || !p.email || !p.new_passcode) {
+    return fail('กรุณากรอกเบอร์โทร อีเมล และ passcode ใหม่ให้ครบ / Please fill in phone, email, and new passcode');
+  }
+
+  const rows = await getSheetRows(SHEETS.USERS);
+  const { headers, objects: users } = parseRowsWithHeaders(rows);
+  const phone = normalizePhone(p.phone);
+  const email = String(p.email).trim().toLowerCase();
+
+  const user = users.find(u =>
+    normalizePhone(u.phone) === phone && String(u.email || '').trim().toLowerCase() === email
+  );
+
+  if (!user) {
+    return fail('เบอร์โทรหรืออีเมลไม่ตรงกับข้อมูลที่สมัครไว้ / Phone number or email doesn\'t match our records');
+  }
+  if (user.account_status === 'deleted') {
+    return fail('บัญชีนี้ถูกปิดใช้งานไปแล้ว / This account has been closed');
+  }
+
+  const newHash = await bcrypt.hash(String(p.new_passcode), 10);
+  const passcodeCol = colIndexByName(headers, 'passcode');
+  const cellRange = SHEETS.USERS + '!' + colLetter(passcodeCol) + user._row;
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: cellRange,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[newHash]] }
+  });
+
+  return ok({ message: 'ตั้ง passcode ใหม่สำเร็จ / Passcode reset successfully' });
+}
+
+// action สำหรับ Pop คนเดียวใช้ตั้ง passcode ใหม่ให้ user ที่ลืม (หลัง Pop ยืนยันตัวตนเขาผ่านช่องทางนอกเว็บ
+// เช่น LINE เอง — ไม่มีระบบ verify อัตโนมัติใดๆ ในนี้เลย เพราะงั้น ADMIN_KEY ต้องเก็บเป็นความลับ ห้ามหลุด
+// ไปให้ใครหรือ commit ขึ้น GitHub เด็ดขาด ใครก็ตามที่รู้ ADMIN_KEY จะรีเซ็ต passcode ของ user คนไหนก็ได้ทันที
+// เก็บไว้เป็นทางสำรอง (เช่น user จำอีเมลที่สมัครไว้ไม่ได้ด้วย) ไม่ใช่ทางหลักแล้ว — ทางหลักคือ resetPasscode ด้านบน
+async function actionAdminResetPasscode(p) {
+  if (!process.env.ADMIN_KEY) return fail('เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า ADMIN_KEY');
+  if (!p.admin_key || p.admin_key !== process.env.ADMIN_KEY) {
+    return fail('admin_key ไม่ถูกต้อง / Invalid admin key');
+  }
+  if (!p.phone || !p.new_passcode) {
+    return fail('กรุณาระบุ phone และ new_passcode');
+  }
+
+  const rows = await getSheetRows(SHEETS.USERS);
+  const { headers, objects: users } = parseRowsWithHeaders(rows);
+  const phone = normalizePhone(p.phone);
+  const user = users.find(u => normalizePhone(u.phone) === phone);
+  if (!user) return fail('ไม่พบ user เบอร์นี้ / User not found');
+
+  const newHash = await bcrypt.hash(String(p.new_passcode), 10);
+  const passcodeCol = colIndexByName(headers, 'passcode');
+  const cellRange = SHEETS.USERS + '!' + colLetter(passcodeCol) + user._row;
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: cellRange,
+    valueInputOption: 'RAW',
+    requestBody: { values: [[newHash]] }
+  });
+
+  return ok({ message: 'ตั้ง passcode ใหม่สำเร็จ สำหรับ user_id: ' + user.user_id, username: user.username });
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -484,6 +560,12 @@ module.exports = async (req, res) => {
         break;
       case 'login':
         result = await actionLogin(p);
+        break;
+      case 'adminResetPasscode':
+        result = await actionAdminResetPasscode(p);
+        break;
+      case 'resetPasscode':
+        result = await actionResetPasscode(p);
         break;
       default:
         result = fail('ไม่รู้จัก action นี้ / Unknown action: ' + action);
