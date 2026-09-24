@@ -11,6 +11,7 @@
 const { google } = require('googleapis');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { Readable } = require('stream');
 
 const SHEETS = {
   USERS: 'users',
@@ -41,21 +42,35 @@ const CARD_COLORS = [
   { name: 'เทา', hex: '#666666' }
 ];
 
-// ===== Google Sheets client (JWT service account) =====
-let sheetsClientPromise = null;
-function getSheetsClient() {
-  if (!sheetsClientPromise) {
+// ===== Google auth + Sheets/Drive clients (share credential เดียวกัน) =====
+let authClientSingleton = null;
+function getAuthClient() {
+  if (!authClientSingleton) {
     const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-    const auth = new google.auth.JWT({
+    authClientSingleton = new google.auth.JWT({
       email: creds.client_email,
       key: creds.private_key,
-      // ใช้ scope เต็ม (ไม่ใช่ readonly) ไว้ตั้งแต่ตอนนี้เลย เผื่อ action เขียนข้อมูล (createCompany/vote ฯลฯ)
-      // ที่จะพอร์ตต่อในรอบหน้า จะได้ไม่ต้องมาวน setup credential ใหม่อีกรอบ
-      scopes: ['https://www.googleapis.com/auth/spreadsheets']
+      // เพิ่ม scope drive.file เข้ามาด้วย (รอบนี้ต้องใช้ตอน uploadImage) — drive.file แคบกว่า drive เต็ม
+      // (เข้าถึงได้แค่ไฟล์ที่ service account นี้เป็นคนสร้างเอง ไม่ใช่ทุกไฟล์ใน Drive) ปลอดภัยกว่าตาม least-privilege
+      scopes: [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive.file'
+      ]
     });
-    sheetsClientPromise = google.sheets({ version: 'v4', auth });
   }
+  return authClientSingleton;
+}
+
+let sheetsClientPromise = null;
+function getSheetsClient() {
+  if (!sheetsClientPromise) sheetsClientPromise = google.sheets({ version: 'v4', auth: getAuthClient() });
   return sheetsClientPromise;
+}
+
+let driveClientPromise = null;
+function getDriveClient() {
+  if (!driveClientPromise) driveClientPromise = google.drive({ version: 'v3', auth: getAuthClient() });
+  return driveClientPromise;
 }
 
 // เทียบเท่า rowsToObjects() เดิมใน appscript.txt (บรรทัด 200-210) — แปลง 2D array (แถวแรก=header)
@@ -274,11 +289,46 @@ function generateCode() {
   for (let i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
   return code;
 }
-function generateUniqueUserId(existingIds) {
+function generateUniqueCode(existingIds) {
   let code;
   do { code = generateCode(); } while (existingIds.indexOf(code) !== -1);
   return code;
 }
+
+// พอร์ตตรงจาก findUserByToken() เดิม (บรรทัด 914-920) — ไม่มี cache (ตกลงกันไว้แล้วว่ายังไม่ทำ cache รอบนี้)
+// เลยอ่านชีท users สดทุกครั้งที่มี action ไหนต้องยืนยันตัวตนผ่าน session_token
+async function findUserByToken(token) {
+  if (!token) return null;
+  const rows = await getSheetRows(SHEETS.USERS);
+  const { objects: users } = parseRowsWithHeaders(rows);
+  const user = users.find(u => u.session_token === token) || null;
+  if (user && user.account_status === 'deleted') return null;
+  return user;
+}
+
+// พอร์ตตรงจาก getAgeGroup() เดิม (บรรทัด 280-287)
+function getAgeGroup(age) {
+  if (age < 18) return 'ต่ำกว่า 18';
+  if (age <= 24) return '18-24';
+  if (age <= 34) return '25-34';
+  if (age <= 44) return '35-44';
+  if (age <= 54) return '45-54';
+  return '55+';
+}
+
+function validYNU(v) {
+  return v === 'yes' || v === 'no' || v === 'unsure';
+}
+
+// พอร์ตตรงจาก isEnglishOnlyName() เดิม (บรรทัด 964-970) — บังคับชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น
+function isEnglishOnlyName(str) {
+  const s = String(str || '').trim();
+  if (!s) return false;
+  if (!/^[a-zA-Z0-9 &,.\-'()]+$/.test(s)) return false;
+  if (!/[a-zA-Z0-9]/.test(s)) return false;
+  return true;
+}
+const ENGLISH_ONLY_NAME_ERROR = 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น / Company name must be in English only';
 
 // ===== Actions =====
 
@@ -382,7 +432,7 @@ async function actionSignup(p) {
   }
 
   const existingIds = users.map(u => u.user_id);
-  const userId = generateUniqueUserId(existingIds);
+  const userId = generateUniqueCode(existingIds);
   const sessionToken = crypto.randomUUID();
   const profileImageUrl = normalizeImageUrl(p.profile_image_url || '');
   const nowIso = new Date().toISOString();
@@ -533,6 +583,185 @@ async function actionAdminResetPasscode(p) {
   return ok({ message: 'ตั้ง passcode ใหม่สำเร็จ สำหรับ user_id: ' + user.user_id, username: user.username });
 }
 
+// พอร์ตตรงจาก actionUploadImage()/driveThumbUrl()/getOrCreateUploadFolder() เดิม (บรรทัด 303-359)
+// ⚠️ ก่อนใช้งานจริง: Pop ต้องแชร์โฟลเดอร์ Drive "TOKBUD_upload" (ID: 1OjIDiojfe0J8aC0CkCSIxiPn-NJXokjv)
+// ให้ service account email เดียวกับที่แชร์ Google Sheet ไว้ เป็นสิทธิ์ Editor ด้วย — คนละสิทธิ์กับที่แชร์ Sheet
+// ไว้ก่อนหน้านี้ (แชร์คนละไฟล์คนละสิทธิ์กัน) ถ้าไม่แชร์เพิ่ม upload จะ error สิทธิ์ไม่พอ
+// ตัดส่วน fallback หาโฟลเดอร์ด้วยชื่อ/สร้างใหม่ออก (DriveApp เฉพาะของ Apps Script ไม่มีใน Node) ถ้า folder ID
+// นี้ใช้ไม่ได้จริงๆ (ถูกลบ/ย้ายเจ้าของ) จะ error ตรงๆ ให้ Pop รู้ทันที แทนที่จะสร้างโฟลเดอร์ใหม่แบบเงียบๆ
+const FIXED_UPLOAD_FOLDER_ID = '1OjIDiojfe0J8aC0CkCSIxiPn-NJXokjv';
+
+async function actionUploadImage(p) {
+  if (!p.file_data || !p.mime_type) return fail('ไม่มีข้อมูลรูปภาพ');
+
+  try {
+    let base64 = String(p.file_data);
+    if (base64.indexOf(',') !== -1) base64 = base64.split(',')[1]; // ตัด prefix "data:image/png;base64,"
+    const buffer = Buffer.from(base64, 'base64');
+
+    const fileName = (p.file_name ? String(p.file_name).replace(/[^a-zA-Z0-9._-]/g, '_') : 'upload')
+      + '_' + generateCode();
+
+    const drive = getDriveClient();
+    const createRes = await drive.files.create({
+      requestBody: { name: fileName, parents: [FIXED_UPLOAD_FOLDER_ID] },
+      media: { mimeType: p.mime_type, body: Readable.from(buffer) },
+      fields: 'id'
+    });
+    const fileId = createRes.data.id;
+
+    // เทียบเท่า setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW) เดิม
+    await drive.permissions.create({
+      fileId,
+      requestBody: { role: 'reader', type: 'anyone' }
+    });
+
+    return ok({ file_id: fileId, image_url: driveThumbUrl(fileId) });
+  } catch (err) {
+    return fail('อัพโหลดรูปไม่สำเร็จ: ' + err.message);
+  }
+}
+
+// พอร์ตตรงจาก actionCreateCompany() เดิม (บรรทัด 973-1008)
+async function actionCreateCompany(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อนสร้างบริษัท / Please log in before creating a company');
+
+  if (!p.company_name) return fail('กรุณากรอกชื่อบริษัท / Please enter a company name');
+  if (!isEnglishOnlyName(p.company_name)) return fail(ENGLISH_ONLY_NAME_ERROR);
+  if (!p.category) return fail('กรุณาเลือกหมวดหมู่ / Please select a category');
+
+  const tags = [p.tag_1, p.tag_2, p.tag_3, p.tag_4, p.tag_5].filter(t => t && String(t).trim());
+  if (tags.length < 1) return fail('กรุณาใส่ tag อย่างน้อย 1 อัน / Please add at least 1 tag');
+
+  const rows = await getSheetRows(SHEETS.COMPANIES);
+  const { headers, objects: companies } = parseRowsWithHeaders(rows);
+  const existingIds = companies.map(c => c.company_id);
+  const companyId = generateUniqueCode(existingIds);
+  const nowIso = new Date().toISOString();
+
+  const rowMap = {
+    company_id: companyId,
+    user_id: user.user_id,
+    image_url_raw: p.image_url_raw || '',
+    image_url_display: p.image_url_raw ? normalizeImageUrl(p.image_url_raw) : '',
+    company_name: p.company_name,
+    description: p.description || '',
+    card_color: p.card_color || CARD_COLORS[8].hex,
+    category: p.category,
+    tag_1: p.tag_1 || '', tag_2: p.tag_2 || '', tag_3: p.tag_3 || '', tag_4: p.tag_4 || '', tag_5: p.tag_5 || '',
+    status: 'active',
+    start_date: nowIso,
+    end_date: '',
+    created_at: nowIso,
+    updated_at: nowIso
+  };
+  const rowValues = headers.map(h => (rowMap[h] !== undefined ? rowMap[h] : ''));
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: SHEETS.COMPANIES,
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [rowValues] }
+  });
+
+  return ok({
+    company_id: companyId, status: 'active',
+    message: 'สร้างบริษัทสำเร็จ เผยแพร่ขึ้นหน้าแรกแล้ว / Company created and published to the homepage'
+  });
+}
+
+// พอร์ตตรงจาก actionVote() เดิม (บรรทัด 2807-2868) — รองรับทั้งสร้างใหม่ (append) และแก้ไขของเดิม (update in place)
+async function actionVote(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อนส่งความคิดเห็น / Please log in before submitting');
+  if (!p.company_id || !p.side) return fail('ข้อมูลไม่ครบ / Missing information');
+  if (p.side !== 'A' && p.side !== 'B') return fail('side ต้องเป็น A หรือ B เท่านั้น / side must be A or B only');
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const companies = rowsToObjects(companyRows);
+  const company = companies.find(c => c.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.status === 'deleted') return fail('ไม่พบบริษัทนี้ / Company not found');
+
+  const comment = String(p.main_reason || '').trim().slice(0, 5000);
+  if (!comment) return fail('กรุณากรอกเหตุผลหลัก / Please enter your main reason');
+
+  let sideFields;
+  if (p.side === 'A') {
+    const ynuKeys = ['join_salary_good', 'join_benefits_good', 'join_brand_reputation', 'join_growth_opportunity',
+      'join_challenging_work', 'join_culture_team', 'join_location_flexibility'];
+    for (const k of ynuKeys) { if (!validYNU(p[k] || '')) return fail('กรุณาตอบให้ครบทุกข้อ / Please answer all questions'); }
+    const score = Number(p.join_confidence_score);
+    if (!p.join_confidence_score || isNaN(score) || score < 1 || score > 5) {
+      return fail('กรุณาเลือกคะแนน 1-5 / Please select a score from 1 to 5');
+    }
+    sideFields = {
+      join_salary_good: p.join_salary_good || '', join_benefits_good: p.join_benefits_good || '',
+      join_brand_reputation: p.join_brand_reputation || '', join_growth_opportunity: p.join_growth_opportunity || '',
+      join_challenging_work: p.join_challenging_work || '', join_culture_team: p.join_culture_team || '',
+      join_location_flexibility: p.join_location_flexibility || '', join_confidence_score: score
+    };
+  } else {
+    const ynuKeys = ['leave_salary_benefits_mismatch', 'leave_no_growth', 'leave_culture_mismatch', 'leave_manager_mismatch',
+      'leave_team_mismatch', 'leave_worklife_mismatch', 'leave_better_offer', 'leave_not_challenging'];
+    for (const k of ynuKeys) { if (!validYNU(p[k] || '')) return fail('กรุณาตอบให้ครบทุกข้อ / Please answer all questions'); }
+    sideFields = {
+      leave_salary_benefits_mismatch: p.leave_salary_benefits_mismatch || '', leave_no_growth: p.leave_no_growth || '',
+      leave_culture_mismatch: p.leave_culture_mismatch || '', leave_manager_mismatch: p.leave_manager_mismatch || '',
+      leave_team_mismatch: p.leave_team_mismatch || '', leave_worklife_mismatch: p.leave_worklife_mismatch || '',
+      leave_better_offer: p.leave_better_offer || '', leave_not_challenging: p.leave_not_challenging || '',
+      leave_improvement_suggestion: String(p.leave_improvement_suggestion || '').trim().slice(0, 5000)
+    };
+  }
+
+  const voteRows = await getSheetRows(SHEETS.VOTES);
+  const { headers: voteHeaders, objects: votes } = parseRowsWithHeaders(voteRows);
+  const existing = votes.find(v => v.company_id === p.company_id && v.user_id === user.user_id && v.side === p.side);
+  const nowIso = new Date().toISOString();
+  const sheets = getSheetsClient();
+
+  if (!existing) {
+    const existingVoteIds = votes.map(v => v.vote_id);
+    const voteId = generateUniqueCode(existingVoteIds);
+    const rowMap = Object.assign({
+      vote_id: voteId, company_id: p.company_id, user_id: user.user_id, side: p.side,
+      main_reason: comment, voted_at: nowIso, last_changed_at: nowIso,
+      gender_snapshot: user.gender,
+      age_group_snapshot: user.birthday ? getAgeGroup(calculateAge(user.birthday)) : '',
+      province_snapshot: user.province, company_name: company.company_name
+    }, sideFields);
+    const rowValues = voteHeaders.map(h => (rowMap[h] !== undefined ? rowMap[h] : ''));
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.TOKBUD_SHEET_ID,
+      range: SHEETS.VOTES,
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [rowValues] }
+    });
+    return ok({ message: 'ส่งความคิดเห็นสำเร็จ / Submitted successfully', is_new: true });
+  }
+
+  // แก้ไขของเดิม: update ทีละเซลล์เฉพาะคอลัมน์ที่เปลี่ยน (main_reason, last_changed_at, + sideFields ทั้งหมด)
+  // ไม่ใช่ overwrite ทั้งแถว กัน column อื่นที่ไม่เกี่ยว (เช่น voted_at, snapshot ตอนโหวตครั้งแรก) โดนทับหายไป
+  const updateMap = Object.assign({ main_reason: comment, last_changed_at: nowIso }, sideFields);
+  const data = Object.keys(updateMap).map(key => {
+    const col = colIndexByName(voteHeaders, key);
+    return {
+      range: SHEETS.VOTES + '!' + colLetter(col) + existing._row,
+      values: [[updateMap[key]]]
+    };
+  });
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    requestBody: { valueInputOption: 'RAW', data }
+  });
+  return ok({ message: 'แก้ไขความคิดเห็นสำเร็จ / Updated successfully', is_new: false });
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -554,6 +783,15 @@ module.exports = async (req, res) => {
         break;
       case 'getCompanies':
         result = await actionGetCompanies(p);
+        break;
+      case 'uploadImage':
+        result = await actionUploadImage(p);
+        break;
+      case 'createCompany':
+        result = await actionCreateCompany(p);
+        break;
+      case 'vote':
+        result = await actionVote(p);
         break;
       case 'signup':
         result = await actionSignup(p);
