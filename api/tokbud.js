@@ -366,7 +366,56 @@ function isEnglishOnlyName(str) {
 }
 const ENGLISH_ONLY_NAME_ERROR = 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น / Company name must be in English only';
 
+// พอร์ตตรงจาก csvEscape() เดิม (appscript.txt บรรทัด 624-629) — กัน field ที่มี comma/quote/ขึ้นบรรทัดใหม่ ทำ
+// CSV เพี้ยน (มาตรฐาน RFC 4180: ครอบด้วย "" แล้ว escape "" ที่ซ้อนอยู่)
+function csvEscape(value) {
+  const s = String(value === undefined || value === null ? '' : value);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+// พอร์ตตรงจาก genderToEn() เดิม (บรรทัด 619-622) — gender เก็บเป็นภาษาไทยในชีท แต่ไฟล์ export ใช้ EN เสมอ
+function genderToEn(g) {
+  const map = { 'ชาย': 'male', 'หญิง': 'female', 'อื่นๆ': 'other' };
+  return map[g] || g || '';
+}
+
+// เทียบเท่า Utilities.formatDate(..., 'GMT+7', 'yyyy-MM-dd HH:mm') เดิม ใช้เฉพาะตอน export CSV — ตั้งใจแกะ
+// ตัวเลขจาก string ตรงๆ แทนที่จะพึ่ง new Date()+timezone ของเครื่อง Vercel (ซึ่งไม่แน่นอน) เพื่อกันพลาด:
+//   - แถวใหม่ (last_changed_at เป็น "M/D/YYYY H:mm:ss" ที่ formatDateForSheet เขียนไว้ = เวลาไทยอยู่แล้ว
+//     ในตัว) แกะตัวเลขมาเรียงใหม่ตรงๆ ไม่ต้องบวกเวลาซ้ำ
+//   - แถวเก่าก่อน migrate (ค่าจริงเป็น Date/ISO UTC จาก Apps Script เดิม) ตีความเป็น UTC แล้วค่อยบวก +7
+function formatExportTimestamp(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
+  if (m1) {
+    const [, M, D, Y, h, mi] = m1;
+    return `${Y}-${M.padStart(2, '0')}-${D.padStart(2, '0')} ${h.padStart(2, '0')}:${mi}`;
+  }
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '';
+  const bkk = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return `${bkk.getUTCFullYear()}-${String(bkk.getUTCMonth() + 1).padStart(2, '0')}-${String(bkk.getUTCDate()).padStart(2, '0')} ${String(bkk.getUTCHours()).padStart(2, '0')}:${String(bkk.getUTCMinutes()).padStart(2, '0')}`;
+}
+
+// พอร์ตตรงจาก hasProAccess() เดิม (บรรทัด 557-571) — แหล่งความจริงเดียวว่า user คนนี้มีสิทธิ์ PRO ไหม ใช้จุดเดียว
+// กับทุกฟีเจอร์ที่ gate ด้วย PRO (ตอนนี้มีแค่ Export — Conversation Cards ยังไม่ได้พอร์ตมาที่นี่) ได้ PRO เมื่อ
+// plan==='pro' และ (subscription_status==='active' หรือ (===canceled และ pro_until ยังไม่หมดอายุ))
+// มอบ/ถอด PRO ด้วยมือได้โดยตรงในชีท users (คอลัมน์ plan/subscription_status/pro_until) เหมือนเดิมทุกประการ —
+// ยังไม่มี Stripe billing เชื่อมจริงตอนนี้ (อยู่ท้ายลำดับ migration ตามที่ตกลงกัน)
+function hasProAccess(user) {
+  if (!user || user.plan !== 'pro') return false;
+  if (user.subscription_status === 'active') return true;
+  if (user.subscription_status === 'canceled' && user.pro_until) {
+    const until = new Date(user.pro_until).getTime();
+    return !isNaN(until) && until > Date.now();
+  }
+  return false;
+}
+
 // ===== Actions =====
+
 
 async function actionGetCategories() {
   const data = await loadAllSheetsData();
@@ -1297,6 +1346,51 @@ async function actionCancelTransfer(p) {
   return ok({ message: 'ยกเลิกลิงก์ส่งมอบเรียบร้อยแล้ว / Transfer link cancelled' });
 }
 
+// พอร์ตตรงจาก actionExportCompanyVotes() เดิม (appscript.txt บรรทัด 2635-2674) — export CSV คำตอบทั้งหมดของ
+// 1 บริษัท (ทุกโหวต ไม่ใช่แค่แถวที่มี comment) gate ชั้นเดียว: ต้อง login + ต้องเป็น PRO เท่านั้น (ไม่ต้องเป็น
+// เจ้าของบริษัทนั้นด้วย — ตาม FIX ที่ตกลงกับ Pop ไว้แล้วในต้นฉบับ ให้ใครก็ได้ที่จ่าย PRO export ได้เอง)
+// ไม่มีคอลัมน์ email/phone ใน export เลยตามที่ตกลงกัน (กันตามตัวคนคอมเมนต์กลับไปได้) คืน CSV เป็น string ผ่าน
+// JSON (นำหน้าด้วย BOM \uFEFF กัน Excel เปิดภาษาไทยเพี้ยน) ให้ frontend สร้าง Blob ดาวน์โหลดเอง ไม่ใช่ไฟล์จริง
+async function actionExportCompanyVotes(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!hasProAccess(user)) return fail('ฟีเจอร์ Export data นี้ สำหรับผู้ใช้งานแบบ PRO plan / This export feature is for PRO plan users only');
+  if (!p.company_id) return fail('ไม่พบบริษัทที่ต้องการ export / Missing company_id');
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const company = rowsToObjects(companyRows).find(c => c.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+
+  const voteRows = await getSheetRows(SHEETS.VOTES);
+  const votes = rowsToObjects(voteRows).filter(v => v.company_id === p.company_id);
+
+  const header = ['no', 'timestamp', 'side', 'main_reason',
+    'join_salary_good', 'join_benefits_good', 'join_brand_reputation', 'join_growth_opportunity', 'join_challenging_work', 'join_culture_team', 'join_location_flexibility', 'join_confidence_score',
+    'leave_salary_benefits_mismatch', 'leave_no_growth', 'leave_culture_mismatch', 'leave_manager_mismatch', 'leave_team_mismatch', 'leave_worklife_mismatch', 'leave_better_offer', 'leave_not_challenging', 'leave_improvement_suggestion',
+    'gender', 'age_group'];
+  const lines = [header.map(csvEscape).join(',')];
+
+  votes.forEach((v, idx) => {
+    const timestampStr = formatExportTimestamp(v.last_changed_at);
+    const sideLabel = v.side === 'A' ? 'Work' : (v.side === 'B' ? 'Left' : (v.side || ''));
+    lines.push([
+      idx + 1, timestampStr, sideLabel, v.main_reason || '',
+      v.join_salary_good || '', v.join_benefits_good || '', v.join_brand_reputation || '', v.join_growth_opportunity || '', v.join_challenging_work || '', v.join_culture_team || '', v.join_location_flexibility || '', v.join_confidence_score || '',
+      v.leave_salary_benefits_mismatch || '', v.leave_no_growth || '', v.leave_culture_mismatch || '', v.leave_manager_mismatch || '', v.leave_team_mismatch || '', v.leave_worklife_mismatch || '', v.leave_better_offer || '', v.leave_not_challenging || '', v.leave_improvement_suggestion || '',
+      genderToEn(v.gender_snapshot), v.age_group_snapshot || ''
+    ].map(csvEscape).join(','));
+  });
+
+  const safeTitle = String(company.company_name || 'company').replace(/[^a-zA-Z0-9ก-๙_-]+/g, '_').slice(0, 40);
+  const bkkNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const exportStamp = `${bkkNow.getUTCFullYear()}${String(bkkNow.getUTCMonth() + 1).padStart(2, '0')}${String(bkkNow.getUTCDate()).padStart(2, '0')}_${String(bkkNow.getUTCHours()).padStart(2, '0')}${String(bkkNow.getUTCMinutes()).padStart(2, '0')}`;
+  return ok({
+    csv: '\uFEFF' + lines.join('\r\n'),
+    filename: `TOKBUD_${safeTitle}_${exportStamp}.csv`,
+    row_count: votes.length
+  });
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -1354,6 +1448,9 @@ module.exports = async (req, res) => {
         break;
       case 'cancelTransfer':
         result = await actionCancelTransfer(p);
+        break;
+      case 'exportCompanyVotes':
+        result = await actionExportCompanyVotes(p);
         break;
       case 'signup':
         result = await actionSignup(p);
