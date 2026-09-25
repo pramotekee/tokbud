@@ -782,6 +782,235 @@ async function actionVote(p) {
   return ok({ message: 'แก้ไขความคิดเห็นสำเร็จ / Updated successfully', is_new: false });
 }
 
+// เทียบเท่า updateObjectByRow() เดิม (บรรทัด 221-234) — อัปเดตเฉพาะคอลัมน์ที่ระบุใน fieldsObj (ไม่แตะคอลัมน์
+// อื่นเลย) โดยหาตำแหน่งคอลัมน์จากชื่อ header จริงเหมือนเดิมทุกจุด ไม่ hardcode ตำแหน่ง
+async function updateRowFields(tabName, headers, rowNum, fieldsObj) {
+  const keys = Object.keys(fieldsObj);
+  if (keys.length === 0) return;
+  const data = keys.map(key => ({
+    range: tabName + '!' + colLetter(colIndexByName(headers, key)) + rowNum,
+    values: [[fieldsObj[key]]]
+  }));
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    requestBody: { valueInputOption: 'RAW', data }
+  });
+}
+
+// พอร์ตตรงจาก actionEditCompany()/syncVoteCompanyNames() เดิม (บรรทัด 1336-1408) — ตัด guard "ไม่มีอะไรเปลี่ยน
+// ก็ fail" ออกเหมือนต้นฉบับที่แก้ไปแล้ว (FIX ของ Pop ที่ทำไว้ก่อนหน้า) อัปเดต updated_at เสมอแม้ diff ว่างเปล่า
+async function actionEditCompany(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!p.company_id) return fail('ต้องระบุ company_id');
+
+  const rows = await getSheetRows(SHEETS.COMPANIES);
+  const { headers, objects: companies } = parseRowsWithHeaders(rows);
+  const company = companies.find(c => c.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.status === 'deleted') return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์แก้ไขบริษัทนี้ / You don\'t have permission to edit this company');
+
+  if (!p.company_name) return fail('กรุณากรอกชื่อบริษัท / Please enter a company name');
+  if (!isEnglishOnlyName(p.company_name)) return fail(ENGLISH_ONLY_NAME_ERROR);
+  if (!p.category) return fail('กรุณาเลือกหมวดหมู่ / Please select a category');
+
+  const tags = [p.tag_1, p.tag_2, p.tag_3, p.tag_4, p.tag_5].filter(t => t && String(t).trim());
+  if (tags.length < 1) return fail('กรุณาใส่ tag อย่างน้อย 1 อัน / Please add at least 1 tag');
+
+  const editable = {};
+  let nameChanged = false;
+
+  if (String(p.company_name).trim() !== String(company.company_name).trim()) {
+    editable.company_name = p.company_name;
+    nameChanged = true;
+  }
+  if (String(p.image_url_raw || '') !== String(company.image_url_raw || '')) {
+    editable.image_url_raw = p.image_url_raw || '';
+    editable.image_url_display = p.image_url_raw ? normalizeImageUrl(p.image_url_raw) : '';
+  }
+  if (String(p.description || '') !== String(company.description || '')) editable.description = p.description || '';
+  if (String(p.category) !== String(company.category)) editable.category = p.category;
+  ['tag_1', 'tag_2', 'tag_3', 'tag_4', 'tag_5'].forEach(k => {
+    const v = p[k] || '';
+    if (String(v) !== String(company[k] || '')) editable[k] = v;
+  });
+  if (p.card_color && String(p.card_color) !== String(company.card_color)) editable.card_color = p.card_color;
+
+  editable.updated_at = formatDateForSheet(new Date());
+  await updateRowFields(SHEETS.COMPANIES, headers, company._row, editable);
+
+  if (nameChanged) {
+    // เทียบเท่า syncVoteCompanyNames() เดิม — อัปเดต company_name ที่ snapshot ไว้ในทุกแถวโหวตของบริษัทนี้ด้วย
+    const voteRows = await getSheetRows(SHEETS.VOTES);
+    const { headers: voteHeaders, objects: votes } = parseRowsWithHeaders(voteRows);
+    const nameCol = voteHeaders.indexOf('company_name');
+    if (nameCol !== -1) {
+      const touchedRows = votes.filter(v => v.company_id === p.company_id);
+      if (touchedRows.length > 0) {
+        const sheets = getSheetsClient();
+        const data = touchedRows.map(v => ({
+          range: SHEETS.VOTES + '!' + colLetter(nameCol + 1) + v._row,
+          values: [[p.company_name]]
+        }));
+        await sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId: process.env.TOKBUD_SHEET_ID,
+          requestBody: { valueInputOption: 'RAW', data }
+        });
+      }
+    }
+  }
+
+  return ok({ message: 'บันทึกการแก้ไขเรียบร้อย / Changes saved successfully', status: company.status });
+}
+
+// พอร์ตตรงจาก actionRequestDeleteCompany() เดิม (บรรทัด 1432-1472)
+// ⚠️ ตัดส่วนเดียว: เดิมเช็ค _hasActiveTransfer() ก่อนด้วย (กันลบบริษัทที่มีลิงก์ส่งมอบค้างอยู่) — ฟีเจอร์ transfer
+// ยังไม่ได้พอร์ตมาที่นี่เลย เลยข้ามการเช็คนี้ไปก่อนชั่วคราว จะกลับมาเพิ่มพร้อมกับตอนพอร์ต transfer feature
+async function actionRequestDeleteCompany(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!p.company_id) return fail('ต้องระบุบริษัท / Missing company_id');
+  if (!p.passcode) return fail('กรุณากรอก Passcode เพื่อยืนยันการขอลบ / Please enter your Passcode to confirm this request');
+
+  const passcodeMatches = await bcrypt.compare(String(p.passcode), String(user.passcode || ''));
+  if (!passcodeMatches) return fail('Passcode ไม่ถูกต้อง / Incorrect passcode');
+
+  const validReasons = ['duplicate', 'no_longer_want_listed', 'testing_only', 'other'];
+  if (!p.reason || validReasons.indexOf(p.reason) === -1) return fail('กรุณาเลือกเหตุผล / Please select a reason');
+
+  let reasonText = '';
+  if (p.reason === 'no_longer_want_listed' || p.reason === 'other') {
+    reasonText = String(p.reason_text || '').trim().slice(0, 500);
+    if (!reasonText) return fail('กรุณาระบุรายละเอียดเพิ่มเติม / Please provide more detail');
+  }
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const companies = rowsToObjects(companyRows);
+  const company = companies.find(c => c.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์ขอลบบริษัทนี้ / You don\'t have permission to request deletion of this company');
+
+  const reqRows = await getSheetRows(SHEETS.DELETEREQUESTS);
+  const { headers: reqHeaders, objects: requests } = parseRowsWithHeaders(reqRows);
+  const existing = requests.find(r => r.company_id === p.company_id && r.status === 'pending');
+  if (existing) return ok({ message: 'ส่งคำขอลบไปแล้ว กำลังรอการตรวจสอบ / A delete request is already pending review' });
+
+  const existingIds = requests.map(r => r.request_id);
+  const requestId = generateUniqueCode(existingIds);
+  const rowMap = {
+    request_id: requestId, company_id: p.company_id, requested_by: user.user_id,
+    reason: p.reason, reason_text: reasonText, requested_at: formatDateForSheet(new Date()), status: 'pending'
+  };
+  const rowValues = reqHeaders.map(h => (rowMap[h] !== undefined ? rowMap[h] : ''));
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: SHEETS.DELETEREQUESTS,
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [rowValues] }
+  });
+
+  return ok({ message: 'ส่งคำขอลบสำเร็จ ทีมงานจะตรวจสอบและดำเนินการ / Delete request submitted, our team will review it. It\'ll be removed from the feed once approved.' });
+}
+
+// พอร์ตตรงจาก actionCancelDeleteRequest() เดิม (บรรทัด 1478-1495)
+async function actionCancelDeleteRequest(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!p.company_id) return fail('ต้องระบุบริษัท / Missing company_id');
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const company = rowsToObjects(companyRows).find(c => c.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์ยกเลิกคำขอนี้ / You don\'t have permission to cancel this request');
+
+  const reqRows = await getSheetRows(SHEETS.DELETEREQUESTS);
+  const { headers: reqHeaders, objects: requests } = parseRowsWithHeaders(reqRows);
+  const pending = requests.find(r => r.company_id === p.company_id && r.status === 'pending');
+  if (!pending) return fail('ไม่พบคำขอลบที่รอดำเนินการอยู่ / No pending delete request found');
+
+  await updateRowFields(SHEETS.DELETEREQUESTS, reqHeaders, pending._row, { status: 'cancelled' });
+  return ok({ message: 'ยกเลิกคำขอลบเรียบร้อยแล้ว / Delete request cancelled' });
+}
+
+// พอร์ตตรงจาก actionGetMyCompanies() เดิม (บรรทัด 1593-1647)
+// ⚠️ ตัดส่วนเดียว: ฟีเจอร์ transfer (pending transfer link / transferred_out history) ยังไม่พอร์ต เลยไม่ส่ง
+// field `transfer` และ `transferred_out` มาด้วยตอนนี้ (ของเดิม fail-soft อยู่แล้วถ้าอ่าน transfers ไม่ได้ เลยตัด
+// ออกไปเลยตรงๆ ปลอดภัยกว่า) จะกลับมาเพิ่มพร้อมพอร์ต transfer feature
+async function actionGetMyCompanies(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const companies = rowsToObjects(companyRows).filter(t => t.user_id === user.user_id && t.status !== 'deleted');
+
+  const voteRows = await getSheetRows(SHEETS.VOTES);
+  const votes = rowsToObjects(voteRows);
+  const votesByCompany = buildVotesByCompany(votes);
+
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const userMap = buildUserMap(rowsToObjects(usersRows));
+
+  const reqRows = await getSheetRows(SHEETS.DELETEREQUESTS);
+  const pendingDeleteIds = {};
+  rowsToObjects(reqRows).forEach(r => { if (r.status === 'pending') pendingDeleteIds[r.company_id] = true; });
+
+  return ok({
+    companies: companies.map(t => Object.assign(
+      summarizeCompany(t, votesByCompany[t.company_id] || [], userMap),
+      {
+        status: t.status,
+        created_at: t.created_at,
+        has_pending_delete_request: !!pendingDeleteIds[t.company_id],
+        image_url_raw: t.image_url_raw || ''
+      }
+    )),
+    transferred_out: []
+  });
+}
+
+// พอร์ตตรงจาก actionGetMyComments() เดิม (บรรทัด 1652-1687)
+async function actionGetMyComments(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const companies = rowsToObjects(companyRows);
+  const companyMap = {};
+  companies.forEach(c => { companyMap[c.company_id] = c; });
+
+  const voteRows = await getSheetRows(SHEETS.VOTES);
+  const votes = rowsToObjects(voteRows);
+  const myVotes = votes.filter(v => v.user_id === user.user_id);
+  myVotes.sort((a, b) => new Date(b.last_changed_at) - new Date(a.last_changed_at));
+
+  return ok({
+    comments: myVotes.map(v => ({
+      vote_id: v.vote_id,
+      company_id: v.company_id,
+      company_name: companyMap[v.company_id] ? companyMap[v.company_id].company_name : v.company_name,
+      card_color: companyMap[v.company_id] ? companyMap[v.company_id].card_color : '',
+      side: v.side,
+      main_reason: v.main_reason,
+      voted_at: v.voted_at,
+      last_changed_at: v.last_changed_at,
+      join_salary_good: v.join_salary_good, join_benefits_good: v.join_benefits_good,
+      join_brand_reputation: v.join_brand_reputation, join_growth_opportunity: v.join_growth_opportunity,
+      join_challenging_work: v.join_challenging_work, join_culture_team: v.join_culture_team,
+      join_location_flexibility: v.join_location_flexibility, join_confidence_score: v.join_confidence_score,
+      leave_salary_benefits_mismatch: v.leave_salary_benefits_mismatch, leave_no_growth: v.leave_no_growth,
+      leave_culture_mismatch: v.leave_culture_mismatch, leave_manager_mismatch: v.leave_manager_mismatch,
+      leave_team_mismatch: v.leave_team_mismatch, leave_worklife_mismatch: v.leave_worklife_mismatch,
+      leave_better_offer: v.leave_better_offer, leave_not_challenging: v.leave_not_challenging,
+      leave_improvement_suggestion: v.leave_improvement_suggestion
+    }))
+  });
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -812,6 +1041,21 @@ module.exports = async (req, res) => {
         break;
       case 'vote':
         result = await actionVote(p);
+        break;
+      case 'editCompany':
+        result = await actionEditCompany(p);
+        break;
+      case 'requestDeleteCompany':
+        result = await actionRequestDeleteCompany(p);
+        break;
+      case 'cancelDeleteRequest':
+        result = await actionCancelDeleteRequest(p);
+        break;
+      case 'getMyCompanies':
+        result = await actionGetMyCompanies(p);
+        break;
+      case 'getMyComments':
+        result = await actionGetMyComments(p);
         break;
       case 'signup':
         result = await actionSignup(p);
