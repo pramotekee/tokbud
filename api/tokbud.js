@@ -18,7 +18,8 @@ const SHEETS = {
   COMPANIES: 'companies',
   VOTES: 'votes',
   CATEGORIES: 'categories',
-  DELETEREQUESTS: 'deleterequests'
+  DELETEREQUESTS: 'deleterequests',
+  TRANSFERS: 'transfers'
 };
 
 // หมายเหตุ: ลำดับคอลัมน์จริงของ tab users ไม่ได้ fix ไว้ในโค้ดแล้ว — ทุกจุดที่เขียน/หาตำแหน่งคอลัมน์
@@ -121,6 +122,21 @@ function buildUserMap(users) {
   const map = {};
   users.forEach(u => { map[u.user_id] = u; });
   return map;
+}
+
+// พอร์ตตรงจาก findUserInMap() เดิม (appscript.txt บรรทัด 943-948) — หา user จาก userMap ที่มีอยู่แล้วด้วย
+// session_token แทนการอ่านชีท users ซ้ำ (ใช้ตอน actionGetTransfer ที่ต้องอ่าน companies/votes/users มาแล้ว)
+function findUserInMap(userMap, token) {
+  if (!token) return null;
+  const user = Object.values(userMap).find(u => u.session_token === token) || null;
+  if (user && user.account_status === 'deleted') return null;
+  return user;
+}
+
+// เทียบเท่า _loadHiddenCompanyIdsCached() เดิม — company_id ที่ Pop อนุมัติลบแล้ว (status='delete' ใน
+// deleterequests) ไม่ควรโผล่ที่ไหนอีกเลย รวมถึงในลิงก์ transfer ที่ยังไม่หมดอายุของบริษัทนั้น
+function getHiddenCompanyIds(deleteRequests) {
+  return deleteRequests.filter(r => r.status === 'delete').map(r => r.company_id);
 }
 
 function buildVotesByCompany(votes) {
@@ -866,8 +882,7 @@ async function actionEditCompany(p) {
 }
 
 // พอร์ตตรงจาก actionRequestDeleteCompany() เดิม (บรรทัด 1432-1472)
-// ⚠️ ตัดส่วนเดียว: เดิมเช็ค _hasActiveTransfer() ก่อนด้วย (กันลบบริษัทที่มีลิงก์ส่งมอบค้างอยู่) — ฟีเจอร์ transfer
-// ยังไม่ได้พอร์ตมาที่นี่เลย เลยข้ามการเช็คนี้ไปก่อนชั่วคราว จะกลับมาเพิ่มพร้อมกับตอนพอร์ต transfer feature
+// เช็ค hasActiveTransfer() ก่อนด้วยแล้ว (กันลบบริษัทที่มีลิงก์ส่งมอบค้างอยู่) — เพิ่มกลับมาตอนพอร์ต transfer feature
 async function actionRequestDeleteCompany(p) {
   const user = await findUserByToken(p.session_token);
   if (!user) return fail('กรุณา login ก่อน / Please log in first');
@@ -891,6 +906,9 @@ async function actionRequestDeleteCompany(p) {
   const company = companies.find(c => c.company_id === p.company_id);
   if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
   if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์ขอลบบริษัทนี้ / You don\'t have permission to request deletion of this company');
+  if (await hasActiveTransfer(p.company_id)) {
+    return fail('กรุณายกเลิกลิงก์ส่งมอบก่อน จึงจะขอลบบริษัทได้ / Please cancel the pending transfer link before requesting deletion');
+  }
 
   const reqRows = await getSheetRows(SHEETS.DELETEREQUESTS);
   const { headers: reqHeaders, objects: requests } = parseRowsWithHeaders(reqRows);
@@ -937,16 +955,17 @@ async function actionCancelDeleteRequest(p) {
   return ok({ message: 'ยกเลิกคำขอลบเรียบร้อยแล้ว / Delete request cancelled' });
 }
 
-// พอร์ตตรงจาก actionGetMyCompanies() เดิม (บรรทัด 1593-1647)
-// ⚠️ ตัดส่วนเดียว: ฟีเจอร์ transfer (pending transfer link / transferred_out history) ยังไม่พอร์ต เลยไม่ส่ง
-// field `transfer` และ `transferred_out` มาด้วยตอนนี้ (ของเดิม fail-soft อยู่แล้วถ้าอ่าน transfers ไม่ได้ เลยตัด
-// ออกไปเลยตรงๆ ปลอดภัยกว่า) จะกลับมาเพิ่มพร้อมพอร์ต transfer feature
+// พอร์ตตรงจาก actionGetMyCompanies() เดิม (บรรทัด 1593-1647) — ตอนนี้พอร์ต transfer feature มาครบแล้ว จึง
+// ใส่ field `transfer` (ลิงก์ส่งมอบที่ยังรอผู้รับของบริษัทนั้น ถ้ามี) และ `transferred_out` (ประวัติบริษัทที่
+// เคยเป็นของเรามาก่อนแต่โอนออกไปแล้ว) กลับเข้ามาเหมือนต้นฉบับ — fail-soft เหมือนเดิม: ถ้าอ่าน tab transfers
+// พลาดด้วยเหตุผลใดก็ตาม (เช่น tab ถูกเปลี่ยนชื่อ) ต้องไม่ทำให้หน้า My Company พังทั้งหน้า
 async function actionGetMyCompanies(p) {
   const user = await findUserByToken(p.session_token);
   if (!user) return fail('กรุณา login ก่อน / Please log in first');
 
   const companyRows = await getSheetRows(SHEETS.COMPANIES);
-  const companies = rowsToObjects(companyRows).filter(t => t.user_id === user.user_id && t.status !== 'deleted');
+  const allCompanies = rowsToObjects(companyRows);
+  const companies = allCompanies.filter(t => t.user_id === user.user_id && t.status !== 'deleted');
 
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const votes = rowsToObjects(voteRows);
@@ -959,6 +978,32 @@ async function actionGetMyCompanies(p) {
   const pendingDeleteIds = {};
   rowsToObjects(reqRows).forEach(r => { if (r.status === 'pending') pendingDeleteIds[r.company_id] = true; });
 
+  const pendingTransferByCompany = {};
+  let transferredOut = [];
+  try {
+    const trRows = await getSheetRows(SHEETS.TRANSFERS);
+    const transfers = rowsToObjects(trRows);
+    const nowMs = Date.now();
+    transfers.forEach(tr => {
+      if (tr.from_user_id !== user.user_id) return;
+      const eff = transferEffectiveStatus(tr, nowMs);
+      if (eff === 'pending') {
+        pendingTransferByCompany[tr.company_id] = {
+          transfer_id: tr.transfer_id, created_at: toIso(tr.created_at), expires_at: toIso(tr.expires_at)
+        };
+      } else if (eff === 'accepted') {
+        const toUser = userMap[tr.to_user_id];
+        const c = allCompanies.find(x => x.company_id === tr.company_id);
+        transferredOut.push({
+          company_id: tr.company_id, company_name: c ? c.company_name : '',
+          to_username: toUser ? toUser.username : '', completed_at: toIso(tr.completed_at)
+        });
+      }
+    });
+    transferredOut.sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+    transferredOut = transferredOut.slice(0, 50);
+  } catch (e) { console.error('[getMyCompanies] read transfers failed:', e); }
+
   return ok({
     companies: companies.map(t => Object.assign(
       summarizeCompany(t, votesByCompany[t.company_id] || [], userMap),
@@ -966,10 +1011,11 @@ async function actionGetMyCompanies(p) {
         status: t.status,
         created_at: t.created_at,
         has_pending_delete_request: !!pendingDeleteIds[t.company_id],
-        image_url_raw: t.image_url_raw || ''
+        image_url_raw: t.image_url_raw || '',
+        transfer: pendingTransferByCompany[t.company_id] || null
       }
     )),
-    transferred_out: []
+    transferred_out: transferredOut
   });
 }
 
@@ -1009,6 +1055,246 @@ async function actionGetMyComments(p) {
       leave_improvement_suggestion: v.leave_improvement_suggestion
     }))
   });
+}
+
+/* ================= COMPANY TRANSFER (ส่งมอบบริษัทให้คนอื่นดูแลต่อ) =================
+ * พอร์ตตรงจาก appscript.txt บรรทัด 1911-2153 — logic เดียวกันเป๊ะ, ต่างจากต้นฉบับ 2 จุดเท่านั้น:
+ *   (1) เทียบ passcode ด้วย bcrypt.compare() แทนเทียบ string ตรงๆ (ฝั่งนี้ hash passcode ไว้ ดู actionSignup)
+ *   (2) ไม่มี LockService บน Vercel — ตามดีไซน์ที่ตกลงกับ Pop ไว้แล้วว่าข้ามการล็อคทั้งระบบไปก่อน (traffic ยัง
+ *       น้อยมาก) จุดเดียวที่ยังพอมีความเสี่ยงจริงจากการไม่มีล็อคคือ acceptTransfer ถ้ามี 2 คนกด Accept พร้อมกัน
+ *       เป๊ะๆ ในเสี้ยววินาทีเดียวกัน (โอกาสต่ำมากที่ traffic ปัจจุบัน) — ทุก action ยังอ่านชีทสดแล้วเช็คซ้ำก่อน
+ *       เขียนเหมือนเดิม ลดความเสี่ยงลงได้มากแม้ไม่มีล็อคจริง ถ้าต้องการล็อคจริงทีหลังต้องใช้ external lock
+ *       service (เช่น Upstash Redis) — ยังไม่ทำตอนนี้ตามดีไซน์เดิม
+ */
+const TRANSFER_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; // 3 วัน
+
+function toIso(v) {
+  if (!v) return '';
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? '' : d.toISOString();
+}
+
+// สถานะจริง: pending ที่เลยเวลาแล้ว (หรือ expires_at อ่านไม่ออก) ถือเป็น expired
+function transferEffectiveStatus(t, nowMs) {
+  const st = String(t.status || '').trim();
+  if (st !== 'pending') return st;
+  const exp = new Date(t.expires_at).getTime();
+  return (isNaN(exp) || exp <= nowMs) ? 'expired' : 'pending';
+}
+
+async function markTransferExpired(headers, t) {
+  try {
+    if (String(t.status || '').trim() !== 'pending') return;
+    await updateRowFields(SHEETS.TRANSFERS, headers, t._row, { status: 'expired', completed_at: t.expires_at || formatDateForSheet(new Date()) });
+  } catch (e) { console.error('[transfer] mark expired failed:', e); } // แค่จัดระเบียบชีต ห้ามให้กระทบผู้ใช้
+}
+
+// เหตุผลที่บริษัทนี้ส่งมอบไม่ได้: 'not_found' | 'pending_delete' | '' (ส่งมอบได้)
+async function transferBlockReason(company) {
+  if (!company || company.status === 'deleted') return 'not_found';
+  const reqRows = await getSheetRows(SHEETS.DELETEREQUESTS);
+  const requests = rowsToObjects(reqRows);
+  if (getHiddenCompanyIds(requests).indexOf(company.company_id) !== -1) return 'not_found';
+  const hasPendingDelete = requests.some(r => r.company_id === company.company_id && r.status === 'pending');
+  return hasPendingDelete ? 'pending_delete' : '';
+}
+
+// ใช้ใน actionRequestDeleteCompany — fail-soft: tab transfers หาย/ชื่อผิด ห้ามทำให้ฟีเจอร์ขอลบที่ใช้งานอยู่พัง
+async function hasActiveTransfer(companyId) {
+  try {
+    const rows = await getSheetRows(SHEETS.TRANSFERS);
+    const nowMs = Date.now();
+    return rowsToObjects(rows).some(t => t.company_id === companyId && transferEffectiveStatus(t, nowMs) === 'pending');
+  } catch (e) { return false; }
+}
+
+const TRANSFER_MSG = {
+  login: 'กรุณา login ก่อน / Please log in first',
+  invalid: 'ลิงก์นี้ไม่ถูกต้อง / This link is not valid',
+  expired: 'ลิงก์นี้หมดอายุแล้ว / This link has expired',
+  cancelled: 'ผู้ส่งยกเลิกลิงก์นี้แล้ว / The sender has cancelled this link',
+  used: 'ลิงก์นี้ถูกใช้ไปแล้ว / This link has already been used',
+  own: 'นี่คือลิงก์ที่คุณสร้างเอง กรุณาส่งต่อให้ผู้ที่จะรับช่วงดูแลแทน / This is your own transfer link. Please send it to the person who will take over',
+  unavailable: 'บริษัทนี้ไม่พร้อมให้ส่งมอบแล้ว / This company is no longer available for transfer',
+  notFound: 'ไม่พบบริษัทนี้ / Company not found',
+  transferNotFound: 'ไม่พบรายการส่งมอบนี้ / Transfer not found'
+};
+
+// ผู้ส่ง: สร้างลิงก์ส่งมอบ (ต้องกรอก passcode) — ถ้ามีลิงก์ที่ยังใช้ได้อยู่แล้ว คืนลิงก์เดิม (กันกดซ้ำ/สองแท็บ)
+async function actionCreateTransfer(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail(TRANSFER_MSG.login);
+  if (!p.company_id) return fail('ข้อมูลไม่ครบ / Missing company_id');
+  if (!p.passcode) return fail('กรุณากรอก Passcode เพื่อยืนยันการส่งมอบ / Please enter your Passcode to confirm this transfer');
+
+  const passcodeMatches = await bcrypt.compare(String(p.passcode), String(user.passcode || ''));
+  if (!passcodeMatches) return fail('Passcode ไม่ถูกต้อง / Incorrect passcode');
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const company = rowsToObjects(companyRows).find(c => c.company_id === p.company_id);
+  if (!company || company.status === 'deleted') return fail(TRANSFER_MSG.notFound);
+  if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์ส่งมอบบริษัทนี้ / You don\'t have permission to transfer this company');
+  const block = await transferBlockReason(company);
+  if (block === 'not_found') return fail(TRANSFER_MSG.notFound);
+  if (block === 'pending_delete') return fail('ส่งมอบไม่ได้ขณะที่มีคำขอลบค้างอยู่ กรุณายกเลิกคำขอลบก่อน / You can\'t transfer a company while a delete request is pending. Please cancel the delete request first');
+
+  const trRows = await getSheetRows(SHEETS.TRANSFERS);
+  const { headers: trHeaders, objects: transfers } = parseRowsWithHeaders(trRows);
+  const nowMs = Date.now();
+  let active = null;
+  for (const t of transfers) {
+    if (t.company_id !== company.company_id) continue;
+    const eff = transferEffectiveStatus(t, nowMs);
+    if (eff === 'pending') active = t;
+    else if (eff === 'expired') await markTransferExpired(trHeaders, t);
+  }
+  if (active) {
+    return ok({ transfer_id: active.transfer_id, created_at: toIso(active.created_at), expires_at: toIso(active.expires_at), reused: true });
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + TRANSFER_EXPIRY_MS);
+  const transferId = crypto.randomUUID();
+  const rowMap = {
+    transfer_id: transferId, company_id: company.company_id, from_user_id: user.user_id, to_user_id: '',
+    status: 'pending', created_at: formatDateForSheet(now), expires_at: formatDateForSheet(expiresAt), completed_at: ''
+  };
+  const rowValues = trHeaders.map(h => (rowMap[h] !== undefined ? rowMap[h] : ''));
+
+  const sheets = getSheetsClient();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: SHEETS.TRANSFERS,
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [rowValues] }
+  });
+  return ok({ transfer_id: transferId, created_at: now.toISOString(), expires_at: expiresAt.toISOString() });
+}
+
+// ทุกคน (ไม่ต้อง login): ดูตัวอย่างจากลิงก์ — คืนรายละเอียดบริษัทเฉพาะตอนลิงก์ยังใช้ได้ (ลิงก์อื่นๆ คืนแค่สถานะ)
+// ถ้าส่ง session_token มาด้วย จะบอกว่า login อยู่ไหม / เป็นลิงก์ของตัวเองไหม เพื่อให้หน้าเว็บเลือกปุ่มถูก
+async function actionGetTransfer(p) {
+  const id = String(p.transfer_id || '').trim();
+  if (!id) return ok({ transfer_status: 'invalid' });
+
+  const trRows = await getSheetRows(SHEETS.TRANSFERS);
+  const { headers: trHeaders, objects: transfers } = parseRowsWithHeaders(trRows);
+  const t = transfers.find(r => r.transfer_id === id);
+  if (!t) return ok({ transfer_status: 'invalid' });
+
+  const eff = transferEffectiveStatus(t, Date.now());
+  if (eff === 'expired') await markTransferExpired(trHeaders, t);
+  if (eff !== 'pending') return ok({ transfer_status: (eff === 'accepted' || eff === 'cancelled' || eff === 'expired') ? eff : 'invalid' });
+
+  const data = await loadAllSheetsData();
+  const company = data.companies.find(c => c.company_id === t.company_id);
+  if (!company || company.status === 'deleted' || company.user_id !== t.from_user_id) {
+    return ok({ transfer_status: 'unavailable' });
+  }
+  const votesByCompany = buildVotesByCompany(data.votes);
+  const userMap = buildUserMap(data.users);
+  const viewer = findUserInMap(userMap, p.session_token);
+  const summary = summarizeCompany(company, votesByCompany[company.company_id] || [], userMap);
+  const fromUser = userMap[t.from_user_id];
+  return ok({
+    transfer_status: 'pending',
+    company: {
+      company_id: summary.company_id, company_name: summary.company_name,
+      image_url: summary.image_url, card_color: summary.card_color, comment_count: summary.total_votes
+    },
+    from_username: fromUser ? fromUser.username : '',
+    expires_at: toIso(t.expires_at),
+    logged_in: !!viewer,
+    is_sender: !!viewer && viewer.user_id === t.from_user_id
+  });
+}
+
+// ผู้รับ: กดรับ (ต้อง login, ไม่ต้องกรอก passcode) — เปลี่ยนเจ้าของบริษัท + จดประวัติ
+async function actionAcceptTransfer(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail(TRANSFER_MSG.login);
+  const id = String(p.transfer_id || '').trim();
+  if (!id) return fail(TRANSFER_MSG.invalid);
+
+  const trRows = await getSheetRows(SHEETS.TRANSFERS);
+  const { headers: trHeaders, objects: transfers } = parseRowsWithHeaders(trRows);
+  const t = transfers.find(r => r.transfer_id === id);
+  if (!t) return fail(TRANSFER_MSG.invalid);
+
+  const nowMs = Date.now();
+  const eff = transferEffectiveStatus(t, nowMs);
+  if (eff === 'expired') { await markTransferExpired(trHeaders, t); return fail(TRANSFER_MSG.expired); }
+  if (eff === 'accepted') {
+    // คนเดิมกดซ้ำ (เช่น เน็ตหลุดหลังรับสำเร็จ แล้ว frontend retry ให้อัตโนมัติ) = สำเร็จอยู่แล้ว ไม่ใช่ error
+    if (t.to_user_id === user.user_id) {
+      const companyRows = await getSheetRows(SHEETS.COMPANIES);
+      const mine = rowsToObjects(companyRows).find(c => c.company_id === t.company_id);
+      return ok({ company_id: t.company_id, company_name: mine ? mine.company_name : '', message: 'รับช่วงดูแลบริษัทเรียบร้อยแล้ว / You are now managing this company' });
+    }
+    return fail(TRANSFER_MSG.used);
+  }
+  if (eff === 'cancelled') return fail(TRANSFER_MSG.cancelled);
+  if (eff !== 'pending') return fail(TRANSFER_MSG.invalid);
+  if (t.from_user_id === user.user_id) return fail(TRANSFER_MSG.own);
+
+  // ตรวจซ้ำจากชีตสดทุกครั้ง: ยังเป็นของผู้ส่งอยู่ไหม / บริษัทยังอยู่ไหม / ไม่มีคำขอลบค้าง
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const { headers: companyHeaders, objects: companies } = parseRowsWithHeaders(companyRows);
+  const company = companies.find(c => c.company_id === t.company_id);
+  if (!company || company.status === 'deleted' || company.user_id !== t.from_user_id) {
+    // เจ้าของเปลี่ยนไปแล้ว/บริษัทหาย: ลิงก์นี้ใช้ไม่ได้ตลอดไป ปิดรายการไม่ปล่อยค้าง pending
+    await updateRowFields(SHEETS.TRANSFERS, trHeaders, t._row, { status: 'cancelled', completed_at: formatDateForSheet(new Date()) });
+    return fail(TRANSFER_MSG.unavailable);
+  }
+  const block = await transferBlockReason(company);
+  if (block !== '') return fail(TRANSFER_MSG.unavailable); // เช่น มีคำขอลบค้าง (อาจหายไปทีหลัง จึงไม่ปิดลิงก์)
+
+  const now = new Date();
+  const nowStr = formatDateForSheet(now);
+  // ลำดับสำคัญ: เปลี่ยนเจ้าของก่อน แล้วค่อยจดประวัติ — ถ้าขั้นหลังพลาด ลิงก์เดิมจะถูกปฏิเสธเองเพราะเจ้าของไม่ใช่ผู้ส่งแล้ว (ไม่ค้างครึ่งๆ กลางๆ)
+  await updateRowFields(SHEETS.COMPANIES, companyHeaders, company._row, { user_id: user.user_id, updated_at: nowStr });
+  const acceptedPatch = { to_user_id: user.user_id, status: 'accepted', completed_at: nowStr };
+  try {
+    await updateRowFields(SHEETS.TRANSFERS, trHeaders, t._row, acceptedPatch);
+  } catch (e) {
+    await new Promise(r => setTimeout(r, 300));
+    try { await updateRowFields(SHEETS.TRANSFERS, trHeaders, t._row, acceptedPatch); }
+    catch (e2) { console.error('[transfer] company moved but history write failed:', t.transfer_id, e2); }
+  }
+
+  // เผื่อมีลิงก์ค้างซ้อนของบริษัทเดียวกัน (ปกติไม่มี เพราะสร้างซ้ำไม่ได้) -> ปิดให้หมด
+  for (const o of transfers) {
+    if (o._row === t._row || o.company_id !== t.company_id) continue;
+    if (transferEffectiveStatus(o, nowMs) === 'pending') {
+      try { await updateRowFields(SHEETS.TRANSFERS, trHeaders, o._row, { status: 'cancelled', completed_at: nowStr }); } catch (e) {}
+    }
+  }
+
+  return ok({
+    company_id: company.company_id, company_name: company.company_name,
+    message: 'รับช่วงดูแลบริษัทเรียบร้อยแล้ว / You are now managing this company'
+  });
+}
+
+// ผู้ส่ง: ยกเลิกลิงก์ที่ยังไม่มีคนรับ
+async function actionCancelTransfer(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail(TRANSFER_MSG.login);
+  const id = String(p.transfer_id || '').trim();
+  if (!id) return fail(TRANSFER_MSG.invalid);
+
+  const trRows = await getSheetRows(SHEETS.TRANSFERS);
+  const { headers: trHeaders, objects: transfers } = parseRowsWithHeaders(trRows);
+  const t = transfers.find(r => r.transfer_id === id);
+  if (!t || t.from_user_id !== user.user_id) return fail(TRANSFER_MSG.transferNotFound);
+
+  const eff = transferEffectiveStatus(t, Date.now());
+  if (eff === 'accepted') return fail('ลิงก์นี้ถูกรับไปแล้ว ยกเลิกไม่ได้ / This transfer was already accepted and can\'t be cancelled');
+  if (eff === 'pending') await updateRowFields(SHEETS.TRANSFERS, trHeaders, t._row, { status: 'cancelled', completed_at: formatDateForSheet(new Date()) });
+  else if (eff === 'expired') await markTransferExpired(trHeaders, t);
+  // cancelled อยู่แล้ว = สำเร็จแบบ idempotent (กดซ้ำไม่ error)
+  return ok({ message: 'ยกเลิกลิงก์ส่งมอบเรียบร้อยแล้ว / Transfer link cancelled' });
 }
 
 // ===== Router =====
@@ -1056,6 +1342,18 @@ module.exports = async (req, res) => {
         break;
       case 'getMyComments':
         result = await actionGetMyComments(p);
+        break;
+      case 'createTransfer':
+        result = await actionCreateTransfer(p);
+        break;
+      case 'getTransfer':
+        result = await actionGetTransfer(p);
+        break;
+      case 'acceptTransfer':
+        result = await actionAcceptTransfer(p);
+        break;
+      case 'cancelTransfer':
+        result = await actionCancelTransfer(p);
         break;
       case 'signup':
         result = await actionSignup(p);
