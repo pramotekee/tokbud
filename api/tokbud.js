@@ -239,6 +239,26 @@ function colIndexByName(headers, name) {
   if (idx === -1) throw new Error('ไม่พบคอลัมน์ "' + name + '" ในชีท (header row)');
   return idx + 1; // คืนเป็น 1-based
 }
+
+// เดิม (Apps Script) เขียนวันที่ลงชีทด้วย new Date() ตรงๆ — Google Sheets รู้จักเป็น "ค่าวันที่จริง" แสดงผล
+// ตามฟอร์แมตของสเปรดชีต (เช่น "9/22/2026 17:14") ฝั่ง Node เขียนผ่าน Sheets API ด้วย valueInputOption RAW
+// (จำเป็นต้องใช้ RAW เพื่อกันเลข 0 นำหน้าเบอร์โทรหาย — ดูคอมเมนต์ที่ actionSignup) ซึ่ง RAW ไม่ auto-parse
+// อะไรเลย ถ้าส่ง ISO string ตรงๆ ("2026-09-24T08:36:43.604Z") จะถูกเก็บเป็นข้อความดิบตามนั้น อ่านยากกว่าของเดิม
+// เลยจัดรูปแบบให้เป็น M/D/YYYY H:mm:ss (โซนเวลาไทย +7 คงที่ ไม่มี DST) ให้หน้าตาใกล้เคียงแถวเก่าที่สุด
+// ข้อแลก: ยังเป็น "ข้อความ" ในสายตา Sheets ไม่ใช่ "ค่าวันที่จริง" แบบแถวเก่า (เรียงลำดับ/กรองแบบ native
+// ของ Sheets เองอาจไม่เหมือนแถวเก่าเป๊ะ) แต่โค้ดฝั่งเราเองที่ใช้เรียงลำดับ/คำนวณ (เช่น sort "latest" ใน
+// getCompanies) แปลง string นี้กลับเป็น Date ใน JS ได้ปกติ ไม่กระทบการทำงานของแอป — ถ้าต้องการให้เป็นค่าวันที่
+// จริงแบบเป๊ะๆ ด้วย ทำได้แต่ต้องเปลี่ยนวิธีเขียน (batchUpdate แบบระบุชนิดข้อมูลเป็นเซลล์ๆ ไป) แจ้งได้ถ้าต้องการ
+function formatDateForSheet(date) {
+  const bkk = new Date(date.getTime() + 7 * 60 * 60 * 1000);
+  const M = bkk.getUTCMonth() + 1, D = bkk.getUTCDate(), Y = bkk.getUTCFullYear();
+  const h = bkk.getUTCHours();
+  const m = String(bkk.getUTCMinutes()).padStart(2, '0');
+  const s = String(bkk.getUTCSeconds()).padStart(2, '0');
+  return `${M}/${D}/${Y} ${h}:${m}:${s}`;
+}
+
+// พอร์ตตรงจาก normalizePhone() เดิม (บรรทัด 244-248)
 function normalizePhone(phone) {
   let p = String(phone).trim().replace(/[^0-9]/g, '');
   if (p.length === 9 && p.charAt(0) !== '0') p = '0' + p;
@@ -435,7 +455,7 @@ async function actionSignup(p) {
   const userId = generateUniqueCode(existingIds);
   const sessionToken = crypto.randomUUID();
   const profileImageUrl = normalizeImageUrl(p.profile_image_url || '');
-  const nowIso = new Date().toISOString();
+  const nowIso = formatDateForSheet(new Date());
   // bcrypt.hash ครั้งเดียว ได้ string ที่เก็บทั้ง algorithm/cost/salt/hash รวมกันในตัว (ขึ้นต้น $2a$หรือ $2b$)
   // ไม่ต้องเก็บ salt แยกคอลัมน์เอง bcrypt.compare() ตอน login จะแกะ salt จากในนี้ให้เองอัตโนมัติ
   const passcodeHash = await bcrypt.hash(String(p.passcode), 10);
@@ -638,7 +658,7 @@ async function actionCreateCompany(p) {
   const { headers, objects: companies } = parseRowsWithHeaders(rows);
   const existingIds = companies.map(c => c.company_id);
   const companyId = generateUniqueCode(existingIds);
-  const nowIso = new Date().toISOString();
+  const nowIso = formatDateForSheet(new Date());
 
   const rowMap = {
     company_id: companyId,
@@ -720,7 +740,7 @@ async function actionVote(p) {
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const { headers: voteHeaders, objects: votes } = parseRowsWithHeaders(voteRows);
   const existing = votes.find(v => v.company_id === p.company_id && v.user_id === user.user_id && v.side === p.side);
-  const nowIso = new Date().toISOString();
+  const nowIso = formatDateForSheet(new Date());
   const sheets = getSheetsClient();
 
   if (!existing) {
