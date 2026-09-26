@@ -109,6 +109,13 @@ a{color:inherit;text-decoration:none;}
 .current-lang-tag{ font-size:11.5px; color:var(--text-muted); }
 .reveal-brand{ text-align:center; font-family:'Antonio',sans-serif; font-size:22px; color:var(--primary); letter-spacing:1px; }
 
+/* P0-fix (คำขอ Pop): ตอนแปลภาษาอื่นเจอ cold start ของ Apps Script (ดูหมายเหตุ backend) โชว์สถานะนี้แทนการ
+   fallback เงียบๆ ไปเป็น EN แบบเดิม กัน user งงว่าทำไมภาษาที่เลือกไม่ตรงกับที่ขึ้นจริง */
+.translate-retry{ display:flex; flex-direction:column; align-items:flex-start; gap:14px; }
+.translate-retry-msg{ font-family:'Lexend',sans-serif; font-size:15px; font-weight:600; line-height:1.5; color:var(--primary-dark); }
+.translate-retry-btn{ padding:10px 20px; font-size:13px; }
+.reveal-card.deep .translate-retry-msg{ color:#F8E7A8; }
+
 .lang-modal{ position:fixed; inset:0; background:rgba(11,29,127,.55); display:none; justify-content:center; align-items:flex-end; z-index:1001; }
 .lang-modal.open{ display:flex; }
 .lang-sheet{ width:100%; max-width:420px; max-height:70vh; overflow-y:auto; background:#fff; border-radius:24px 24px 0 0; padding:20px; color:var(--text); }
@@ -1101,7 +1108,21 @@ async function showCardText(categoryKey, index, lang){
   // การ์ดที่เปิดอยู่อาจถูกปิด/เปลี่ยนไปแล้วก่อนที่คำแปลจะกลับมา (กดเร็ว) — เช็คก่อน apply กันข้อความไปโผล่ผิดใบ
   if(!CURRENT_CARD || CURRENT_CARD.category !== categoryKey || CURRENT_CARD.index !== index) return;
   if(!res.success){
-    qEl.textContent = enText; // แปลไม่สำเร็จ fallback กลับ EN แทน ไม่ปล่อยการ์ดว่างเปล่า
+    // P0-fix (คำขอ Pop): res.retryable = ตัวแปลช้า/พังชั่วคราวจาก cold start ของ Apps Script (ดูหมายเหตุ backend)
+    // ต่างจาก error อื่น (เช่น ภาษาที่เลือกไม่รองรับ — ไม่ควรเกิดจริงเพราะ picker จำกัดตัวเลือกไว้แล้ว) เคส
+    // retryable โชว์ปุ่ม Try again ให้ user กดใหม่เอง แทนที่จะ fallback เงียบๆ ไปเป็น EN แบบเดิม
+    if(res.retryable){
+      qEl.innerHTML = '<div class="translate-retry">' +
+        '<div class="translate-retry-msg">นักแปลคิวงานแน่นมาก กำลังพยายามแปลให้คุณอยู่นะ<br>Translator is busy right now</div>' +
+        '<button type="button" class="btn btn-primary translate-retry-btn">Try again</button>' +
+        '</div>';
+      langTagEl.textContent = langLabel;
+      qEl.querySelector('.translate-retry-btn').addEventListener('click', () => {
+        showCardText(categoryKey, index, lang);
+      });
+      return;
+    }
+    qEl.textContent = enText; // แปลไม่สำเร็จ (error อื่นที่ไม่ retryable) fallback กลับ EN แทน ไม่ปล่อยการ์ดว่างเปล่า
     langTagEl.textContent = 'English';
     return;
   }
