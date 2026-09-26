@@ -19,7 +19,8 @@ const SHEETS = {
   VOTES: 'votes',
   CATEGORIES: 'categories',
   DELETEREQUESTS: 'deleterequests',
-  TRANSFERS: 'transfers'
+  TRANSFERS: 'transfers',
+  MYTYPE: 'mytype'
 };
 
 // หมายเหตุ: ลำดับคอลัมน์จริงของ tab users ไม่ได้ fix ไว้ในโค้ดแล้ว — ทุกจุดที่เขียน/หาตำแหน่งคอลัมน์
@@ -1391,6 +1392,216 @@ async function actionExportCompanyVotes(p) {
   });
 }
 
+/* ================= MY TYPE (About Me / self-expression + match feature) =================
+ * พอร์ตตรงจาก appscript.txt บรรทัด 2155-2426 (ต้นฉบับเองก็บอกไว้ว่าพอร์ตมาจาก appscript_wezide.txt แบบตรงตัว
+ * ไม่ปรับ logic ใดๆ — สคีมาชีท mytype คอลัมน์ A-BH ตรงกับของเดิมทุกตัว) ต่างจากต้นฉบับจุดเดียว: ไม่มี
+ * CacheService บน Vercel เลยอ่านชีทสดทุกครั้งแทนการ cache ผลไว้ 1 นาทีแบบเดิม (ตามดีไซน์ "ไม่มี caching
+ * ที่ไหนเลยตอนนี้" ที่ตกลงกับ Pop ไว้ตั้งแต่ต้นโปรเจกต์อยู่แล้ว ไม่ใช่จุดใหม่ที่ตัดสินใจเอง)
+ * ⚠️ ยังไม่พอร์ต `translateCardQuestion` (แปลข้อความการ์ดคำถาม) เพราะต้นฉบับใช้ LanguageApp.translate() ของ
+ * Apps Script ล้วนๆ ซึ่งไม่มีบน Vercel เลย ต้องต่อ Google Cloud Translation API แยกต่างหาก (ต้องสร้าง credential/
+ * เปิด billing เพิ่ม) — เป็นการตัดสินใจโครงสร้างใหม่ที่ต้องถาม Pop ก่อน ไม่ใช่แค่พอร์ตโค้ดตรงๆ เหมือนที่ผ่านมา
+ */
+const MYTYPE_QUESTION_COUNT = 50;
+function mytypeQuestionKeys() {
+  const keys = [];
+  for (let i = 1; i <= MYTYPE_QUESTION_COUNT; i++) keys.push('q' + String(i).padStart(2, '0'));
+  return keys;
+}
+const MYTYPE_CONTACT_FIELDS = ['fb', 'yt', 'ig', 'tt', 'x', 'website'];
+const MYTYPE_MATCH_THRESHOLDS = {
+  very_me: { field: 'match_pct', min: 70 },
+  kinda_me: { field: 'match_pct', min: 40 },
+  not_me: { field: 'diff_pct', min: 40 },
+  so_different: { field: 'diff_pct', min: 70 }
+};
+const MYTYPE_MIN_COMMON_ANSWERS = 5;
+const MYTYPE_MATCH_RESULT_CAP = 60;
+
+function extractAnsweredQuestions(row) {
+  const out = {};
+  if (!row) return out;
+  mytypeQuestionKeys().forEach(k => {
+    const v = row[k];
+    if (v !== '' && v !== null && v !== undefined) out[k] = Number(v);
+  });
+  return out;
+}
+
+function computeMyTypeDiff(answersA, answersB) {
+  let sum = 0, commonCount = 0;
+  Object.keys(answersA).forEach(k => {
+    if (answersB[k] !== undefined) { sum += Math.abs(answersA[k] - answersB[k]); commonCount++; }
+  });
+  return { commonCount, avgDiff: commonCount ? (sum / commonCount) : null };
+}
+
+function buildContactPayload(row, includeLinks) {
+  const channels = [];
+  const links = {};
+  MYTYPE_CONTACT_FIELDS.forEach(f => {
+    const v = row ? String(row[f] || '').trim() : '';
+    if (v) { channels.push(f); if (includeLinks) links[f] = v; }
+  });
+  return { channels, links };
+}
+
+function normalizeContactUrl(url) {
+  const trimmed = String(url || '').trim();
+  if (!trimmed) return '';
+  return /^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed;
+}
+
+// public: ใครมีลิงก์ (?id=user_id) ก็เปิดดูได้ — session_token ใส่มาด้วยก็ได้ (ไม่ login ก็ดูได้ปกติ แค่ไม่เห็น
+// ลิงก์ contact จริง) ใช้ userMap ตัวเต็ม (ไม่ filter) เพราะต้องหา target_user ที่อาจไม่ใช่ตัว viewer เอง
+async function actionGetMyType(p) {
+  if (!p.id) return fail('ต้องระบุ id ของผู้ใช้ / Must specify a user id');
+
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const userMap = buildUserMap(rowsToObjects(usersRows));
+  const targetUser = userMap[p.id];
+  if (!targetUser || targetUser.account_status === 'deleted') return fail('ไม่พบผู้ใช้นี้ / User not found');
+
+  const viewer = findUserInMap(userMap, p.session_token);
+  const isOwner = !!(viewer && viewer.user_id === targetUser.user_id);
+  const isLoggedIn = !!viewer;
+
+  const myTypeRows = await getSheetRows(SHEETS.MYTYPE);
+  const row = rowsToObjects(myTypeRows).find(r => r.user_id === targetUser.user_id) || null;
+  const baseUser = { user_id: targetUser.user_id, username: targetUser.username, profile_image_url: targetUser.profile_image_url || '' };
+
+  if (!row) {
+    return ok({ exists: false, user: baseUser, is_owner: isOwner, is_logged_in: isLoggedIn, card_is_pro: isOwner ? hasProAccess(viewer) : undefined });
+  }
+
+  const contact = buildContactPayload(row, isLoggedIn);
+  return ok({
+    exists: true, user: baseUser, aboutme: row.aboutme || '',
+    contact_channels: contact.channels, contact_links: contact.links,
+    answers: extractAnsweredQuestions(row), is_owner: isOwner, is_logged_in: isLoggedIn,
+    card_is_pro: isOwner ? hasProAccess(viewer) : undefined,
+    updated_at: row.updated_at
+  });
+}
+
+// เจ้าของบัญชีเท่านั้นที่แก้ของตัวเองได้ — เฉพาะ field ที่ frontend ส่งมาจริงเท่านั้นที่ถูกเขียน/ทับ (undefined = ไม่แตะ)
+async function actionSaveMyType(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (p.aboutme !== undefined && String(p.aboutme).length > 500) {
+    return fail('About Me ต้องไม่เกิน 500 ตัวอักษร / About Me must not exceed 500 characters');
+  }
+
+  const trRows = await getSheetRows(SHEETS.MYTYPE);
+  const { headers, objects } = parseRowsWithHeaders(trRows);
+  const existing = objects.find(r => r.user_id === user.user_id);
+
+  const editable = {};
+  if (p.aboutme !== undefined) editable.aboutme = String(p.aboutme).trim();
+  MYTYPE_CONTACT_FIELDS.forEach(f => { if (p[f] !== undefined) editable[f] = normalizeContactUrl(p[f]); });
+
+  let invalidQ = null, invalidReason = '';
+  mytypeQuestionKeys().forEach(k => {
+    if (p[k] === undefined) return;
+    const v = Number(p[k]);
+    if (isNaN(v) || v < 0 || v > 100) { invalidQ = k; invalidReason = 'range'; return; }
+    const rounded = Math.max(1, Math.min(100, Math.round(v)));
+    if (rounded === 50) { invalidQ = k; invalidReason = 'midpoint'; return; }
+    editable[k] = rounded;
+  });
+  if (invalidQ) {
+    return fail(invalidReason === 'midpoint'
+      ? `คำถาม ${invalidQ} ต้องเอียงไปทางใดทางหนึ่ง ไม่ใช่ตรงกลางพอดี / Question ${invalidQ} must lean to one side, not exactly in the middle`
+      : `ค่าคำถาม ${invalidQ} ไม่ถูกต้อง / Invalid value for question ${invalidQ}`);
+  }
+  if (Object.keys(editable).length === 0) return fail('ไม่มีข้อมูลที่จะบันทึก / No data to save');
+
+  const nowStr = formatDateForSheet(new Date());
+  editable.updated_at = nowStr;
+
+  if (existing) {
+    await updateRowFields(SHEETS.MYTYPE, headers, existing._row, editable);
+  } else {
+    editable.user_id = user.user_id;
+    editable.created_at = nowStr;
+    const rowValues = headers.map(h => (editable[h] !== undefined ? editable[h] : ''));
+    const sheets = getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.MYTYPE, valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS', requestBody: { values: [rowValues] }
+    });
+  }
+  return ok({ message: 'บันทึก My Type สำเร็จ / My Type saved successfully' });
+}
+
+// gate ด้วย session_token ฝั่ง backend เท่านั้น ไม่ login/token ผิด -> is_pro:false เฉยๆ ไม่ fail (frontend ตกไป
+// โหมด demo แทน ไม่ใช่ error state)
+async function actionGetCardAccess(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return ok({ is_pro: false });
+  return ok({ is_pro: hasProAccess(user) });
+}
+
+async function actionGetMyTypeMatch(p) {
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const userMap = buildUserMap(rowsToObjects(usersRows));
+  const user = findUserInMap(userMap, p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const threshold = MYTYPE_MATCH_THRESHOLDS[p.mode];
+  if (!threshold) return fail('mode ไม่ถูกต้อง / Invalid mode');
+
+  const myTypeRows = await getSheetRows(SHEETS.MYTYPE);
+  const allRows = rowsToObjects(myTypeRows);
+  const myRow = allRows.find(r => r.user_id === user.user_id);
+  if (!myRow) return fail('กรุณาตั้งค่า My Type ของตัวเองก่อน / Please set up your own My Type first');
+
+  const myAnswers = extractAnsweredQuestions(myRow);
+  const results = [];
+  allRows.forEach(row => {
+    if (row.user_id === user.user_id) return;
+    const otherUser = userMap[row.user_id];
+    if (!otherUser || otherUser.account_status === 'deleted') return;
+
+    const { commonCount, avgDiff } = computeMyTypeDiff(myAnswers, extractAnsweredQuestions(row));
+    if (commonCount < MYTYPE_MIN_COMMON_ANSWERS) return;
+
+    const matchPct = Math.round(100 - avgDiff);
+    const diffPct = Math.round(avgDiff);
+    const value = threshold.field === 'match_pct' ? matchPct : diffPct;
+    if (value < threshold.min) return;
+
+    results.push({ user_id: row.user_id, username: otherUser.username, profile_image_url: otherUser.profile_image_url || '', match_pct: matchPct, diff_pct: diffPct });
+  });
+
+  results.sort((a, b) => b[threshold.field] - a[threshold.field]);
+  return ok({ mode: p.mode, count: results.length, results: results.slice(0, MYTYPE_MATCH_RESULT_CAP) });
+}
+
+// เจ้าของโปรไฟล์เท่านั้นที่ใช้ได้ — endpoint เปิดใช้งานปกติแต่ frontend ยังไม่มีปุ่ม/UI เรียก (ตามคำสั่งเดิมของ Pop
+// เผื่ออนาคตเปิดกลับมาใช้ ตรงกับต้นฉบับ)
+async function actionSearchMyType(p) {
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const userMap = buildUserMap(rowsToObjects(usersRows));
+  const user = findUserInMap(userMap, p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const q = String(p.query || '').trim().toLowerCase();
+  if (!q) return ok({ results: [] });
+
+  const myTypeRows = await getSheetRows(SHEETS.MYTYPE);
+  const allRows = rowsToObjects(myTypeRows);
+  const results = [];
+  for (const row of allRows) {
+    if (row.user_id === user.user_id) continue;
+    const otherUser = userMap[row.user_id];
+    if (!otherUser || otherUser.account_status === 'deleted') continue;
+    if (String(otherUser.username || '').toLowerCase().indexOf(q) === -1) continue;
+    results.push({ user_id: otherUser.user_id, username: otherUser.username, profile_image_url: otherUser.profile_image_url || '' });
+    if (results.length >= 20) break;
+  }
+  return ok({ results });
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -1451,6 +1662,21 @@ module.exports = async (req, res) => {
         break;
       case 'exportCompanyVotes':
         result = await actionExportCompanyVotes(p);
+        break;
+      case 'getMyType':
+        result = await actionGetMyType(p);
+        break;
+      case 'saveMyType':
+        result = await actionSaveMyType(p);
+        break;
+      case 'getMyTypeMatch':
+        result = await actionGetMyTypeMatch(p);
+        break;
+      case 'searchMyType':
+        result = await actionSearchMyType(p);
+        break;
+      case 'getCardAccess':
+        result = await actionGetCardAccess(p);
         break;
       case 'signup':
         result = await actionSignup(p);
