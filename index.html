@@ -4265,6 +4265,17 @@ async function initFocusMode(topicId){
     }
   }
 
+  // P0-fix (คำขอ Pop): มาจากหน้า "Please log in first" ของ profile.html (เจอตอน redirect กลับจาก Stripe
+  // Checkout แล้ว session หมดอายุ/ยังไม่เคย login เลย) เดิมปุ่มพาแค่มาหน้าแรกเฉยๆ user ต้องกวาดหาปุ่ม Login
+  // เอง — เปลี่ยนมาเปิด loginModal ให้อัตโนมัติทันที ตาม pattern เดียวกับ ?signup=1 ด้านบน ใช้โหมด 'redirect'
+  // เพราะ user ถูกเด้งมาจากที่อื่น ไม่ได้ตั้งใจกดปุ่ม Login เอง (ข้อความ "Oops! คุณลืม login" ยังเหมาะสมอยู่)
+  if(params.get('login') === '1'){
+    history.replaceState(null, '', location.pathname); // ล้าง query ทิ้งกันเปิด modal ซ้ำตอน refresh
+    if(!isLoggedIn()){
+      setTimeout(()=> openLoginModal('redirect'), 100);
+    }
+  }
+
   // ลิงก์รับช่วงดูแลบริษัท (?transfer=ID): เก็บ id ไว้ใน STATE และ *ไม่ลบ* query ออกจาก URL จนกว่าจะจบ flow
   // (รับสำเร็จ/กดปิด) เพื่อให้ refresh แล้วกลับมาหน้าเดิมได้ -- เปิด modal หลังเช็ค session เสร็จ (เหมือน ?create=1)
   // ไม่รอ loadHomeFeed() เพราะ Apps Script cold start อาจช้า ไม่ควรให้คนที่ถือลิงก์ต้องรอฟีดก่อน
