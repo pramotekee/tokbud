@@ -20,8 +20,15 @@ const SHEETS = {
   CATEGORIES: 'categories',
   DELETEREQUESTS: 'deleterequests',
   TRANSFERS: 'transfers',
-  MYTYPE: 'mytype'
+  MYTYPE: 'mytype',
+  BILLING: 'billing'
 };
+
+// พอร์ตตรงจาก PRO_PLAN เดิม (appscript.txt บรรทัด 100-105) — PRICE_THB ใช้แค่แสดงผล UI/บันทึกลงชีท ราคาจริงที่ตัดเงิน
+// มาจาก Stripe Price object (STRIPE_PRICE_ID_*) เสมอ ถ้า Pop ไปแก้ราคาใน Stripe Dashboard ทีหลัง ต้องมาแก้เลขนี้
+// ให้ตรงกันเองด้วยมือ (ไม่ sync อัตโนมัติ)
+const PRO_PLAN = { PRICE_THB: 249, CURRENCY: 'thb', STRIPE_API_BASE: 'https://api.stripe.com/v1' };
+const FRONTEND_URL = 'https://tokbud.vercel.app';
 
 // หมายเหตุ: ลำดับคอลัมน์จริงของ tab users ไม่ได้ fix ไว้ในโค้ดแล้ว — ทุกจุดที่เขียน/หาตำแหน่งคอลัมน์
 // จะอ่านชื่อ header จากแถวแรกของชีทสดๆ ทุกครั้ง (ดู parseRowsWithHeaders/colIndexByName ด้านล่าง)
@@ -1642,9 +1649,286 @@ async function actionTranslateCardQuestion(p) {
   }
 }
 
+/* ================= PRO PLAN / STRIPE BILLING =================
+ * พอร์ตตรงจาก appscript.txt บรรทัด 421-571, 2428-2740 — logic เดียวกันเป๊ะ (poll-based ตามที่ Pop ยืนยันแล้ว
+ * ไม่ใช้ webhook) ต่างจากต้นฉบับที่จุดต่อไปนี้เท่านั้น:
+ *   - STRIPE_ENV / STRIPE_SECRET_KEY_* / STRIPE_PRICE_ID_* อ่านจาก Vercel env vars แทน Script Properties เดิม
+ *   - เรียก Stripe ผ่าน fetch() ของ Node แทน UrlFetchApp ของ Apps Script
+ *   - actionConfirmCheckoutSession ไม่มี LockService บน Vercel เหมือนเดิม (design decision เดียวกับที่ตกลงไว้
+ *     ตอนพอร์ต transfer feature) แต่ idempotent guard เดิม (เช็ค stripe_subscription_id ซ้ำก่อนเขียน) ยังอยู่
+ *     ครบ ลดความเสี่ยง double-write จากการกดรีเฟรชซ้ำได้เกือบเท่าเดิมอยู่แล้วแม้ไม่มีล็อคจริง
+ *   - sweepSubscriptions แยกเป็น sweepSubscriptionsCore() ให้ /api/cron/sweep-subscriptions.js เรียกใช้ตรงๆ
+ *     (Vercel Cron เรียกผ่าน route แยก ไม่ใช่ผ่าน action=xxx ของ router นี้ ตามรูปแบบมาตรฐานของ Vercel)
+ */
+function getStripeEnv() {
+  return process.env.STRIPE_ENV === 'live' ? 'live' : 'test';
+}
+function getStripeSecretKey() {
+  const env = getStripeEnv();
+  const raw = process.env[env === 'live' ? 'STRIPE_SECRET_KEY_LIVE' : 'STRIPE_SECRET_KEY_TEST'];
+  const key = raw ? String(raw).replace(/\s+/g, '') : '';
+  if (!key) throw new Error('STRIPE_NOT_CONFIGURED');
+  return key;
+}
+function getStripePriceId() {
+  const env = getStripeEnv();
+  const raw = process.env[env === 'live' ? 'STRIPE_PRICE_ID_LIVE' : 'STRIPE_PRICE_ID_TEST'];
+  const id = raw ? String(raw).replace(/\s+/g, '') : '';
+  if (!id) throw new Error('STRIPE_NOT_CONFIGURED');
+  return id;
+}
+
+function flattenStripeParams(obj, prefix) {
+  const pairs = [];
+  Object.keys(obj).forEach(key => {
+    const value = obj[key];
+    const paramKey = prefix ? (Array.isArray(obj) ? prefix + '[]' : prefix + '[' + key + ']') : key;
+    if (value === undefined || value === null) return;
+    if (typeof value === 'object') pairs.push.apply(pairs, flattenStripeParams(value, paramKey));
+    else pairs.push([paramKey, String(value)]);
+  });
+  return pairs;
+}
+
+// P0 (เหมือนต้นฉบับ): ไม่ปล่อย raw error ของ Stripe (เช่น "Invalid API Key provided: sk_live_...") หลุดไปหา user
+// ตรงๆ — log ไว้ฝั่ง server (console.error, ดูได้จาก Vercel > Logs) แล้วส่งข้อความทั่วไปกลับไปแทนเสมอ
+function stripeFail(context, rawMessage) {
+  console.error('[stripeFail] ' + context + ': ' + rawMessage);
+  return fail(context + ' — กรุณาลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบหากยังไม่สำเร็จ / please try again, or contact support if this continues.');
+}
+
+async function stripeRequest(method, path, paramsObj) {
+  let secretKey;
+  try { secretKey = getStripeSecretKey(); }
+  catch (e) { return { ok: false, message: 'ระบบชำระเงินยังไม่พร้อมใช้งาน (รอ Pop ตั้งค่า Stripe key) / Payment system is not yet configured' }; }
+
+  const authHeader = 'Basic ' + Buffer.from(secretKey + ':').toString('base64');
+  let url = PRO_PLAN.STRIPE_API_BASE + path;
+  const pairs = paramsObj ? flattenStripeParams(paramsObj, '') : [];
+  const qs = pairs.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+
+  const options = { method: method.toUpperCase(), headers: { Authorization: authHeader } };
+  if (method === 'get') {
+    if (qs) url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
+  } else {
+    options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    options.body = qs;
+  }
+
+  try {
+    const res = await fetch(url, options);
+    const body = await res.json();
+    if (res.status >= 200 && res.status < 300 && !body.error) return { ok: true, data: body };
+    return { ok: false, message: (body.error && body.error.message) || ('Stripe API error (HTTP ' + res.status + ')') };
+  } catch (err) {
+    return { ok: false, message: 'เชื่อมต่อระบบชำระเงินไม่สำเร็จ: ' + err.message };
+  }
+}
+
+function createCheckoutSession(user) {
+  const successUrl = FRONTEND_URL + '/profile.html?tab=planbilling&checkout=success&stripe_session_id={CHECKOUT_SESSION_ID}';
+  const cancelUrl = FRONTEND_URL + '/profile.html?tab=planbilling&checkout=cancel';
+  const params = {
+    mode: 'subscription', line_items: [{ price: getStripePriceId(), quantity: 1 }],
+    success_url: successUrl, cancel_url: cancelUrl,
+    client_reference_id: user.user_id, metadata: { user_id: user.user_id }
+  };
+  if (user.stripe_customer_id) params.customer = user.stripe_customer_id;
+  else params.customer_email = user.email;
+  return stripeRequest('post', '/checkout/sessions', params);
+}
+function getCheckoutSession(sessionId) {
+  return stripeRequest('get', '/checkout/sessions/' + encodeURIComponent(sessionId), { expand: ['subscription', 'subscription.latest_invoice'] });
+}
+function getSubscription(subscriptionId) {
+  return stripeRequest('get', '/subscriptions/' + encodeURIComponent(subscriptionId), { expand: ['latest_invoice'] });
+}
+function cancelStripeSubscriptionAtPeriodEnd(subscriptionId) {
+  return stripeRequest('post', '/subscriptions/' + encodeURIComponent(subscriptionId), { cancel_at_period_end: true });
+}
+
+async function actionCreateCheckoutSession(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (hasProAccess(user)) return fail('บัญชีนี้เป็น PRO อยู่แล้ว / This account is already PRO');
+
+  const sessionRes = await createCheckoutSession(user);
+  if (!sessionRes.ok) return stripeFail('เริ่มการชำระเงินไม่สำเร็จ / Unable to start checkout', sessionRes.message);
+  return ok({ checkout_url: sessionRes.data.url });
+}
+
+// idempotent เหมือนต้นฉบับ: เรียกซ้ำได้ปลอดภัย (เช่น user รีเฟรชหน้า success ซ้ำ) ไม่ปลด PRO ซ้ำ/บันทึกประวัติซ้ำ
+async function actionConfirmCheckoutSession(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!p.stripe_session_id) return fail('ไม่พบข้อมูลการชำระเงิน กรุณาลองใหม่อีกครั้ง / Missing checkout session, please try again');
+
+  const sessionRes = await getCheckoutSession(p.stripe_session_id);
+  if (!sessionRes.ok) return stripeFail('ตรวจสอบการชำระเงินไม่สำเร็จ / Unable to verify your payment', sessionRes.message);
+  const session = sessionRes.data;
+
+  const sessionUserId = session.client_reference_id || (session.metadata && session.metadata.user_id);
+  if (sessionUserId !== user.user_id) return fail('ข้อมูลการชำระเงินไม่ตรงกับบัญชีนี้ / This checkout session does not belong to your account');
+  if (session.payment_status !== 'paid') return fail('ยังไม่ได้รับการยืนยันการชำระเงิน กรุณาลองใหม่อีกครั้ง / Payment has not been confirmed yet, please try again');
+
+  const subscription = session.subscription;
+  if (!subscription || !subscription.id) return fail('ไม่พบข้อมูล subscription กรุณาติดต่อผู้ดูแลระบบ / Missing subscription data, please contact support');
+
+  // P0 (Stripe API Basil เป็นต้นไป): current_period_end ย้ายไปอยู่ที่ subscription item แทนตัว subscription เอง
+  const periodEnd = new Date(subscription.items.data[0].current_period_end * 1000);
+
+  if (user.stripe_subscription_id === subscription.id && user.plan === 'pro') {
+    return ok({ message: 'อัพเกรดเป็น PRO สำเร็จ! / Successfully upgraded to PRO!', plan: 'pro', subscription_status: 'active', pro_until: user.pro_until, next_billing_date: user.next_billing_date });
+  }
+
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const { headers: userHeaders } = parseRowsWithHeaders(usersRows);
+  const nowStr = formatDateForSheet(new Date());
+  const periodEndStr = formatDateForSheet(periodEnd);
+  await updateRowFields(SHEETS.USERS, userHeaders, user._row, {
+    plan: 'pro', subscription_status: 'active', stripe_customer_id: session.customer, stripe_subscription_id: subscription.id,
+    pro_since: nowStr, pro_until: periodEndStr, next_billing_date: periodEndStr, last_charge_status: 'success'
+  });
+
+  const invoice = subscription.latest_invoice;
+  const invoiceId = invoice && invoice.id ? invoice.id : '';
+  const billingRows = await getSheetRows(SHEETS.BILLING);
+  const { headers: billingHeaders, objects: billingObjects } = parseRowsWithHeaders(billingRows);
+  const alreadyLogged = invoiceId && billingObjects.some(b => b.stripe_charge_id === invoiceId);
+  if (!alreadyLogged) {
+    const billingRow = {
+      billing_id: generateUniqueCode(billingObjects.map(b => b.billing_id)), user_id: user.user_id, stripe_charge_id: invoiceId,
+      amount: invoice && invoice.amount_paid ? (invoice.amount_paid / 100) : PRO_PLAN.PRICE_THB, currency: PRO_PLAN.CURRENCY,
+      status: 'success', failure_reason: '', billing_period_start: nowStr, billing_period_end: periodEndStr, charged_at: nowStr
+    };
+    const rowValues = billingHeaders.map(h => (billingRow[h] !== undefined ? billingRow[h] : ''));
+    const sheets = getSheetsClient();
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.BILLING, valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS', requestBody: { values: [rowValues] }
+    });
+  }
+
+  return ok({ message: 'อัพเกรดเป็น PRO สำเร็จ! / Successfully upgraded to PRO!', plan: 'pro', subscription_status: 'active', pro_until: periodEndStr, next_billing_date: periodEndStr });
+}
+
+async function actionCancelSubscription(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (user.plan !== 'pro' || user.subscription_status !== 'active') return fail('บัญชีนี้ไม่ได้เป็น PRO ที่กำลังใช้งานอยู่ / This account has no active PRO subscription');
+  if (!user.stripe_subscription_id) return fail('ไม่พบข้อมูล subscription กรุณาติดต่อผู้ดูแลระบบ / Missing subscription data, please contact support');
+
+  const cancelRes = await cancelStripeSubscriptionAtPeriodEnd(user.stripe_subscription_id);
+  if (!cancelRes.ok) return stripeFail('ยกเลิกไม่สำเร็จ / Unable to cancel your plan', cancelRes.message);
+
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const { headers } = parseRowsWithHeaders(usersRows);
+  await updateRowFields(SHEETS.USERS, headers, user._row, { subscription_status: 'canceled' });
+
+  return ok({ message: 'ยกเลิกการสมัครสมาชิกแล้ว คุณยังใช้สิทธิ์ PRO ได้ถึงวันที่ครบรอบล่าสุด / Subscription canceled. You can keep using PRO until your current billing period ends.', subscription_status: 'canceled', pro_until: user.pro_until });
+}
+
+async function actionResumeSubscription(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (user.plan !== 'pro' || user.subscription_status !== 'canceled' || !hasProAccess(user)) {
+    return fail('บัญชีนี้ไม่มีการสมัครที่ยกเลิกไว้และยังอยู่ในรอบใช้งาน / This account has no canceled subscription that is still within its paid period');
+  }
+  if (!user.stripe_subscription_id) return fail('ไม่พบข้อมูล subscription กรุณาติดต่อผู้ดูแลระบบ / Missing subscription data, please contact support');
+
+  const subRes = await getSubscription(user.stripe_subscription_id);
+  if (!subRes.ok) return stripeFail('ต่ออายุไม่สำเร็จ / Unable to resume your plan', subRes.message);
+  const sub = subRes.data;
+  if (sub.status !== 'active' && sub.status !== 'trialing') return fail('การสมัครนี้สิ้นสุดแล้ว กรุณาอัปเกรดใหม่อีกครั้ง / This subscription has ended, please upgrade again');
+
+  if (sub.cancel_at_period_end) {
+    const resumeRes = await stripeRequest('post', '/subscriptions/' + encodeURIComponent(user.stripe_subscription_id), { cancel_at_period_end: false });
+    if (!resumeRes.ok) return stripeFail('ต่ออายุไม่สำเร็จ / Unable to resume your plan', resumeRes.message);
+  }
+
+  const periodEnd = new Date(sub.items.data[0].current_period_end * 1000);
+  const periodEndStr = formatDateForSheet(periodEnd);
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const { headers } = parseRowsWithHeaders(usersRows);
+  await updateRowFields(SHEETS.USERS, headers, user._row, { subscription_status: 'active', pro_until: periodEndStr, next_billing_date: periodEndStr });
+
+  return ok({ message: 'ต่ออายุแล้ว รอบเดิมจะต่ออัตโนมัติตามเดิม / Subscription resumed. Your plan will renew as usual.', subscription_status: 'active', pro_until: periodEndStr });
+}
+
+async function actionGetBillingHistory(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const billingRows = await getSheetRows(SHEETS.BILLING);
+  const history = rowsToObjects(billingRows)
+    .filter(b => b.user_id === user.user_id)
+    .sort((a, b) => new Date(b.charged_at) - new Date(a.charged_at))
+    .map(b => ({ charged_at: b.charged_at, amount: b.amount, currency: b.currency, status: b.status, failure_reason: b.failure_reason || '' }));
+
+  return ok({ history });
+}
+
+// เรียกจาก /api/cron/sweep-subscriptions.js (Vercel Cron รายวัน) เท่านั้น — ไม่ผูกกับ router ของ action=xxx ปกติ
+// เพราะต้องยืนยันตัวตนด้วย CRON_SECRET header ของ Vercel แทน session_token ปกติ
+async function sweepSubscriptionsCore() {
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const { headers: userHeaders, objects: users } = parseRowsWithHeaders(usersRows);
+  const billingRows = await getSheetRows(SHEETS.BILLING);
+  const { headers: billingHeaders, objects: billingObjects } = parseRowsWithHeaders(billingRows);
+
+  let renewed = 0, stillRetrying = 0, downgraded = 0, skippedNoSub = 0;
+  const sheets = getSheetsClient();
+
+  for (const u of users.filter(u => u.plan === 'pro')) {
+    if (!u.stripe_subscription_id) { skippedNoSub++; continue; }
+
+    const subRes = await getSubscription(u.stripe_subscription_id);
+    if (!subRes.ok) { console.error('sweepSubscriptions: เช็ค subscription ของ user ' + u.user_id + ' ไม่สำเร็จ: ' + subRes.message); continue; }
+    const sub = subRes.data;
+    const periodEnd = new Date(sub.items.data[0].current_period_end * 1000);
+
+    if (sub.status === 'active' || sub.status === 'trialing') {
+      const currentProUntil = u.pro_until ? new Date(u.pro_until) : null;
+      if (!currentProUntil || periodEnd.getTime() > currentProUntil.getTime()) {
+        const periodEndStr = formatDateForSheet(periodEnd);
+        await updateRowFields(SHEETS.USERS, userHeaders, u._row, { pro_until: periodEndStr, next_billing_date: periodEndStr, last_charge_status: 'success' });
+
+        const invoice = sub.latest_invoice;
+        const invoiceId = invoice && invoice.id ? invoice.id : '';
+        const alreadyLogged = invoiceId && billingObjects.some(b => b.stripe_charge_id === invoiceId);
+        if (!alreadyLogged) {
+          const chargeStr = formatDateForSheet(new Date());
+          const billingRow = {
+            billing_id: generateUniqueCode(billingObjects.map(b => b.billing_id)), user_id: u.user_id, stripe_charge_id: invoiceId,
+            amount: invoice && invoice.amount_paid ? (invoice.amount_paid / 100) : PRO_PLAN.PRICE_THB, currency: PRO_PLAN.CURRENCY,
+            status: 'success', failure_reason: '', billing_period_start: chargeStr, billing_period_end: periodEndStr, charged_at: chargeStr
+          };
+          billingObjects.push(billingRow); // กันบันทึกซ้ำถ้ามีหลายคน renew พร้อมกันในรอบ sweep เดียวกัน
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.BILLING, valueInputOption: 'RAW',
+            insertDataOption: 'INSERT_ROWS', requestBody: { values: [billingHeaders.map(h => (billingRow[h] !== undefined ? billingRow[h] : ''))] }
+          });
+        }
+        renewed++;
+      }
+      continue;
+    }
+
+    if (sub.status === 'past_due') { stillRetrying++; continue; }
+
+    const reason = sub.cancellation_details && sub.cancellation_details.reason;
+    const wasPaymentFailure = reason === 'payment_failed' || sub.status === 'unpaid' || sub.status === 'incomplete_expired';
+    await updateRowFields(SHEETS.USERS, userHeaders, u._row, { plan: 'free', subscription_status: 'none', last_charge_status: wasPaymentFailure ? 'failed' : (u.last_charge_status || '') });
+    downgraded++;
+  }
+
+  console.log(`sweepSubscriptions: renew สำเร็จ ${renewed} ราย, Stripe กำลัง retry อยู่ ${stillRetrying} ราย, ปรับเป็น free ${downgraded} ราย, ข้าม (ไม่มี subscription id) ${skippedNoSub} ราย`);
+  return { renewed, stillRetrying, downgraded, skippedNoSub };
+}
+
 // ===== Router =====
 
-module.exports = async (req, res) => {
+async function tokbudHandler(req, res) {
   try {
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON || !process.env.TOKBUD_SHEET_ID) {
       return res.status(500).json(fail('เซิร์ฟเวอร์ตั้งค่าไม่ครบ (env vars) / Server misconfigured'));
@@ -1721,6 +2005,21 @@ module.exports = async (req, res) => {
       case 'translateCardQuestion':
         result = await actionTranslateCardQuestion(p);
         break;
+      case 'createCheckoutSession':
+        result = await actionCreateCheckoutSession(p);
+        break;
+      case 'confirmCheckoutSession':
+        result = await actionConfirmCheckoutSession(p);
+        break;
+      case 'cancelSubscription':
+        result = await actionCancelSubscription(p);
+        break;
+      case 'resumeSubscription':
+        result = await actionResumeSubscription(p);
+        break;
+      case 'getBillingHistory':
+        result = await actionGetBillingHistory(p);
+        break;
       case 'signup':
         result = await actionSignup(p);
         break;
@@ -1741,4 +2040,7 @@ module.exports = async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
-};
+}
+
+module.exports = tokbudHandler;
+module.exports.sweepSubscriptionsCore = sweepSubscriptionsCore;
