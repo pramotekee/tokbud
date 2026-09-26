@@ -1602,6 +1602,46 @@ async function actionSearchMyType(p) {
   return ok({ results });
 }
 
+// พอร์ตจาก actionTranslateCardQuestion() เดิม (appscript.txt บรรทัด 2340-2354) แต่เปลี่ยนวิธีทำงานทั้งหมด:
+// ต้นฉบับใช้ LanguageApp.translate() ของ Apps Script ตรงๆ ซึ่งไม่มีบน Vercel เลย ตามที่ Pop ตัดสินใจ (เก็บ Apps
+// Script ไว้เพื่อ onDeleteRequestEdit trigger อยู่แล้ว เลยใช้ประโยชน์จาก LanguageApp ที่มีอยู่ในนั้นต่อได้) ที่นี่
+// จึงทำตัวเป็น proxy: รับ request จาก frontend ตามปกติ แล้วยิงต่อไปหา Apps Script Web App URL เดิม รอผล แล้วส่ง
+// กลับให้ frontend เหมือนเดิมทุกประการ — frontend ไม่ต้องรู้เลยว่ามี 2 backend อยู่เบื้องหลัง
+// Trade-off ที่ Pop รับทราบแล้ว: ช้ากว่า action อื่น (ต้องรอ Apps Script cold start ถ้าไม่ได้ถูกเรียกมานาน) —
+// ใส่ timeout กันค้างเกินงบเวลาของ Vercel function เอง ถ้า timeout/error จะคืน retryable:true ให้ frontend โชว์
+// ปุ่ม Try again แทนที่จะ fallback เงียบๆ ไปเป็น EN แบบเดิม (ตามที่ Pop ขอเพิ่ม)
+const TRANSLATE_LANGS = ['en', 'zh-CN', 'es', 'hi', 'ar', 'pt', 'bn', 'ru', 'ja', 'de', 'fr', 'ko', 'vi', 'id', 'th'];
+const TRANSLATE_PROXY_TIMEOUT_MS = 8000; // เผื่องบเวลาของ Vercel function เอง (ปรับได้ถ้า Pop ใช้ plan ที่ execution limit สูงกว่านี้)
+
+async function actionTranslateCardQuestion(p) {
+  const targetLang = String(p.target_lang || '').trim();
+  if (!targetLang || TRANSLATE_LANGS.indexOf(targetLang) === -1) return fail('ภาษาปลายทางไม่ถูกต้อง');
+  const text = String(p.text || '').trim();
+  if (!text) return fail('ไม่มีข้อความให้แปล');
+  if (targetLang === 'en') return ok({ translated: text });
+
+  const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
+  if (!appsScriptUrl) return fail('เซิร์ฟเวอร์ตั้งค่าไม่ครบ (ไม่มี APPS_SCRIPT_WEB_APP_URL) / Server misconfigured');
+
+  const qs = new URLSearchParams({
+    action: 'translateCardQuestion', text, target_lang: targetLang,
+    category: p.category || '', index: String(p.index || '0')
+  });
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TRANSLATE_PROXY_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${appsScriptUrl}?${qs.toString()}`, { signal: controller.signal });
+    const data = await res.json();
+    return data; // Apps Script คืนรูปแบบ {success,...} เดียวกับที่นี่อยู่แล้ว ส่งต่อได้ตรงๆ ไม่ต้องแปลงอะไร
+  } catch (e) {
+    console.error('[translateCardQuestion] proxy to Apps Script failed:', e.message);
+    return { success: false, message: 'นักแปลคิวงานแน่นมาก กำลังพยายามแปลให้คุณอยู่นะ / Translator is busy right now', retryable: true };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ===== Router =====
 
 module.exports = async (req, res) => {
@@ -1677,6 +1717,9 @@ module.exports = async (req, res) => {
         break;
       case 'getCardAccess':
         result = await actionGetCardAccess(p);
+        break;
+      case 'translateCardQuestion':
+        result = await actionTranslateCardQuestion(p);
         break;
       case 'signup':
         result = await actionSignup(p);
