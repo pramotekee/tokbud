@@ -21,7 +21,8 @@ const SHEETS = {
   DELETEREQUESTS: 'deleterequests',
   TRANSFERS: 'transfers',
   MYTYPE: 'mytype',
-  BILLING: 'billing'
+  BILLING: 'billing',
+  HEROBANNER: 'herobanner'
 };
 
 // พอร์ตตรงจาก PRO_PLAN เดิม (appscript.txt บรรทัด 100-105) — PRICE_THB ใช้แค่แสดงผล UI/บันทึกลงชีท ราคาจริงที่ตัดเงิน
@@ -50,6 +51,9 @@ const CARD_COLORS = [
   { name: 'น้ำตาล', hex: '#A67C52' },
   { name: 'เทา', hex: '#666666' }
 ];
+
+const TICKER_MIN_COMMENTS = 10; // ถ้าคอมเมนต์รวมทั้งเว็บน้อยกว่านี้ ไม่โชว์แถบเลย ตามที่ Pop กำหนด
+const TICKER_SAMPLE_SIZE = 24; // จำนวนคอมเมนต์ที่สุ่มมาต่อคำขอ ให้ loop วิ่งแล้วดูมีความหลากหลายพอ
 
 // ===== Google auth + Sheets/Drive clients (share credential เดียวกัน) =====
 let authClientSingleton = null;
@@ -436,8 +440,11 @@ function actionGetCardColors() {
 
 // พอร์ตตรงจาก actionGetCompanies()/_getCompaniesPayload() เดิม (บรรทัด 1176-1231) — รวม logic
 // การกรองสถานะ active + hidden (จาก deleterequests) ที่เดิมอยู่ใน loadActiveCompaniesRaw() เข้ามาด้วย
-async function actionGetCompanies(p) {
-  const data = await loadAllSheetsData();
+// แยกเป็น buildCompaniesPayload() คืนค่า object ธรรมดา (ไม่ห่อ ok()) เพื่อให้ actionGetHomeFeed เอาไปประกอบ
+// รวมกับ banners/categories/tickerComments/cardColors ในคำขอเดียวได้ เหมือนต้นฉบับที่แยก _getCompaniesPayload()
+// ออกจาก actionGetCompanies() ไว้แล้วสำหรับจุดประสงค์เดียวกันนี้เป๊ะ
+async function buildCompaniesPayload(p, preloadedData) {
+  const data = preloadedData || await loadAllSheetsData();
 
   const hiddenIds = data.deleteRequests.filter(r => r.status === 'delete').map(r => r.company_id);
   let visible = data.companies.filter(t => t.status === 'active' && hiddenIds.indexOf(t.company_id) === -1);
@@ -495,7 +502,383 @@ async function actionGetCompanies(p) {
   const { pageSlice, total, page, pageSize, totalPages } = paginate(visible, p);
   const result = pageSlice.map(t => summarizeCompany(t, votesByCompany[t.company_id] || [], userMap));
 
-  return ok({ companies: result, count: total, page, page_size: pageSize, total_pages: totalPages });
+  return { companies: result, count: total, page, page_size: pageSize, total_pages: totalPages };
+}
+
+async function actionGetCompanies(p) {
+  return ok(await buildCompaniesPayload(p));
+}
+
+// พอร์ตตรงจาก _loadHeroBannersCached() เดิม (บรรทัด 2979-2994) — ไม่มี cache เหมือนที่อื่นในระบบนี้ (ตกลงกับ
+// Pop แล้วว่ายังไม่ทำ caching รอบนี้) อ่านชีท herobanner สดทุกครั้ง
+async function loadHeroBanners() {
+  const rows = await getSheetRows(SHEETS.HEROBANNER);
+  return rowsToObjects(rows)
+    .filter(b => String(b.status).toLowerCase() === 'active')
+    .map(b => ({ banner_id: b.banner_id, image_url: normalizeImageUrl(b.image_url), link_url: b.link_url || '' }));
+}
+
+async function actionGetHeroBanners() {
+  return ok({ banners: await loadHeroBanners() });
+}
+
+// พอร์ตตรงจาก _buildTickerComments() เดิม (บรรทัด 2937-2977) — รับ companies/votesByCompany ที่โหลดมาแล้วจาก
+// buildCompaniesPayload ในคำขอเดียวกัน (getHomeFeed) แทนที่จะอ่านชีทซ้ำ ตรงกับเจตนาต้นฉบับที่อยากลดรอบอ่านซ้ำ
+// ภายในคำขอเดียวกัน (แม้จะไม่มี cache ข้ามคำขอเหมือนต้นฉบับแล้วก็ตาม)
+function buildTickerComments(companies, votesByCompany) {
+  const companyMap = {};
+  companies.forEach(c => { companyMap[c.company_id] = c; });
+
+  let votes = [];
+  companies.forEach(c => { (votesByCompany[c.company_id] || []).forEach(v => votes.push(v)); });
+  votes = votes.filter(v => String(v.main_reason || '').trim() !== '');
+  if (votes.length < TICKER_MIN_COMMENTS) return [];
+
+  const shuffled = votes.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp;
+  }
+
+  const sideA = shuffled.filter(v => v.side === 'A');
+  const sideB = shuffled.filter(v => v.side === 'B');
+  const out = [];
+  let ai = 0, bi = 0;
+  while (out.length < TICKER_SAMPLE_SIZE && (ai < sideA.length || bi < sideB.length)) {
+    if (ai < sideA.length) out.push(sideA[ai++]);
+    if (out.length < TICKER_SAMPLE_SIZE && bi < sideB.length) out.push(sideB[bi++]);
+  }
+  return out.map(v => ({
+    comment: v.main_reason, company_id: v.company_id,
+    company_name: companyMap[v.company_id] ? companyMap[v.company_id].company_name : v.company_name, side: v.side
+  }));
+}
+
+async function actionGetCompanyFormOptions() {
+  const data = await loadAllSheetsData();
+  return ok({ categories: data.categories, colors: CARD_COLORS });
+}
+
+// พอร์ตตรงจาก actionGetHomeFeed() เดิม (บรรทัด 3032-3046) — รวม getCompanies+getHeroBanners+getCategories+
+// getTickerComments+getCardColors เป็นคำขอเดียว เหตุผลเดียวกับต้นฉบับเป๊ะ (ลดรอบ round-trip ตอนโหลดหน้าแรก)
+// ต่างจากต้นฉบับแค่จุดเดียว: ทุกก้อนข้อมูลอ่านสดทุกครั้งเหมือนกันหมด (ไม่มี cache แยกก้อนเหมือนเดิม)
+async function actionGetHomeFeed(p) {
+  const data = await loadAllSheetsData();
+  const companiesPayload = await buildCompaniesPayload(p, data);
+  const [banners] = await Promise.all([loadHeroBanners()]);
+  const votesByCompany = buildVotesByCompany(data.votes);
+  const tickerComments = buildTickerComments(data.companies, votesByCompany);
+  return ok(Object.assign({ banners, categories: data.categories, tickerComments, cardColors: CARD_COLORS }, companiesPayload));
+}
+
+// พอร์ตตรงจาก actionGetComments() เดิม (บรรทัด 2879-2915)
+async function actionGetComments(p) {
+  if (!p.company_id || !p.side) return fail('ข้อมูลไม่ครบ / Missing information');
+  if (p.side !== 'A' && p.side !== 'B') return fail('side ต้องเป็น A หรือ B เท่านั้น / side must be A or B only');
+
+  const voteRows = await getSheetRows(SHEETS.VOTES);
+  const votes = rowsToObjects(voteRows).filter(v =>
+    v.company_id === p.company_id && v.side === p.side && String(v.main_reason || '').trim() !== ''
+  );
+  votes.sort((a, b) => new Date(b.last_changed_at) - new Date(a.last_changed_at));
+
+  const { pageSlice, total, page, pageSize, totalPages } = paginate(votes, p);
+  const comments = pageSlice.map(v => {
+    const base = { comment: v.main_reason, last_changed_at: v.last_changed_at };
+    if (p.side === 'A') {
+      return Object.assign(base, {
+        join_salary_good: v.join_salary_good, join_benefits_good: v.join_benefits_good,
+        join_brand_reputation: v.join_brand_reputation, join_growth_opportunity: v.join_growth_opportunity,
+        join_challenging_work: v.join_challenging_work, join_culture_team: v.join_culture_team,
+        join_location_flexibility: v.join_location_flexibility, join_confidence_score: v.join_confidence_score
+      });
+    }
+    return Object.assign(base, {
+      leave_salary_benefits_mismatch: v.leave_salary_benefits_mismatch, leave_no_growth: v.leave_no_growth,
+      leave_culture_mismatch: v.leave_culture_mismatch, leave_manager_mismatch: v.leave_manager_mismatch,
+      leave_team_mismatch: v.leave_team_mismatch, leave_worklife_mismatch: v.leave_worklife_mismatch,
+      leave_better_offer: v.leave_better_offer, leave_not_challenging: v.leave_not_challenging
+    });
+  });
+
+  return ok({ comments, count: total, page, page_size: pageSize, total_pages: totalPages });
+}
+
+// พอร์ตตรงจาก actionGetCompanyDetail() เดิม (บรรทัด 1239-1297)
+async function actionGetCompanyDetail(p) {
+  if (!p.company_id) return fail('ต้องระบุ company_id');
+
+  const data = await loadAllSheetsData();
+  const company = data.companies.find(t => t.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.status === 'deleted') return fail('ไม่พบบริษัทนี้ / Company not found');
+
+  const votes = data.votes.filter(v => v.company_id === p.company_id);
+  const userMap = buildUserMap(data.users);
+  const summary = summarizeCompany(company, votes, userMap);
+
+  const genderCount = {}, ageGroupCount = {}, provinceCount = {};
+  let commentCountA = 0, commentCountB = 0;
+  votes.forEach(v => {
+    genderCount[v.gender_snapshot] = (genderCount[v.gender_snapshot] || 0) + 1;
+    provinceCount[v.province_snapshot] = (provinceCount[v.province_snapshot] || 0) + 1;
+    const u = userMap[v.user_id];
+    if (u && u.birthday) {
+      const grp = getAgeGroup(calculateAge(u.birthday));
+      ageGroupCount[grp] = (ageGroupCount[grp] || 0) + 1;
+    }
+    if (String(v.main_reason || '').trim() !== '') {
+      if (v.side === 'A') commentCountA++; else if (v.side === 'B') commentCountB++;
+    }
+  });
+
+  const total = votes.length || 1;
+  const toPercent = (countObj) => {
+    const out = {};
+    Object.keys(countObj).forEach(k => out[k] = Math.round(countObj[k] / total * 100));
+    return out;
+  };
+
+  return ok({
+    company: summary,
+    dashboard: {
+      gender_percent: toPercent(genderCount), age_group_percent: toPercent(ageGroupCount),
+      province_percent: toPercent(provinceCount), comment_count_a: commentCountA, comment_count_b: commentCountB
+    }
+  });
+}
+
+// พอร์ตจาก actionTranslateCompany() เดิม (บรรทัด 1316-1336) — เหมือน translateCardQuestion ทุกประการ: ไม่มี
+// LanguageApp.translate() บน Vercel เลยทำตัวเป็น proxy ไปหา Apps Script Web App เดิมแทน (ดูหมายเหตุยาวที่
+// actionTranslateCardQuestion ด้านบน — เหตุผล/ข้อจำกัด/timeout เดียวกันทุกประการ ใช้ค่าคงที่ร่วมกัน)
+async function actionTranslateCompany(p) {
+  if (!p.company_id) return fail('ต้องระบุ company_id');
+  const targetLang = String(p.target_lang || '').trim();
+  if (!targetLang || TRANSLATE_LANGS.indexOf(targetLang) === -1) return fail('ภาษาปลายทางไม่ถูกต้อง');
+
+  const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
+  if (!appsScriptUrl) return fail('เซิร์ฟเวอร์ตั้งค่าไม่ครบ (ไม่มี APPS_SCRIPT_WEB_APP_URL) / Server misconfigured');
+
+  const qs = new URLSearchParams({ action: 'translateCompany', company_id: p.company_id, target_lang: targetLang });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TRANSLATE_PROXY_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${appsScriptUrl}?${qs.toString()}`, { signal: controller.signal });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.error('[translateCompany] proxy to Apps Script failed:', e.message);
+    return { success: false, message: 'นักแปลคิวงานแน่นมาก กำลังพยายามแปลให้คุณอยู่นะ / Translator is busy right now', retryable: true };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// พอร์ตตรงจาก actionSetMyCompanyStatus() เดิม (บรรทัด 1415-1431)
+async function actionSetMyCompanyStatus(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!p.company_id || !p.status) return fail('ข้อมูลไม่ครบ / Missing information');
+  if (p.status !== 'active' && p.status !== 'inactive') {
+    return fail('เปลี่ยนสถานะได้เฉพาะ เผยแพร่ หรือ ซ่อน เท่านั้น / You can only change status to Published or Hidden');
+  }
+
+  const companyRows = await getSheetRows(SHEETS.COMPANIES);
+  const { headers, objects } = parseRowsWithHeaders(companyRows);
+  const company = objects.find(t => t.company_id === p.company_id);
+  if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
+  if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์แก้ไขบริษัทนี้ / You don\'t have permission to edit this company');
+  if (company.status === 'deleted') return fail('ไม่พบบริษัทนี้ / Company not found');
+
+  await updateRowFields(SHEETS.COMPANIES, headers, company._row, { status: p.status, updated_at: formatDateForSheet(new Date()) });
+  return ok({ message: p.status === 'active' ? 'เผยแพร่บริษัทแล้ว' : 'ซ่อนบริษัทแล้ว', status: p.status });
+}
+
+// พอร์ตตรงจาก actionGetMyProfile() เดิม (บรรทัด 1698-1723)
+async function actionGetMyProfile(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('คุณถูกออกจากระบบ เพราะบัญชีนี้มีการใช้บนอุปกรณ์อื่น / You\'ve been logged out because this account is being used on another device.');
+  return ok({
+    user: {
+      user_id: user.user_id, username: user.username, email: user.email, phone: user.phone,
+      birthday: user.birthday, gender: user.gender, province: user.province, country: user.country,
+      city_state: user.city_state, profile_image_url: user.profile_image_url || '',
+      plan: user.plan || 'free', subscription_status: user.subscription_status || 'none',
+      pro_since: user.pro_since || '', pro_until: user.pro_until || '',
+      next_billing_date: user.next_billing_date || '', last_charge_status: user.last_charge_status || ''
+    }
+  });
+}
+
+// พอร์ตตรงจาก actionGetMyDashboard() เดิม (บรรทัด 1726-1763)
+async function actionGetMyDashboard(p) {
+  const data = await loadAllSheetsData();
+  const userMap = buildUserMap(data.users);
+  const user = findUserInMap(userMap, p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const myCompanies = data.companies.filter(t => t.user_id === user.user_id);
+  const myCompanyIds = myCompanies.map(t => t.company_id);
+  const myVotes = data.votes.filter(v => myCompanyIds.indexOf(v.company_id) !== -1);
+
+  const genderCount = {}, ageGroupCount = {}, provinceCount = {};
+  myVotes.forEach(v => {
+    genderCount[v.gender_snapshot] = (genderCount[v.gender_snapshot] || 0) + 1;
+    provinceCount[v.province_snapshot] = (provinceCount[v.province_snapshot] || 0) + 1;
+    const u = userMap[v.user_id];
+    if (u && u.birthday) {
+      const grp = getAgeGroup(calculateAge(u.birthday));
+      ageGroupCount[grp] = (ageGroupCount[grp] || 0) + 1;
+    }
+  });
+
+  const total = myVotes.length || 1;
+  const toPercent = (countObj) => {
+    const out = {};
+    Object.keys(countObj).forEach(k => out[k] = Math.round(countObj[k] / total * 100));
+    return out;
+  };
+
+  return ok({
+    total_companies: myCompanies.length, total_voters: myVotes.length,
+    gender_percent: toPercent(genderCount), age_group_percent: toPercent(ageGroupCount), province_percent: toPercent(provinceCount)
+  });
+}
+
+// พอร์ตตรงจาก actionUpdateProfile() เดิม (บรรทัด 1768-1892) — ตัด LockService ออก (ตกลงกับ Pop แล้วว่าข้าม
+// การล็อคทั้งระบบไปก่อน เหมือน transfer/signup) เช็คซ้ำเบอร์โทรชนกันจากชีทสดก่อนเขียนยังอยู่ครบ ลดความเสี่ยงได้
+// เกือบเท่าเดิมแม้ไม่มีล็อคจริง — เทียบ passcode ด้วย bcrypt.compare() แทนเทียบ string ตรงๆ (ฝั่งนี้ hash ไว้)
+async function actionUpdateProfile(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+
+  const wantsPhoneChange = p.phone !== undefined && String(p.phone).trim() !== '';
+  const wantsPasscodeChange = !!p.new_passcode;
+  if (wantsPhoneChange && wantsPasscodeChange) {
+    return fail('ไม่สามารถเปลี่ยนหมายเลขโทรศัพท์และ Passcode พร้อมกันได้ กรุณาเลือกเปลี่ยนอย่างใดอย่างหนึ่งต่อครั้ง / You can\'t change your phone number and Passcode at the same time. Please choose one to change per submission');
+  }
+
+  const editable = {};
+  if (p.username !== undefined) {
+    if (!String(p.username).trim()) return fail('ชื่อผู้ใช้ห้ามว่าง / Username cannot be empty');
+    editable.username = p.username;
+  }
+  if (p.email !== undefined) {
+    if (String(p.email).indexOf('@') === -1) return fail('อีเมลไม่ถูกต้อง กรุณาใส่ @ ด้วย / Invalid email, please include an @');
+    editable.email = p.email;
+  }
+  if (p.birthday !== undefined) editable.birthday = p.birthday;
+  if (p.gender !== undefined) editable.gender = p.gender;
+
+  if (p.country !== undefined) {
+    if (!String(p.country).trim()) return fail('กรุณาเลือกประเทศ / Please select a country');
+    const effectiveProvince = p.province !== undefined ? p.province : user.province;
+    if (p.country === 'Thailand' && !effectiveProvince) return fail('กรุณาเลือกจังหวัด / Please select a province');
+    const cityStateCheck = validateCountryCityState(p.country, p.city_state !== undefined ? p.city_state : user.city_state);
+    if (!cityStateCheck.ok) return fail(cityStateCheck.message);
+    editable.country = p.country;
+    editable.city_state = cityStateCheck.cityState;
+    editable.province = p.country === 'Thailand' ? effectiveProvince : '';
+  } else if (p.province !== undefined) {
+    editable.province = p.province;
+  }
+
+  if (p.profile_image_url !== undefined) editable.profile_image_url = normalizeImageUrl(p.profile_image_url);
+
+  if (p.new_passcode) {
+    const oldMatches = p.old_passcode && await bcrypt.compare(String(p.old_passcode), String(user.passcode || ''));
+    if (!oldMatches) return fail('Passcode เดิมไม่ถูกต้อง / Current Passcode is incorrect');
+    if (String(p.new_passcode).length < 6) return fail('Passcode ใหม่ต้องมีอย่างน้อย 6 หลัก / New Passcode must be at least 6 digits');
+    editable.passcode = await bcrypt.hash(String(p.new_passcode), 10);
+  }
+
+  let newPhone = null;
+  if (wantsPhoneChange) {
+    const oldMatches = p.old_passcode && await bcrypt.compare(String(p.old_passcode), String(user.passcode || ''));
+    if (!oldMatches) return fail('กรุณากรอก Passcode เพื่อยืนยันก่อนเปลี่ยนหมายเลขโทรศัพท์ / Please enter your Passcode to confirm before changing your phone number');
+    newPhone = normalizePhone(p.phone);
+    if (newPhone.length !== 10 || newPhone.charAt(0) !== '0') {
+      return fail('หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณากรอกให้ครบ 10 หลัก ขึ้นต้นด้วย 0 / Invalid phone number. Please enter all 10 digits starting with 0');
+    }
+  }
+
+  if (Object.keys(editable).length === 0 && !wantsPhoneChange) return fail('ไม่มีข้อมูลที่จะอัพเดท / No data to update');
+
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const { headers, objects: users } = parseRowsWithHeaders(usersRows);
+
+  if (wantsPhoneChange) {
+    const dup = users.some(u => u._row !== user._row && normalizePhone(u.phone) === newPhone);
+    if (dup) return fail('หมายเลขนี้ถูกใช้งานโดยบัญชีอื่นแล้ว / This phone number is already used by another account');
+  }
+
+  let forceLogout = false;
+  const finalEdits = Object.assign({}, editable);
+  if (wantsPhoneChange && newPhone !== normalizePhone(user.phone)) {
+    finalEdits.phone = newPhone;
+    finalEdits.session_token = '';
+    forceLogout = true;
+  }
+  if (Object.keys(finalEdits).length > 0) {
+    await updateRowFields(SHEETS.USERS, headers, user._row, finalEdits);
+  }
+
+  return ok({
+    message: forceLogout ? 'เปลี่ยนหมายเลขโทรศัพท์สำเร็จ กรุณาเข้าสู่ระบบใหม่ด้วยหมายเลขใหม่' : 'บันทึกข้อมูลสำเร็จ',
+    force_logout: forceLogout,
+    user: {
+      username: editable.username !== undefined ? editable.username : user.username,
+      email: editable.email !== undefined ? editable.email : user.email,
+      phone: newPhone !== null ? newPhone : user.phone,
+      birthday: editable.birthday !== undefined ? editable.birthday : user.birthday,
+      gender: editable.gender !== undefined ? editable.gender : user.gender,
+      province: editable.province !== undefined ? editable.province : user.province,
+      country: editable.country !== undefined ? editable.country : user.country,
+      city_state: editable.city_state !== undefined ? editable.city_state : user.city_state,
+      profile_image_url: editable.profile_image_url !== undefined ? editable.profile_image_url : (user.profile_image_url || '')
+    }
+  });
+}
+
+// พอร์ตตรงจาก actionDeleteAccount() เดิม (บรรทัด 1895-1909)
+async function actionDeleteAccount(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('กรุณา login ก่อน / Please log in first');
+  if (!p.passcode) return fail('กรุณากรอก Passcode เพื่อยืนยันการลบบัญชี / Please enter your Passcode to confirm account deletion');
+  const matches = await bcrypt.compare(String(p.passcode), String(user.passcode || ''));
+  if (!matches) return fail('Passcode ไม่ถูกต้อง / Incorrect Passcode');
+
+  const usersRows = await getSheetRows(SHEETS.USERS);
+  const { headers } = parseRowsWithHeaders(usersRows);
+  await updateRowFields(SHEETS.USERS, headers, user._row, { account_status: 'deleted', session_token: '' });
+  return ok({ message: 'ปิดบัญชีเรียบร้อยแล้ว' });
+}
+
+// พอร์ตตรงจาก actionProxyImage() เดิม (บรรทัด 726-742) — UrlFetchApp.fetch() ของ Apps Script แทนที่ด้วย fetch()
+// ของ Node ตรงๆ, whitelist โดเมนเดียวกันเป๊ะ (กัน SSRF ไปยิง URL ภายในอื่นๆ ผ่าน endpoint นี้)
+async function actionProxyImage(p) {
+  try {
+    const url = p.url;
+    if (!url) return fail('missing url');
+    const allowedHosts = ['lh3.googleusercontent.com', 'drive.google.com', 'api.qrserver.com'];
+    const host = url.replace(/^https?:\/\//, '').split('/')[0];
+    if (!allowedHosts.some(h => host === h || host.endsWith('.' + h))) return fail('domain not allowed');
+
+    const resp = await fetch(url);
+    if (resp.status !== 200) return fail('fetch failed: ' + resp.status);
+    const buf = Buffer.from(await resp.arrayBuffer());
+    const mimeType = resp.headers.get('content-type') || 'image/jpeg';
+    return ok({ dataUri: `data:${mimeType};base64,${buf.toString('base64')}` });
+  } catch (err) {
+    return fail('proxy error: ' + err.message);
+  }
+}
+
+// พอร์ตตรงจาก actionValidateSession() เดิม (บรรทัด 954-958)
+async function actionValidateSession(p) {
+  const user = await findUserByToken(p.session_token);
+  if (!user) return fail('คุณถูกออกจากระบบ เพราะบัญชีนี้มีการใช้บนอุปกรณ์อื่น / You\'ve been logged out because this account is being used on another device.');
+  return ok({ user_id: user.user_id, username: user.username, profile_image_url: user.profile_image_url || '' });
 }
 
 // พอร์ตตรงจาก actionSignup() เดิม (บรรทัด 832-892) — ข้ามส่วน LockService (ตกลงกับ Pop แล้วว่าข้ามไปก่อน
@@ -1947,6 +2330,45 @@ async function tokbudHandler(req, res) {
         break;
       case 'getCompanies':
         result = await actionGetCompanies(p);
+        break;
+      case 'getHomeFeed':
+        result = await actionGetHomeFeed(p);
+        break;
+      case 'getHeroBanners':
+        result = await actionGetHeroBanners();
+        break;
+      case 'getCompanyFormOptions':
+        result = await actionGetCompanyFormOptions();
+        break;
+      case 'getComments':
+        result = await actionGetComments(p);
+        break;
+      case 'getCompanyDetail':
+        result = await actionGetCompanyDetail(p);
+        break;
+      case 'translateCompany':
+        result = await actionTranslateCompany(p);
+        break;
+      case 'setMyCompanyStatus':
+        result = await actionSetMyCompanyStatus(p);
+        break;
+      case 'getMyProfile':
+        result = await actionGetMyProfile(p);
+        break;
+      case 'getMyDashboard':
+        result = await actionGetMyDashboard(p);
+        break;
+      case 'updateProfile':
+        result = await actionUpdateProfile(p);
+        break;
+      case 'deleteAccount':
+        result = await actionDeleteAccount(p);
+        break;
+      case 'proxyImage':
+        result = await actionProxyImage(p);
+        break;
+      case 'validateSession':
+        result = await actionValidateSession(p);
         break;
       case 'uploadImage':
         result = await actionUploadImage(p);
