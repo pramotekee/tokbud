@@ -2817,7 +2817,29 @@ function bindCarouselEvents(scopeEl){
   scopeEl.querySelectorAll('[data-carousel-open]').forEach(btn=>{
     btn.addEventListener('click', ()=> openCarouselCard(btn.dataset.carouselOpen));
   });
+  equalizeCarouselThumbHeights(scopeEl);
 }
+
+// P0-fix (คำขอ Pop, การ์ดสูงไม่เท่ากันบนมือถือ Safari, พังซ้ำที่หน้าเดิมทุกครั้งแบบเดาสาเหตุ CSS ไม่ออกสักที):
+// เลิกพึ่งพา CSS aspect-ratio ให้ browser คำนวณเองแล้ว เปลี่ยนมาให้ JS วัดความกว้างจริงของแต่ละกล่องรูป
+// (.carousel-thumb) แล้วคำนวณความสูงเป็นตัวเลข px ตรงๆ (อัตราส่วน 4/3 ตรงกับ aspect-ratio:3/4 เดิม) แล้วบังคับ
+// ใส่ style.height ทับเข้าไปเลย — วิธีนี้ผลลัพธ์จะเหมือนกันเป๊ะทุก browser/อุปกรณ์ เพราะไม่ปล่อยให้ browser ตีความ
+// เองอีกต่อไป (ตัดปัญหาการตีความ aspect-ratio+grid ต่างกันระหว่างรอบ render ออกไปทั้งหมด) รันซ้ำทุกครั้งที่ render
+// การ์ดใหม่ (bindCarouselEvents ถูกเรียกทุกครั้งใน renderFeed() อยู่แล้ว) และรันซ้ำตอน resize/หมุนจอด้วย
+function equalizeCarouselThumbHeights(scopeEl){
+  const thumbs = scopeEl.querySelectorAll('.carousel-thumb');
+  thumbs.forEach(el => {
+    const w = el.getBoundingClientRect().width;
+    if(w > 0) el.style.height = Math.round(w * 4 / 3) + 'px';
+  });
+}
+let carouselResizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(carouselResizeTimer);
+  carouselResizeTimer = setTimeout(()=>{
+    if(STATE.feedView === 'carousel') equalizeCarouselThumbHeights(document.getElementById('feed'));
+  }, 150);
+});
 
 // เปิด full card เดิม (topicCardHTML) ใน modal — reuse bindCardEvents/setupDescMoreButtons ตัวเดียวกับที่ฟีดปกติ
 // ใช้อยู่แล้ว (pattern เดียวกับ initFocusMode) โหวต/คอมเมนต์/แชร์/แปลภาษาในการ์ดที่เปิดจาก modal ทำงานได้ครบเหมือนการ์ดปกติ
