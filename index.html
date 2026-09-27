@@ -2787,8 +2787,13 @@ function carouselItemHTML(t){
   // TOKBUD ไม่มี field topic_type แล้ว (ของเดิมจาก WEZIDE ที่รองรับ topic แบบไม่มีรูป) ทุกบริษัทมีโลโก้เสมอ เช็คแค่ image_url พอ
   const hasImg = !!t.image_url;
   const color = t.card_color || 'var(--primary)';
+  // P0-fix (คำขอ Pop, การ์ดสูงไม่เท่ากันแบบสุ่มไม่ซ้ำทุกครั้งที่รีเฟรช): เดิมมี loading="lazy" — Safari มี bug
+  // ที่รู้จักกันดี คือคำนวณความสูงแถวของ CSS Grid ก่อนรูปโหลดเสร็จ แล้วไม่ recalculate ใหม่ให้ถูกหลังรูปโหลดเสร็จ
+  // ทำให้ผลลัพธ์ไม่เท่ากันในแต่ละรอบขึ้นกับจังหวะโหลดรูป ตัด lazy ออก (การ์ดพวกนี้เป็น thumbnail เล็กในหน้าแรก
+  // อยู่แล้ว ไม่ใช่รูปหนักที่ต้องรอ lazy-load เพื่อประหยัด bandwidth จริงจัง) พร้อมใส่ width/height attribute ตรงๆ
+  // (อัตราส่วน 3:4 ตรงกับ .carousel-thumb) ให้เบราว์เซอร์จองพื้นที่ไว้ทันทีตั้งแต่ก่อนรูปโหลดเสร็จด้วย เผื่อกันซ้ำ
   const thumbHTML = hasImg
-    ? `<img src="${t.image_url}" alt="${escapeHtml(t.company_name)}" loading="lazy">`
+    ? `<img src="${t.image_url}" alt="${escapeHtml(t.company_name)}" width="300" height="400">`
     : `<div class="carousel-thumb-text-wrap"><div class="carousel-thumb-text">${escapeHtml(t.company_name)}</div></div>`;
   return `
   <button type="button" class="carousel-item" data-carousel-open="${t.company_id}" style="--card-color:${color}">
