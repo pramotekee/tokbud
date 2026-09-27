@@ -2774,6 +2774,17 @@ function renderFeed(){
     return;
   }
   feed.innerHTML = STATE.topics.map(feedItemHTML).join('');
+  // P0-fix (คำขอ Pop, มือถือ Safari เท่านั้น: หน้าแรกที่โหลดสดครั้งแรกการ์ดเท่ากันปกติ แต่พอกดเปลี่ยนหน้า/sort โดยไม่
+  // reload หน้าเว็บทั้งหน้า การ์ดในหน้าใหม่สูงไม่เท่ากันแบบสุ่ม — Safari มี bug ที่รู้จักกันดี (WebKit) คือพอสลับ
+  // เนื้อหาข้างใน display:grid ด้วย innerHTML โดยไม่ reload หน้าเว็บ มันจะ "จำ" ขนาดแถว grid รอบก่อนหน้าค้างไว้บางส่วน
+  // ไม่ยอม recalculate ใหม่ทั้งหมดให้ถูกต้อง (จอคอมไม่เจอเพราะ engine คำนวณ layout ต่างจากมือถือ) วิธีแก้มาตรฐานคือ
+  // บังคับให้ browser ทิ้งค่าที่จำไว้แล้วคำนวณใหม่ทั้งหมด โดยปิด-เปิด display ของ container สลับกันเร็วๆ (ปิดแล้ว
+  // อ่าน offsetHeight บังคับให้ reflow เกิดขึ้นจริงก่อนเปิดกลับ ไม่งั้น browser จะ optimize ข้ามขั้นตอนนี้ไปเฉยๆ)
+  if(STATE.feedView === 'carousel'){
+    feed.style.display = 'none';
+    void feed.offsetHeight;
+    feed.style.display = '';
+  }
   bindCardEvents(feed); // no-op ใน carousel view (ไม่มี .vote-btn/.share-icon-btn ฯลฯ อยู่ในการ์ดย่อ ไม่เป็นปัญหา)
   setupDescMoreButtons();
   if(STATE.feedView === 'line') bindLineEvents(feed);
