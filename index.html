@@ -300,12 +300,17 @@
      ได้จริงโดยไม่บีบการ์ดเล็กจิ๋ว — .feed.view-carousel specificity สูงกว่า .feed เดิม จึง override ได้โดยไม่กระทบ
      Card/Line view ที่ยังอยากคงความกว้าง 640px แบบอ่านสบายเหมือนเดิม */
   .feed.view-carousel{
-    max-width:1100px; display:grid; grid-template-columns:repeat(3, 1fr); gap:14px;
+    max-width:1100px; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px;
   }
   @media(min-width:768px){
-    .feed.view-carousel{ grid-template-columns:repeat(6, 1fr); gap:16px; }
+    .feed.view-carousel{ grid-template-columns:repeat(6, minmax(0, 1fr)); gap:16px; }
   }
-  .carousel-item{ display:flex; flex-direction:column; gap:6px; text-align:left; padding:0; width:100%; transition:transform .12s ease; }
+  /* P0-fix (ต้นเหตุจริงของการ์ดกว้าง/สูงไม่เท่ากันบนมือถือ): เดิมใช้ repeat(3, 1fr) ซึ่งจริงๆ คือ minmax(auto, 1fr)
+     คอลัมน์ขยายได้เกินส่วนแบ่งเท่ากันถ้ามีคำที่ตัดบรรทัดไม่ได้ยาวเกินพื้นที่ (เช่น "TestCompany3", "Kasikornbank")
+     คอลัมน์นั้นเลยกว้างกว่าคอลัมน์อื่น และ aspect-ratio:3/4 ทำให้การ์ดในคอลัมน์ที่กว้างกว่าสูงกว่าตามไปด้วย
+     (จอคอม 6 คอลัมน์กว้างพอเลยไม่เจอ) เปลี่ยนเป็น minmax(0, 1fr) บังคับทุกคอลัมน์กว้างเท่ากันเป๊ะเสมอ
+     + min-width:0 / overflow-wrap ให้คำยาวตัดขึ้นบรรทัดใหม่แทนที่จะดันคอลัมน์ให้กว้างขึ้น */
+  .carousel-item{ display:flex; flex-direction:column; gap:6px; text-align:left; padding:0; width:100%; min-width:0; transition:transform .12s ease; }
   .carousel-item:active{ transform:scale(0.97); }
   .carousel-thumb{ aspect-ratio:3/4; border-radius:12px; overflow:hidden; background:var(--bg); }
   .carousel-thumb img{ width:100%; height:100%; object-fit:cover; }
@@ -317,6 +322,7 @@
   .carousel-thumb-text{
     color:#fff; font-family:'Lexend', sans-serif; font-weight:800; font-size:13.5px; line-height:1.3; text-align:center;
     display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden;
+    overflow-wrap:anywhere; max-width:100%;
   }
   /* แคปชั่นเล็กใต้รูป: จำกัด 2 บรรทัดเสมอ (แม้หัวข้อไม่มีรูป ก็ยังโชว์ซ้ำตัวเล็กแบบนี้ไว้ด้วย)
      P0-fix (คำขอ Pop): เดิมมีแค่ -webkit-line-clamp:2 (จำกัด "สูงสุด" 2 บรรทัด) แต่ไม่ได้กันความสูง "ขั้นต่ำ" ไว้ด้วย
@@ -326,7 +332,7 @@
   .carousel-caption{
     font-size:12.5px; font-weight:600; color:var(--text); line-height:1.35; padding:0 1px;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-    min-height:2.7em;
+    min-height:2.7em; overflow-wrap:anywhere;
   }
 
   .topic-card{
@@ -2774,17 +2780,6 @@ function renderFeed(){
     return;
   }
   feed.innerHTML = STATE.topics.map(feedItemHTML).join('');
-  // P0-fix (คำขอ Pop, มือถือ Safari เท่านั้น: หน้าแรกที่โหลดสดครั้งแรกการ์ดเท่ากันปกติ แต่พอกดเปลี่ยนหน้า/sort โดยไม่
-  // reload หน้าเว็บทั้งหน้า การ์ดในหน้าใหม่สูงไม่เท่ากันแบบสุ่ม — Safari มี bug ที่รู้จักกันดี (WebKit) คือพอสลับ
-  // เนื้อหาข้างใน display:grid ด้วย innerHTML โดยไม่ reload หน้าเว็บ มันจะ "จำ" ขนาดแถว grid รอบก่อนหน้าค้างไว้บางส่วน
-  // ไม่ยอม recalculate ใหม่ทั้งหมดให้ถูกต้อง (จอคอมไม่เจอเพราะ engine คำนวณ layout ต่างจากมือถือ) วิธีแก้มาตรฐานคือ
-  // บังคับให้ browser ทิ้งค่าที่จำไว้แล้วคำนวณใหม่ทั้งหมด โดยปิด-เปิด display ของ container สลับกันเร็วๆ (ปิดแล้ว
-  // อ่าน offsetHeight บังคับให้ reflow เกิดขึ้นจริงก่อนเปิดกลับ ไม่งั้น browser จะ optimize ข้ามขั้นตอนนี้ไปเฉยๆ)
-  if(STATE.feedView === 'carousel'){
-    feed.style.display = 'none';
-    void feed.offsetHeight;
-    feed.style.display = '';
-  }
   bindCardEvents(feed); // no-op ใน carousel view (ไม่มี .vote-btn/.share-icon-btn ฯลฯ อยู่ในการ์ดย่อ ไม่เป็นปัญหา)
   setupDescMoreButtons();
   if(STATE.feedView === 'line') bindLineEvents(feed);
@@ -2817,7 +2812,6 @@ function bindCarouselEvents(scopeEl){
   scopeEl.querySelectorAll('[data-carousel-open]').forEach(btn=>{
     btn.addEventListener('click', ()=> openCarouselCard(btn.dataset.carouselOpen));
   });
-  equalizeCarouselThumbHeights(scopeEl);
 }
 
 // P0-fix (คำขอ Pop, การ์ดสูงไม่เท่ากันบนมือถือ Safari, พังซ้ำที่หน้าเดิมทุกครั้งแบบเดาสาเหตุ CSS ไม่ออกสักที):
@@ -2826,20 +2820,6 @@ function bindCarouselEvents(scopeEl){
 // ใส่ style.height ทับเข้าไปเลย — วิธีนี้ผลลัพธ์จะเหมือนกันเป๊ะทุก browser/อุปกรณ์ เพราะไม่ปล่อยให้ browser ตีความ
 // เองอีกต่อไป (ตัดปัญหาการตีความ aspect-ratio+grid ต่างกันระหว่างรอบ render ออกไปทั้งหมด) รันซ้ำทุกครั้งที่ render
 // การ์ดใหม่ (bindCarouselEvents ถูกเรียกทุกครั้งใน renderFeed() อยู่แล้ว) และรันซ้ำตอน resize/หมุนจอด้วย
-function equalizeCarouselThumbHeights(scopeEl){
-  const thumbs = scopeEl.querySelectorAll('.carousel-thumb');
-  thumbs.forEach(el => {
-    const w = el.getBoundingClientRect().width;
-    if(w > 0) el.style.height = Math.round(w * 4 / 3) + 'px';
-  });
-}
-let carouselResizeTimer;
-window.addEventListener('resize', ()=>{
-  clearTimeout(carouselResizeTimer);
-  carouselResizeTimer = setTimeout(()=>{
-    if(STATE.feedView === 'carousel') equalizeCarouselThumbHeights(document.getElementById('feed'));
-  }, 150);
-});
 
 // เปิด full card เดิม (topicCardHTML) ใน modal — reuse bindCardEvents/setupDescMoreButtons ตัวเดียวกับที่ฟีดปกติ
 // ใช้อยู่แล้ว (pattern เดียวกับ initFocusMode) โหวต/คอมเมนต์/แชร์/แปลภาษาในการ์ดที่เปิดจาก modal ทำงานได้ครบเหมือนการ์ดปกติ
