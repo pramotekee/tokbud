@@ -858,19 +858,31 @@ async function actionDeleteAccount(p) {
 // ของ Node ตรงๆ, whitelist โดเมนเดียวกันเป๊ะ (กัน SSRF ไปยิง URL ภายในอื่นๆ ผ่าน endpoint นี้)
 async function actionProxyImage(p) {
   try {
-    const url = p.url;
-    if (!url) return fail('missing url');
-    const allowedHosts = ['lh3.googleusercontent.com', 'drive.google.com', 'api.qrserver.com'];
-    const host = url.replace(/^https?:\/\//, '').split('/')[0];
-    if (!allowedHosts.some(h => host === h || host.endsWith('.' + h))) return fail('domain not allowed');
+    if (!p.url) return fail('ไม่พบลิงก์รูปภาพ / Missing image link');
 
-    const resp = await fetch(url);
-    if (resp.status !== 200) return fail('fetch failed: ' + resp.status);
+    // ใช้ตัวแกะ URL มาตรฐานของ Node แทนการตัดสตริงเอง — สตริงอย่าง "https://evil.com#.drive.google.com"
+    // หรือ "https://drive.google.com@evil.com" จะถูกแกะเป็น hostname = evil.com แล้วโดนปฏิเสธถูกต้อง
+    let parsed;
+    try { parsed = new URL(String(p.url)); }
+    catch (e) { return fail('ลิงก์รูปภาพไม่ถูกต้อง / Invalid image link'); }
+
+    const allowedHosts = ['lh3.googleusercontent.com', 'drive.google.com', 'api.qrserver.com'];
+    const host = parsed.hostname.toLowerCase();
+    const hostAllowed = allowedHosts.some(h => host === h || host.endsWith('.' + h));
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || !hostAllowed) {
+      return fail('ไม่อนุญาตให้ดึงรูปจากลิงก์นี้ / This image link is not allowed');
+    }
+
+    const resp = await fetch(parsed.href, { signal: AbortSignal.timeout(8000) });
+    if (resp.status !== 200) return fail('ดึงรูปภาพไม่สำเร็จ / Unable to load the image');
+    const mimeType = resp.headers.get('content-type') || '';
+    // รับเฉพาะไฟล์รูปเท่านั้น กันใช้ endpoint นี้เป็นทางผ่านดึงไฟล์ชนิดอื่นจากโดเมนที่อนุญาต
+    if (!/^image\//i.test(mimeType)) return fail('ลิงก์นี้ไม่ใช่รูปภาพ / This link is not an image');
     const buf = Buffer.from(await resp.arrayBuffer());
-    const mimeType = resp.headers.get('content-type') || 'image/jpeg';
     return ok({ dataUri: `data:${mimeType};base64,${buf.toString('base64')}` });
   } catch (err) {
-    return fail('proxy error: ' + err.message);
+    console.error('[proxyImage] ล้มเหลว:', err);
+    return fail('ดึงรูปภาพไม่สำเร็จ / Unable to load the image');
   }
 }
 
@@ -1094,7 +1106,8 @@ async function actionUploadImage(p) {
 
     return ok({ file_id: fileId, image_url: driveThumbUrl(fileId) });
   } catch (err) {
-    return fail('อัพโหลดรูปไม่สำเร็จ: ' + err.message);
+    console.error('[uploadImage] ล้มเหลว:', err);
+    return fail('อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือลองใช้รูปที่มีขนาดเล็กลง / Image upload failed. Please try again or use a smaller image.');
   }
 }
 
@@ -2311,14 +2324,63 @@ async function sweepSubscriptionsCore() {
 
 // ===== Router =====
 
+// ข้อความ error กลางสำหรับ "ระบบขัดข้องเอง" (ไม่ใช่ user กรอกผิด) — ไม่โชว์รายละเอียดเทคนิคให้ user เห็น
+// รายละเอียดจริงเก็บใน console.error (ดูได้ที่ Vercel → Logs) แล้วเปลี่ยนคำนำหน้าตามว่า user กำลังทำอะไรอยู่
+const ACTION_LABELS = {
+  login: ['เข้าสู่ระบบ', 'logging in'],
+  signup: ['สมัครสมาชิก', 'signing up'],
+  resetPasscode: ['ตั้ง Passcode ใหม่', 'resetting your Passcode'],
+  updateProfile: ['บันทึกโปรไฟล์', 'saving your profile'],
+  deleteAccount: ['ปิดบัญชี', 'closing your account'],
+  vote: ['บันทึกความเห็น', 'saving your vote'],
+  createCompany: ['เพิ่มบริษัท', 'adding the company'],
+  editCompany: ['แก้ไขบริษัท', 'editing the company'],
+  uploadImage: ['อัพโหลดรูป', 'uploading the image'],
+  createCheckoutSession: ['เริ่มการชำระเงิน', 'starting the payment'],
+  confirmCheckoutSession: ['ตรวจสอบการชำระเงิน', 'verifying the payment'],
+  cancelSubscription: ['ยกเลิกแพ็กเกจ', 'cancelling the plan'],
+  resumeSubscription: ['ต่ออายุแพ็กเกจ', 'resuming the plan'],
+  getBillingHistory: ['โหลดประวัติการชำระเงิน', 'loading billing history'],
+  translateCompany: ['แปลข้อมูลบริษัท', 'translating the company'],
+  translateCardQuestion: ['แปลคำถาม', 'translating the question'],
+  getHomeFeed: ['โหลดหน้าแรก', 'loading the home page'],
+  getCompanyDetail: ['โหลดข้อมูลบริษัท', 'loading the company'],
+  getComments: ['โหลดความคิดเห็น', 'loading comments'],
+  getMyProfile: ['โหลดโปรไฟล์', 'loading your profile'],
+  getMyDashboard: ['โหลดแดชบอร์ด', 'loading your dashboard']
+};
+function friendlyServerError(action) {
+  const lb = ACTION_LABELS[action];
+  if (lb) return 'ขออภัย ระบบขัดข้องชั่วคราวขณะ' + lb[0] + ' กรุณาลองใหม่อีกครั้งในอีกสักครู่ / Sorry, something went wrong while ' + lb[1] + '. Please try again in a moment.';
+  return 'ขออภัย ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้งในอีกสักครู่ / Sorry, something went wrong. Please try again in a moment.';
+}
+
+// หน้าเว็บส่ง POST เป็น JSON string โดยไม่ตั้ง Content-Type (ตั้งใจ เพื่อไม่ให้เบราว์เซอร์ยิง preflight ตามแบบเดิมของ Apps Script)
+// เบราว์เซอร์จึงส่งเป็น text/plain และ Vercel จะไม่แกะ JSON ให้ — req.body เลยมาเป็น string ไม่ใช่ object
+// (นี่คือสาเหตุที่ login เจอ "Unknown action: undefined") ฟังก์ชันนี้แกะให้เองทุกกรณี: object / string / Buffer
+function readRequestParams(req) {
+  if (req.method === 'GET') return req.query || {};
+  let body = req.body;
+  if (Buffer.isBuffer(body)) body = body.toString('utf8');
+  if (typeof body === 'string') {
+    const text = body.trim();
+    if (!text) return {};
+    try { body = JSON.parse(text); }
+    catch (e) { return {}; }
+  }
+  return (body && typeof body === 'object') ? body : {};
+}
+
 async function tokbudHandler(req, res) {
+  let action;
   try {
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON || !process.env.TOKBUD_SHEET_ID) {
-      return res.status(500).json(fail('เซิร์ฟเวอร์ตั้งค่าไม่ครบ (env vars) / Server misconfigured'));
+      console.error('[tokbud] env vars ไม่ครบ: GOOGLE_SERVICE_ACCOUNT_JSON / TOKBUD_SHEET_ID');
+      return res.status(500).json(fail(friendlyServerError(null)));
     }
 
-    const p = req.method === 'GET' ? (req.query || {}) : (req.body || {});
-    const action = p.action;
+    const p = readRequestParams(req);
+    action = p.action;
 
     let result;
     switch (action) {
@@ -2455,12 +2517,14 @@ async function tokbudHandler(req, res) {
         result = await actionResetPasscode(p);
         break;
       default:
-        result = fail('ไม่รู้จัก action นี้ / Unknown action: ' + action);
+        console.error('[tokbud] คำขอที่ไม่มี/ไม่รู้จัก action: ' + JSON.stringify(action) + ' (method ' + req.method + ')');
+        result = fail('คำขอไม่สมบูรณ์ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง / The request was incomplete. Please refresh the page and try again.');
     }
 
     return res.status(200).json(result);
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('[tokbud] action ' + action + ' ล้มเหลว:', err);
+    return res.status(500).json(fail(friendlyServerError(action)));
   }
 }
 
