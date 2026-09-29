@@ -976,7 +976,37 @@ async function actionLogin(p) {
   // ต้องมี user ตัวจริงให้เทียบ hash ด้วยก่อน ถ้าไม่เจอเบอร์เลยให้ fail ทันทีไม่ต้องเรียก bcrypt เปล่าๆ
   if (!user) return fail('เบอร์โทรหรือ Passcode ไม่ถูกต้อง / Incorrect phone number or Passcode');
 
-  const passcodeMatches = await bcrypt.compare(String(p.passcode), String(user.passcode || ''));
+  const storedPasscode = String(user.passcode || '');
+  // ผู้ใช้จากก่อน migration บางคนยังเก็บ passcode เป็นตัวอักษรตรงๆ ในชีท (ไม่ใช่ bcrypt hash ที่ขึ้นต้น
+  // ด้วย $2a$/$2b$) เช็คว่าเป็น hash จริงก่อนเรียก bcrypt.compare() เพื่อไม่ให้มันพยายามเทียบกับข้อความ
+  // ธรรมดาแล้ว error/false มั่วๆ — ถ้าเป็น hash จริงเทียบด้วย bcrypt ตามปกติ ถ้าไม่ใช่ (คนเก่ายังไม่ migrate)
+  // ให้เทียบตรงตัวแทน แล้วถ้าตรง อัปเกรดเป็น bcrypt hash เขียนกลับลงชีททันที โดยผู้ใช้ไม่ต้องทำอะไรเพิ่ม
+  // ครั้งต่อไปที่ login คนนี้จะผ่านเส้นทาง bcrypt ปกติ — migrate ทีละคนอัตโนมัติตอน login แทนการรันสคริปต์
+  // ไล่แปลงทั้งชีทครั้งเดียว (ปลอดภัยกว่า เพราะแปลงเฉพาะคนที่พิสูจน์ตัวตนสำเร็จจริงๆ)
+  const looksHashed = /^\$2[aby]\$/.test(storedPasscode);
+  let passcodeMatches;
+  if (looksHashed) {
+    passcodeMatches = await bcrypt.compare(String(p.passcode), storedPasscode);
+  } else {
+    passcodeMatches = storedPasscode !== '' && storedPasscode === String(p.passcode);
+    if (passcodeMatches) {
+      try {
+        const newHash = await bcrypt.hash(String(p.passcode), 10);
+        const passcodeCol = colIndexByName(headers, 'passcode');
+        const sheetsForUpgrade = getSheetsClient();
+        await sheetsForUpgrade.spreadsheets.values.update({
+          spreadsheetId: process.env.TOKBUD_SHEET_ID,
+          range: SHEETS.USERS + '!' + colLetter(passcodeCol) + user._row,
+          valueInputOption: 'RAW',
+          requestBody: { values: [[newHash]] }
+        });
+      } catch (upgradeErr) {
+        // เขียน hash ใหม่ไม่สำเร็จ ไม่เป็นไร — user คนนี้ login ผ่านได้ตามปกติในรอบนี้ แค่ยังไม่ได้ migrate
+        // จะลองอัปเกรดใหม่อีกทีตอน login ครั้งถัดไป ไม่ block การ login ของ user เพราะเรื่องนี้
+        console.error('[login] อัปเกรด passcode เป็น bcrypt ไม่สำเร็จสำหรับ user_id ' + user.user_id + ':', upgradeErr);
+      }
+    }
+  }
   if (!passcodeMatches) return fail('เบอร์โทรหรือ Passcode ไม่ถูกต้อง / Incorrect phone number or Passcode');
   if (user.account_status === 'deleted') return fail('บัญชีนี้ถูกปิดใช้งานไปแล้ว / This account has been closed');
 
@@ -1107,7 +1137,10 @@ async function actionUploadImage(p) {
     return ok({ file_id: fileId, image_url: driveThumbUrl(fileId) });
   } catch (err) {
     console.error('[uploadImage] ล้มเหลว:', err);
-    return fail('อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง หรือลองใช้รูปที่มีขนาดเล็กลง / Image upload failed. Please try again or use a smaller image.');
+    // หมายเหตุ: รูปถูกลดขนาด/บีบอัดจากฝั่งหน้าเว็บก่อนส่งมาแล้วเสมอ (ไม่เกิน 1600px, JPEG quality 0.8)
+    // ขนาดไฟล์แทบไม่ใช่สาเหตุจริงของ error นี้ สาเหตุที่พบบ่อยกว่าคือเน็ตหลุดระหว่างอัพ หรือ Google Drive
+    // ฝั่งเราขัดข้องชั่วคราว จึงบอก user ตามนั้นแทนที่จะเดาว่า "ไฟล์ใหญ่ไป" ซึ่งมักไม่ใช่ต้นเหตุจริง
+    return fail('อัพโหลดรูปไม่สำเร็จ ลองเช็คสัญญาณอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง / The photo didn\'t upload. Please check your connection and try again.');
   }
 }
 
@@ -2324,35 +2357,38 @@ async function sweepSubscriptionsCore() {
 
 // ===== Router =====
 
-// ข้อความ error กลางสำหรับ "ระบบขัดข้องเอง" (ไม่ใช่ user กรอกผิด) — ไม่โชว์รายละเอียดเทคนิคให้ user เห็น
-// รายละเอียดจริงเก็บใน console.error (ดูได้ที่ Vercel → Logs) แล้วเปลี่ยนคำนำหน้าตามว่า user กำลังทำอะไรอยู่
+// ข้อความ error กลางสำหรับ "ระบบขัดข้องเอง" (ไม่ใช่ user กรอกผิด) — พูดแบบคนคุยกัน ไม่ใช้คำทางการ/เทคนิค
+// อย่าง "คำขอ" ไม่โชว์รายละเอียดทางเทคนิคให้ user เห็น รายละเอียดจริงเก็บใน console.error (ดูได้ที่
+// Vercel → Logs) แล้วเปลี่ยนคำนำหน้าตามว่า user กำลังทำอะไรอยู่ตอนที่มันพัง
+// รูปแบบข้อความ: "TH text / EN text" เสมอ (ห้ามสลับลำดับ) — ฝั่งหน้าเว็บมีฟังก์ชัน pickLang() ที่แยก
+// TH/EN จาก " / " ตรงๆ (th = ส่วนแรก, en = ส่วนหลัง) สลับลำดับจะทำให้ pickLang() โชว์ภาษาผิดทันที
 const ACTION_LABELS = {
-  login: ['เข้าสู่ระบบ', 'logging in'],
-  signup: ['สมัครสมาชิก', 'signing up'],
-  resetPasscode: ['ตั้ง Passcode ใหม่', 'resetting your Passcode'],
-  updateProfile: ['บันทึกโปรไฟล์', 'saving your profile'],
-  deleteAccount: ['ปิดบัญชี', 'closing your account'],
-  vote: ['บันทึกความเห็น', 'saving your vote'],
-  createCompany: ['เพิ่มบริษัท', 'adding the company'],
-  editCompany: ['แก้ไขบริษัท', 'editing the company'],
-  uploadImage: ['อัพโหลดรูป', 'uploading the image'],
-  createCheckoutSession: ['เริ่มการชำระเงิน', 'starting the payment'],
-  confirmCheckoutSession: ['ตรวจสอบการชำระเงิน', 'verifying the payment'],
-  cancelSubscription: ['ยกเลิกแพ็กเกจ', 'cancelling the plan'],
-  resumeSubscription: ['ต่ออายุแพ็กเกจ', 'resuming the plan'],
-  getBillingHistory: ['โหลดประวัติการชำระเงิน', 'loading billing history'],
-  translateCompany: ['แปลข้อมูลบริษัท', 'translating the company'],
-  translateCardQuestion: ['แปลคำถาม', 'translating the question'],
-  getHomeFeed: ['โหลดหน้าแรก', 'loading the home page'],
-  getCompanyDetail: ['โหลดข้อมูลบริษัท', 'loading the company'],
-  getComments: ['โหลดความคิดเห็น', 'loading comments'],
-  getMyProfile: ['โหลดโปรไฟล์', 'loading your profile'],
-  getMyDashboard: ['โหลดแดชบอร์ด', 'loading your dashboard']
+  login: ['เข้าสู่ระบบ', 'log you in'],
+  signup: ['สมัครสมาชิก', 'sign you up'],
+  resetPasscode: ['ตั้ง Passcode ใหม่', 'set your new Passcode'],
+  updateProfile: ['บันทึกโปรไฟล์', 'save your profile'],
+  deleteAccount: ['ปิดบัญชี', 'close your account'],
+  vote: ['บันทึกความเห็น', 'save your answer'],
+  createCompany: ['เพิ่มบริษัท', 'add the company'],
+  editCompany: ['แก้ไขบริษัท', 'save the changes'],
+  uploadImage: ['อัพโหลดรูป', 'upload the image'],
+  createCheckoutSession: ['เริ่มการชำระเงิน', 'start the payment'],
+  confirmCheckoutSession: ['ตรวจสอบการชำระเงิน', 'verify the payment'],
+  cancelSubscription: ['ยกเลิกแพ็กเกจ', 'cancel the plan'],
+  resumeSubscription: ['ต่ออายุแพ็กเกจ', 'resume the plan'],
+  getBillingHistory: ['โหลดประวัติการชำระเงิน', 'load your billing history'],
+  translateCompany: ['แปลข้อมูลบริษัท', 'translate the company'],
+  translateCardQuestion: ['แปลคำถาม', 'translate the question'],
+  getHomeFeed: ['โหลดหน้าแรก', 'load the home page'],
+  getCompanyDetail: ['โหลดข้อมูลบริษัท', 'load the company'],
+  getComments: ['โหลดความคิดเห็น', 'load the comments'],
+  getMyProfile: ['โหลดโปรไฟล์', 'load your profile'],
+  getMyDashboard: ['โหลดแดชบอร์ด', 'load your dashboard']
 };
 function friendlyServerError(action) {
   const lb = ACTION_LABELS[action];
-  if (lb) return 'ขออภัย ระบบขัดข้องชั่วคราวขณะ' + lb[0] + ' กรุณาลองใหม่อีกครั้งในอีกสักครู่ / Sorry, something went wrong while ' + lb[1] + '. Please try again in a moment.';
-  return 'ขออภัย ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้งในอีกสักครู่ / Sorry, something went wrong. Please try again in a moment.';
+  if (lb) return 'มีบางอย่างสะดุดฝั่งเราตอน' + lb[0] + ' ลองใหม่อีกครั้งได้เลย ถ้ายังไม่ได้อีกสักพักค่อยลองใหม่นะ / Something hiccupped on our end while trying to ' + lb[1] + '. Please try again — if it keeps happening, wait a bit and try once more.';
+  return 'โอ๊ะ มีบางอย่างสะดุดฝั่งเรา ลองใหม่อีกครั้งได้เลย / Oops, something hiccupped on our end. Please try again.';
 }
 
 // หน้าเว็บส่ง POST เป็น JSON string โดยไม่ตั้ง Content-Type (ตั้งใจ เพื่อไม่ให้เบราว์เซอร์ยิง preflight ตามแบบเดิมของ Apps Script)
@@ -2517,8 +2553,8 @@ async function tokbudHandler(req, res) {
         result = await actionResetPasscode(p);
         break;
       default:
-        console.error('[tokbud] คำขอที่ไม่มี/ไม่รู้จัก action: ' + JSON.stringify(action) + ' (method ' + req.method + ')');
-        result = fail('คำขอไม่สมบูรณ์ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่อีกครั้ง / The request was incomplete. Please refresh the page and try again.');
+        console.error('[tokbud] ไม่รู้จัก action นี้: ' + JSON.stringify(action) + ' (method ' + req.method + ')');
+        result = fail('โอ๊ะ มีบางอย่างสะดุดติดขัด กรุณารีเฟรชหน้าแล้วลองใหม่อีกครั้ง / Oops, something got stuck. Please refresh the page and try again.');
     }
 
     return res.status(200).json(result);
