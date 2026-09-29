@@ -1366,11 +1366,20 @@ async function api(action, params = {}, method = 'GET', _isRetry = false, _first
   }
 }
 
-function showToast(msg){
+// รองรับปุ่ม "Try again" ในตัว toast เอง (retryFn ไม่ใส่มา = toast ข้อความเฉยๆ เหมือนเดิมทุกอย่าง ไม่กระทบจุดเรียกเดิม)
+function showToast(msg, durationMs, retryFn){
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  clearTimeout(t._hideTimer);
+  if(retryFn){
+    t.innerHTML = '<span>' + escapeHtml(msg) + '</span> <button type="button" class="toast-retry-btn" style="margin-left:10px;padding:4px 12px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;">Try again</button>';
+    const btn = t.querySelector('.toast-retry-btn');
+    if(btn) btn.addEventListener('click', ()=>{ t.classList.remove('show'); retryFn(); });
+    durationMs = durationMs || 8000;
+  } else {
+    t.textContent = msg;
+  }
   t.classList.add('show');
-  setTimeout(()=> t.classList.remove('show'), 2600);
+  t._hideTimer = setTimeout(()=> t.classList.remove('show'), durationMs || 2600);
 }
 
 // เช็คฝั่ง client ก่อนยิง API — ต้อง sync กับ isEnglishOnlyName() ฝั่ง appscript.txt และ index.txt เป๊ะๆ
@@ -1725,7 +1734,7 @@ function renderProfileHead(){
 /* ---------- Dashboard tab ---------- */
 async function loadDashboard(){
   const res = await api('getMyDashboard', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return false; }
+  if(!res.success){ showToast(res.message, null, loadDashboard); return false; }
   document.getElementById('statTopics').textContent = res.total_topics;
   document.getElementById('statVoters').textContent = res.total_voters;
   renderDashboardBreakdown(res);
@@ -1771,7 +1780,7 @@ function renderDashboardBreakdown(dash){
 /* ---------- My Topics tab ---------- */
 async function loadMyTopics(){
   const res = await api('getMyCompanies', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return false; }
+  if(!res.success){ showToast(res.message, null, loadMyTopics); return false; }
   STATE.myTopics = res.companies || [];
   STATE.myTransferred = res.transferred_out || [];
   renderMyTopics();
@@ -2385,7 +2394,7 @@ function validateVoteQuestionsAnswered(scopeSelector){
 
 async function loadMyComments(){
   const res = await api('getMyComments', { session_token: STATE.session.session_token });
-  if(!res.success){ showToast(res.message); return false; }
+  if(!res.success){ showToast(res.message, null, loadMyComments); return false; }
   STATE.myComments = res.comments || [];
   renderMyComments();
   return true;
