@@ -1735,7 +1735,7 @@ function renderProfileHead(){
 async function loadDashboard(){
   const res = await api('getMyDashboard', { session_token: STATE.session.session_token });
   if(!res.success){ showToast(res.message, null, loadDashboard); return false; }
-  document.getElementById('statTopics').textContent = res.total_topics;
+  document.getElementById('statTopics').textContent = res.total_companies;
   document.getElementById('statVoters').textContent = res.total_voters;
   renderDashboardBreakdown(res);
   return true;
