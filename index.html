@@ -1645,11 +1645,20 @@ function isEnglishOnlyName(str){
   return true;
 }
 
-function showToast(msg, durationMs){
+// รองรับปุ่ม "Try again" ในตัว toast เอง (retryFn ไม่ใส่มา = toast ข้อความเฉยๆ เหมือนเดิมทุกอย่าง ไม่กระทบจุดเรียกเดิม)
+// กด Try again แล้วปิด toast ทันทีแล้วเรียก retryFn() ให้เลย ไม่ต้องรอ user ไปหาปุ่มเดิมเอง
+function showToast(msg, durationMs, retryFn){
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
   clearTimeout(t._hideTimer); // กันเคส toast ถูกเรียกซ้อนกัน ตัวเก่าจะไปลบ .show ทับตัวใหม่ก่อนเวลาที่ควรจะเป็น
+  if(retryFn){
+    t.innerHTML = '<span>' + escapeHtml(msg) + '</span> <button type="button" class="toast-retry-btn" style="margin-left:10px;padding:4px 12px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;">Try again</button>';
+    const btn = t.querySelector('.toast-retry-btn');
+    if(btn) btn.addEventListener('click', ()=>{ t.classList.remove('show'); retryFn(); });
+    durationMs = durationMs || 8000; // มีปุ่มให้กด ให้เวลาอ่าน+ตัดสินใจนานกว่าข้อความเฉยๆ
+  } else {
+    t.textContent = msg;
+  }
+  t.classList.add('show');
   t._hideTimer = setTimeout(()=> t.classList.remove('show'), durationMs || 4000); // มาตรฐานใหม่ 4 วิ (เดิม 2.6 วิ อ่านไม่ทันสำหรับข้อความยาว)
 }
 
