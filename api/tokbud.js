@@ -951,7 +951,7 @@ async function actionSignup(p) {
   const sheets = getSheetsClient();
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.TOKBUD_SHEET_ID,
-    range: SHEETS.USERS,
+    range: SHEETS.USERS + '!A:' + colLetter(headers.length), // ล็อกช่วงคอลัมน์ตาม header จริง กัน append เพี้ยนไปคอลัมน์อื่นถ้ามีข้อมูล/โน้ตแปลกปลอมอยู่ไกลออกไปในชีท (ดูคำอธิบายเต็มที่ DELETEREQUESTS ด้านล่าง)
     valueInputOption: 'RAW', // RAW = เก็บ string ตามที่ส่งไปเป๊ะ ไม่ auto-parse เลขนำหน้า 0 ของเบอร์โทรทิ้ง
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [rowValues] }
@@ -1183,7 +1183,7 @@ async function actionCreateCompany(p) {
   const sheets = getSheetsClient();
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.TOKBUD_SHEET_ID,
-    range: SHEETS.COMPANIES,
+    range: SHEETS.COMPANIES + '!A:' + colLetter(headers.length),
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [rowValues] }
@@ -1259,7 +1259,7 @@ async function actionVote(p) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.TOKBUD_SHEET_ID,
-      range: SHEETS.VOTES,
+      range: SHEETS.VOTES + '!A:' + colLetter(voteHeaders.length),
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [rowValues] }
@@ -1412,7 +1412,10 @@ async function actionRequestDeleteCompany(p) {
   const sheets = getSheetsClient();
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.TOKBUD_SHEET_ID,
-    range: SHEETS.DELETEREQUESTS,
+    // เดิมใช้ range: SHEETS.DELETEREQUESTS เฉยๆ (ไม่ระบุคอลัมน์) — เจอบั๊กจริงจากการใช้งาน: ถ้าในชีทมีข้อความ
+    // หรือโน้ตอะไรก็ตามอยู่ในคอลัมน์ไกลออกไป (เช่น H, I, J) Sheets API จะงงว่า "ตาราง" จริงอยู่ตรงไหน แล้วไป
+    // append แถวใหม่ชิดคอลัมน์ที่มันคิดว่าใช่แทนที่จะเริ่มที่ A เสมอ ล็อกช่วงคอลัมน์ตามจำนวน header จริงกันปัญหานี้
+    range: SHEETS.DELETEREQUESTS + '!A:' + colLetter(reqHeaders.length),
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [rowValues] }
@@ -1650,7 +1653,7 @@ async function actionCreateTransfer(p) {
   const sheets = getSheetsClient();
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.TOKBUD_SHEET_ID,
-    range: SHEETS.TRANSFERS,
+    range: SHEETS.TRANSFERS + '!A:' + colLetter(trHeaders.length),
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [rowValues] }
@@ -1962,7 +1965,7 @@ async function actionSaveMyType(p) {
     const rowValues = headers.map(h => (editable[h] !== undefined ? editable[h] : ''));
     const sheets = getSheetsClient();
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.MYTYPE, valueInputOption: 'RAW',
+      spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.MYTYPE + '!A:' + colLetter(headers.length), valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS', requestBody: { values: [rowValues] }
     });
   }
@@ -2233,7 +2236,7 @@ async function actionConfirmCheckoutSession(p) {
     const rowValues = billingHeaders.map(h => (billingRow[h] !== undefined ? billingRow[h] : ''));
     const sheets = getSheetsClient();
     await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.BILLING, valueInputOption: 'RAW',
+      spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.BILLING + '!A:' + colLetter(billingHeaders.length), valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS', requestBody: { values: [rowValues] }
     });
   }
@@ -2334,7 +2337,7 @@ async function sweepSubscriptionsCore() {
           };
           billingObjects.push(billingRow); // กันบันทึกซ้ำถ้ามีหลายคน renew พร้อมกันในรอบ sweep เดียวกัน
           await sheets.spreadsheets.values.append({
-            spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.BILLING, valueInputOption: 'RAW',
+            spreadsheetId: process.env.TOKBUD_SHEET_ID, range: SHEETS.BILLING + '!A:' + colLetter(billingHeaders.length), valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS', requestBody: { values: [billingHeaders.map(h => (billingRow[h] !== undefined ? billingRow[h] : ''))] }
           });
         }
