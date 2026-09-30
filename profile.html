@@ -196,6 +196,9 @@
   .mt-action-btn.edit{ border-color:var(--primary); color:var(--primary); background:#fff; }
   .mt-action-btn.export{ border-color:#2C8A4B; color:#2C8A4B; background:#fff; }
   .mt-action-btn.delete{ border-color:var(--danger); color:var(--danger); background:#fff; }
+  /* feedback ของ Pop: เดิม has_pending_delete_request ถูกเช็คแค่ตอนกดปุ่ม (โผล่ popup) ไม่มีอะไรโชว์ให้เห็น
+     ล่วงหน้าบนการ์ดเลย ทำให้ดูไม่ออกว่าใบไหนกำลังรอ admin อนุมัติอยู่แล้ว ใบไหนยังกดขอลบได้ปกติ */
+  .mt-action-btn.delete.pending{ border-color:var(--text-muted); color:var(--text-muted); background:#fff; }
   .mt-action-btn.transfer{ border-color:#5B4BB0; color:#5B4BB0; background:#fff; }
   .status-badge.pending{ background:#EAE6FA; color:#5B4BB0; }
 
@@ -1888,7 +1891,7 @@ function renderMyTopics(){
           <button class="mt-action-btn edit" data-action="edit" data-topic="${t.company_id}">Edit</button>
           <button class="mt-action-btn export" data-action="export" data-topic="${t.company_id}">${t18n('exportBtn')}</button>
           ${t.transfer ? '' : `<button class="mt-action-btn transfer" data-action="transfer" data-topic="${t.company_id}">${t18n('trTransferBtn')}</button>`}
-          <button class="mt-action-btn delete" data-action="delete" data-topic="${t.company_id}">Delete</button>
+          <button class="mt-action-btn delete${t.has_pending_delete_request ? ' pending' : ''}" data-action="delete" data-topic="${t.company_id}">${t.has_pending_delete_request ? '⏳ Delete requested — pending' : 'Delete'}</button>
         </div>
         ${transferNoteHTML(t)}
       </div>`;
