@@ -3417,7 +3417,15 @@ function openLangPickerFor(topicId){
   openModal('translateLangModal');
 }
 
-async function runTranslate(topicId, lang){
+// P0-fix (feedback ของ Pop: กด Translate แล้วเจอ popup error 3-4 รอบก่อนจะแปลสำเร็จ ดูเหมือนระบบพัง ทั้งที่
+// จริงๆ คือตัวแปลฝั่ง Apps Script cold-start ช้าเฉยๆ) — เดิมพอ res.success เป็น false โผล่ popup error ทันที
+// ไม่ว่าจะเป็น error ประเภทไหน ทำให้ user ต้องมาคอยกดปิด popup แล้วกด Translate เองซ้ำๆ ระหว่างรอ ตัวปุ่มเองก็ไม่
+// มีอะไรบอกว่ากำลังทำงานอยู่ (ทั้งที่จริงๆ มันมี .loading class ให้ label ขึ้น "Translating..." แล้วก็ตาม)
+// แก้ตามแพทเทิร์นเดียวกับ conversationcard.txt (showCardText): ถ้า res.retryable = true (แปลว่าตัวแปลแค่ยังไม่
+// พร้อม/คิวแน่น ไม่ใช่ error จริง) ให้ retry เงียบๆ เองไม่เกิน 3 รอบ โดยปุ่มยังโชว์ "Translating..." ค้างไว้ตลอด
+// ไม่โผล่ popup รบกวน user เลย ถ้าเกิน 3 รอบแล้วยังไม่ผ่าน หรือเป็น error ที่ไม่ retryable ค่อยโผล่ popup จริงๆ
+async function runTranslate(topicId, lang, attempt){
+  attempt = attempt || 1;
   const btn = document.querySelector(`.translate-btn[data-tr-topic="${topicId}"]`);
   if(btn){ btn.classList.add('loading'); const lbl = btn.querySelector('.tr-label'); if(lbl) lbl.textContent = 'Translating...'; }
 
@@ -3427,6 +3435,10 @@ async function runTranslate(topicId, lang){
 
   const res = await api('translateCompany', { company_id: topicId, target_lang: lang });
   if(!res.success){
+    if(res.retryable && attempt < 3){
+      runTranslate(topicId, lang, attempt + 1);
+      return;
+    }
     if(btn){ btn.classList.remove('loading'); const lbl = btn.querySelector('.tr-label'); if(lbl) lbl.textContent = 'Translate'; }
     TR_PENDING_RETRY = { topicId, lang };
     openModal('translateErrorModal');
