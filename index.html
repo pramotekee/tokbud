@@ -541,6 +541,14 @@
   /* --- translate button (อยู่ใต้ปุ่มตัวเลือก เหนือเส้นแบ่ง mini-dash) --- */
   .translate-row{ padding:0 14px 12px; margin-top:-6px; display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
   .translate-btn{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--primary); padding:4px 2px; }
+  /* สปินเนอร์หมุนตอนกำลังแปล — ใช้แพทเทิร์นเดียวกับ .dash-spinner (มีอยู่แล้วในไฟล์นี้) ให้เห็นชัดว่าระบบ
+     กำลังทำงานอยู่จริง ไม่ใช่ค้าง (feedback ของ Pop: ข้อความ "Translating..." เฉยๆ เห็นไม่ชัดว่ากำลังทำงาน) */
+  .tr-spinner{
+    width:13px; height:13px; border-radius:50%; flex-shrink:0; display:inline-block;
+    border:2px solid var(--line); border-top-color:var(--primary);
+    animation:dash-spin .7s linear infinite;
+  }
+  .tr-translating-text{ font-size:12.5px; font-weight:600; color:var(--text-muted); }
   .translate-btn .tr-icon{ font-size:13px; }
   .translate-btn.loading{ opacity:.55; pointer-events:none; }
   .tr-translated-note{ font-size:12px; color:var(--text-muted); display:inline-flex; align-items:center; gap:4px; }
@@ -3417,17 +3425,22 @@ function openLangPickerFor(topicId){
   openModal('translateLangModal');
 }
 
-// P0-fix (feedback ของ Pop: กด Translate แล้วเจอ popup error 3-4 รอบก่อนจะแปลสำเร็จ ดูเหมือนระบบพัง ทั้งที่
-// จริงๆ คือตัวแปลฝั่ง Apps Script cold-start ช้าเฉยๆ) — เดิมพอ res.success เป็น false โผล่ popup error ทันที
-// ไม่ว่าจะเป็น error ประเภทไหน ทำให้ user ต้องมาคอยกดปิด popup แล้วกด Translate เองซ้ำๆ ระหว่างรอ ตัวปุ่มเองก็ไม่
-// มีอะไรบอกว่ากำลังทำงานอยู่ (ทั้งที่จริงๆ มันมี .loading class ให้ label ขึ้น "Translating..." แล้วก็ตาม)
-// แก้ตามแพทเทิร์นเดียวกับ conversationcard.txt (showCardText): ถ้า res.retryable = true (แปลว่าตัวแปลแค่ยังไม่
-// พร้อม/คิวแน่น ไม่ใช่ error จริง) ให้ retry เงียบๆ เองไม่เกิน 3 รอบ โดยปุ่มยังโชว์ "Translating..." ค้างไว้ตลอด
-// ไม่โผล่ popup รบกวน user เลย ถ้าเกิน 3 รอบแล้วยังไม่ผ่าน หรือเป็น error ที่ไม่ retryable ค่อยโผล่ popup จริงๆ
+// P0-fix รอบ 2 (feedback ของ Pop): รอบแรกที่แก้ไว้ดักเฉพาะกรณีปุ่ม "Translate" ตอนการ์ดยังไม่เคยถูกแปล
+// (`.translate-btn[data-tr-topic]`) แต่พอการ์ดถูกแปลไปแล้วครั้งหนึ่ง แถวปุ่มจะเปลี่ยนเป็น "🌐 Translated · X /
+// See original / Change language" ซึ่งไม่มี element data-tr-topic เหลืออยู่เลย — ทำให้ querySelector หาปุ่มไม่
+// เจอ (คืนค่า null) ตอนกด "Change language" เปลี่ยนจากภาษา A เป็น B ซ้ำ เลยไม่มี loading state โชว์ให้เห็นเลย
+// ตรงกับที่ Pop เจอเป๊ะ (แปล A→B รอบสองไม่มีหมุนๆ) นี่คือ root cause ตัวจริง ไม่ใช่แค่เรื่อง retry ที่แก้รอบแรก
+// แก้ใหม่: เล็งที่ .translate-row[data-tr-wrap] ซึ่งมีอยู่แน่นอนทั้ง 2 สถานะของการ์ด แล้วสลับ innerHTML ทั้งแถว
+// เป็นสปินเนอร์ระหว่างรอ (เก็บ HTML เดิมไว้ใน dataset ก่อน 1 ครั้งตอนเริ่ม ไม่ใช่ทุกรอบ retry เผื่อต้องคืนกลับ
+// ถ้า fail ถาวร) เมื่อสำเร็จ ไม่ต้องคืน HTML เอง เพราะ applyTranslation() เรียก rerenderSingleCard() อยู่แล้ว
+// ซึ่งสร้าง DOM การ์ดใหม่ทั้งใบ ล้างสถานะ loading ไปเองโดยอัตโนมัติ
 async function runTranslate(topicId, lang, attempt){
   attempt = attempt || 1;
-  const btn = document.querySelector(`.translate-btn[data-tr-topic="${topicId}"]`);
-  if(btn){ btn.classList.add('loading'); const lbl = btn.querySelector('.tr-label'); if(lbl) lbl.textContent = 'Translating...'; }
+  const wrap = document.querySelector(`.translate-row[data-tr-wrap="${topicId}"]`);
+  if(attempt === 1 && wrap){
+    wrap.dataset.trPrevHtml = wrap.innerHTML;
+    wrap.innerHTML = '<span class="tr-spinner"></span><span class="tr-translating-text">Translating…</span>';
+  }
 
   const cacheKey = topicId + '_' + lang;
   const cached = TR_CACHE[cacheKey];
@@ -3439,7 +3452,9 @@ async function runTranslate(topicId, lang, attempt){
       runTranslate(topicId, lang, attempt + 1);
       return;
     }
-    if(btn){ btn.classList.remove('loading'); const lbl = btn.querySelector('.tr-label'); if(lbl) lbl.textContent = 'Translate'; }
+    // ลองครบรอบแล้วยังไม่ผ่าน (หรือ error ที่ไม่ retryable) — คืนแถวปุ่มกลับสภาพเดิมก่อนเปิด popup แจ้ง error
+    const wrapNow = document.querySelector(`.translate-row[data-tr-wrap="${topicId}"]`);
+    if(wrapNow && wrapNow.dataset.trPrevHtml){ wrapNow.innerHTML = wrapNow.dataset.trPrevHtml; delete wrapNow.dataset.trPrevHtml; }
     TR_PENDING_RETRY = { topicId, lang };
     openModal('translateErrorModal');
     return;
