@@ -343,10 +343,47 @@
     </div>
     <div class="field-error" id="loginError"></div>
     <button class="btn btn-primary full-btn" id="loginSubmitBtn" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+    <button type="button" class="link-btn" id="openForgotPasscodeBtn" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--text-muted);font-size:13px;text-decoration:underline;cursor:pointer;" data-i18n="forgotPasscodeLink">ลืม Passcode?</button>
     <div class="divider-note">
       <span data-i18n="noAccountText">ยังไม่มีบัญชี?</span>
       <button type="button" class="btn btn-accent full-btn signup-cta-btn" id="goSignupBtn" data-i18n="goSignupLink">สมัครสมาชิกเลย</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== Forgot Passcode Modal (self-service — ดูหมายเหตุที่ index.txt และ backend resetPasscode) ===== -->
+<div class="modal-overlay" id="forgotPasscodeModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="forgotPasscodeTitle">ตั้ง Passcode ใหม่</h3>
+      <button class="modal-close" data-close="forgotPasscodeModal">✕</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-muted);margin-top:-8px;margin-bottom:16px;" data-i18n="forgotPasscodeHint">กรอกเบอร์โทรและอีเมลที่ใช้ตอนสมัคร เพื่อตั้ง Passcode ใหม่ด้วยตัวเอง</p>
+    <div class="field">
+      <label data-i18n="phoneLabel">เบอร์โทรศัพท์</label>
+      <input type="tel" id="fpPhone" placeholder="08xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="fpEmail" placeholder="you@email.com">
+    </div>
+    <div class="field">
+      <label data-i18n="newPasscodeLabel">Passcode ใหม่</label>
+      <div class="passcode-wrap">
+        <input type="text" id="fpNewPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="fpNewPasscode">👁️</button>
+      </div>
+    </div>
+    <div class="field">
+      <label data-i18n="confirmPasscodeLabel">ยืนยัน Passcode ใหม่</label>
+      <div class="passcode-wrap">
+        <input type="text" id="fpConfirmPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="fpConfirmPasscode">👁️</button>
+      </div>
+    </div>
+    <div class="field-error" id="forgotPasscodeError"></div>
+    <button class="btn btn-primary full-btn" id="forgotPasscodeSubmitBtn" data-i18n="forgotPasscodeSubmitBtn">ตั้ง Passcode ใหม่</button>
+    <button type="button" class="link-btn" id="backToLoginBtn" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--text-muted);font-size:13px;text-decoration:underline;cursor:pointer;" data-i18n="backToLoginBtn">← กลับไปเข้าสู่ระบบ</button>
   </div>
 </div>
 
@@ -444,6 +481,15 @@ const I18N = {
     phoneLabel: 'เบอร์โทรศัพท์', loginBtn: 'เข้าสู่ระบบ', loggingInText: 'กำลังเข้าสู่ระบบ...',
     noAccountText: 'ยังไม่มีบัญชี?', goSignupLink: 'สมัครสมาชิกเลย',
     loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ',
+    forgotPasscodeLink: 'ลืม Passcode?', forgotPasscodeTitle: 'ตั้ง Passcode ใหม่',
+    forgotPasscodeHint: 'กรอกเบอร์โทรและอีเมลที่ใช้ตอนสมัคร เพื่อตั้ง Passcode ใหม่ด้วยตัวเอง',
+    newPasscodeLabel: 'Passcode ใหม่', confirmPasscodeLabel: 'ยืนยัน Passcode ใหม่',
+    forgotPasscodeSubmitBtn: 'ตั้ง Passcode ใหม่', backToLoginBtn: '← กลับไปเข้าสู่ระบบ',
+    forgotPasscodeErrorRequired: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
+    forgotPasscodeErrorTooShort: 'Passcode ใหม่ต้องมีอย่างน้อย 6 ตัวอักษร',
+    forgotPasscodeErrorMismatch: 'Passcode ใหม่ทั้งสองช่องไม่ตรงกัน',
+    resettingPasscodeText: 'กำลังตั้ง Passcode ใหม่...',
+    forgotPasscodeSuccessToast: 'ตั้ง Passcode ใหม่สำเร็จ เข้าสู่ระบบด้วย Passcode ใหม่ได้เลย',
     charCount: '{n}/500 ตัวอักษร',
     sliderMidError: 'กรุณาเลือกให้เอียงไปทางใดทางหนึ่ง',
     convoCardBadge: 'PRO',
@@ -484,6 +530,15 @@ const I18N = {
     phoneLabel: 'Phone Number', loginBtn: 'Log In', loggingInText: 'Logging in...',
     noAccountText: 'Don\'t have an account?', goSignupLink: 'Sign Up Now',
     loginErrorRequired: 'Please enter both your phone number and Passcode',
+    forgotPasscodeLink: 'Forgot Passcode?', forgotPasscodeTitle: 'Reset your Passcode',
+    forgotPasscodeHint: 'Enter the phone number and email you signed up with to set a new Passcode yourself.',
+    newPasscodeLabel: 'New Passcode', confirmPasscodeLabel: 'Confirm New Passcode',
+    forgotPasscodeSubmitBtn: 'Reset Passcode', backToLoginBtn: '← Back to Login',
+    forgotPasscodeErrorRequired: 'Please fill in every field.',
+    forgotPasscodeErrorTooShort: 'New Passcode must be at least 6 characters.',
+    forgotPasscodeErrorMismatch: 'The two new Passcode fields don\'t match.',
+    resettingPasscodeText: 'Resetting Passcode...',
+    forgotPasscodeSuccessToast: 'Passcode reset! You can now log in with your new Passcode.',
     charCount: '{n}/500 characters',
     sliderMidError: 'Please lean toward one side or the other',
     convoCardBadge: 'PRO',
@@ -631,20 +686,12 @@ async function api(action, params = {}, method = 'GET', _isRetry = false, _first
   }finally{ clearTimeout(timeoutId); }
 }
 
-// รองรับปุ่ม "Try again" ในตัว toast เอง (retryFn ไม่ใส่มา = toast ข้อความเฉยๆ เหมือนเดิมทุกอย่าง ไม่กระทบจุดเรียกเดิม)
-function showToast(msg, durationMs, retryFn){
+function showToast(msg){
   const el = document.getElementById('toast');
-  clearTimeout(el._hideTimer);
-  if(retryFn){
-    el.innerHTML = '<span>' + escapeHtml(msg) + '</span> <button type="button" class="toast-retry-btn" style="margin-left:10px;padding:4px 12px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit;cursor:pointer;">Try again</button>';
-    const btn = el.querySelector('.toast-retry-btn');
-    if(btn) btn.addEventListener('click', ()=>{ el.classList.remove('show'); retryFn(); });
-    durationMs = durationMs || 8000;
-  } else {
-    el.textContent = msg;
-  }
+  el.textContent = msg;
   el.classList.add('show');
-  el._hideTimer = setTimeout(()=> el.classList.remove('show'), durationMs || 2600);
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=> el.classList.remove('show'), 2600);
 }
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
 function openModal(id){ document.getElementById(id).classList.add('open'); }
@@ -1281,6 +1328,51 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   localStorage.setItem('wz_session', JSON.stringify(res));
   closeModal('loginModal');
   await loadProfile(false); // โหลดใหม่ทั้งหน้า จะได้ contact_links / is_owner / grouping ที่ถูกต้องตามสิทธิ์ใหม่
+});
+
+// ===== Forgot Passcode (self-service, ไม่มี OTP — ดูหมายเหตุที่ backend resetPasscode) =====
+document.getElementById('openForgotPasscodeBtn').addEventListener('click', ()=>{
+  document.getElementById('fpPhone').value = document.getElementById('loginPhone').value.trim();
+  document.getElementById('fpEmail').value = '';
+  document.getElementById('fpNewPasscode').value = '';
+  document.getElementById('fpConfirmPasscode').value = '';
+  document.getElementById('forgotPasscodeError').style.display = 'none';
+  closeModal('loginModal');
+  openModal('forgotPasscodeModal');
+});
+document.getElementById('backToLoginBtn').addEventListener('click', ()=>{
+  closeModal('forgotPasscodeModal');
+  openModal('loginModal');
+});
+document.getElementById('forgotPasscodeSubmitBtn').addEventListener('click', async ()=>{
+  const phone = document.getElementById('fpPhone').value.trim();
+  const email = document.getElementById('fpEmail').value.trim();
+  const newPasscode = document.getElementById('fpNewPasscode').value.trim();
+  const confirmPasscode = document.getElementById('fpConfirmPasscode').value.trim();
+  const errEl = document.getElementById('forgotPasscodeError');
+  errEl.style.display = 'none';
+  if(!phone || !email || !newPasscode || !confirmPasscode){
+    errEl.textContent = t('forgotPasscodeErrorRequired'); errEl.style.display = 'block'; return;
+  }
+  if(newPasscode.length < 6){
+    errEl.textContent = t('forgotPasscodeErrorTooShort'); errEl.style.display = 'block'; return;
+  }
+  if(newPasscode !== confirmPasscode){
+    errEl.textContent = t('forgotPasscodeErrorMismatch'); errEl.style.display = 'block'; return;
+  }
+  const btn = document.getElementById('forgotPasscodeSubmitBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="btn-spinner"></span>${t('resettingPasscodeText')}`;
+  const res = await api('resetPasscode', { phone, email, new_passcode: newPasscode }, 'POST');
+  btn.disabled = false;
+  btn.innerHTML = originalHtml;
+  if(!res.success){ errEl.textContent = res.message; errEl.style.display = 'block'; return; }
+  closeModal('forgotPasscodeModal');
+  document.getElementById('loginPhone').value = phone;
+  document.getElementById('loginPasscode').value = '';
+  openModal('loginModal');
+  showToast(t('forgotPasscodeSuccessToast'));
 });
 // P0-fix (UX สมัครสมาชิกจาก popup login ของหน้า My Type): เดิมเป็นลิงก์ข้อความพาไปหน้าแรกเฉยๆ ผู้ใช้ต้อง
 // กวาดสายตาหาปุ่มสมัครเองอีกที เปลี่ยนเป็นพาไปหน้าแรกพร้อม ?signup=1 ให้ index.html เปิดฟอร์มสมัครสมาชิกให้เลย
