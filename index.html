@@ -926,11 +926,50 @@
     </div>
     <div class="field-error" id="loginError"></div>
     <button class="btn btn-primary full-btn" id="loginSubmitBtn" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+    <button type="button" class="link-btn" id="openForgotPasscodeBtn" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--text-muted);font-size:13px;text-decoration:underline;cursor:pointer;" data-i18n="forgotPasscodeLink">ลืม Passcode?</button>
 
     <div class="divider-note">
       <span data-i18n="signupCta">หากคุณยังไม่ได้เป็นสมาชิก สมัครเพียง <b>30 วินาที</b> ก็เข้าร่วมสนุกกับพวกเราได้แล้ว</span>
       <button class="btn btn-accent full-btn signup-cta-btn" id="openSignupBtn" data-i18n="signupBtn">สมัครเลย</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== Forgot Passcode Modal ===== -->
+<!-- self-service ล้วน (ไม่มีอีเมล/SMS OTP ส่งจริง) ตรงกับ backend resetPasscode: เช็คแค่เบอร์โทร+อีเมลตรงกับ
+     ที่สมัครไว้ ถ้าตรงให้ตั้ง Passcode ใหม่ได้ทันที ไม่ต้องรอ verify อะไรเพิ่ม -->
+<div class="modal-overlay" id="forgotPasscodeModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 data-i18n="forgotPasscodeTitle">ตั้ง Passcode ใหม่</h3>
+      <button class="modal-close" data-close="forgotPasscodeModal">✕</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-muted);margin-top:-8px;margin-bottom:16px;" data-i18n="forgotPasscodeHint">กรอกเบอร์โทรและอีเมลที่ใช้ตอนสมัคร เพื่อตั้ง Passcode ใหม่ด้วยตัวเอง</p>
+    <div class="field">
+      <label data-i18n="phoneLabel">เบอร์โทรศัพท์</label>
+      <input type="tel" id="fpPhone" placeholder="08xxxxxxxx">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="fpEmail" placeholder="you@email.com">
+    </div>
+    <div class="field">
+      <label data-i18n="newPasscodeLabel">Passcode ใหม่</label>
+      <div class="passcode-wrap">
+        <input type="text" id="fpNewPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="fpNewPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
+      </div>
+    </div>
+    <div class="field">
+      <label data-i18n="confirmPasscodeLabel">ยืนยัน Passcode ใหม่</label>
+      <div class="passcode-wrap">
+        <input type="text" id="fpConfirmPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" class="passcode-toggle" data-target="fpConfirmPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
+      </div>
+    </div>
+    <div class="field-error" id="forgotPasscodeError"></div>
+    <button class="btn btn-primary full-btn" id="forgotPasscodeSubmitBtn" data-i18n="forgotPasscodeSubmitBtn">ตั้ง Passcode ใหม่</button>
+    <button type="button" class="link-btn" id="backToLoginBtn" style="display:block;margin:10px auto 0;background:none;border:none;color:var(--text-muted);font-size:13px;text-decoration:underline;cursor:pointer;" data-i18n="backToLoginBtn">← กลับไปเข้าสู่ระบบ</button>
   </div>
 </div>
 
@@ -1365,6 +1404,15 @@ const I18N = {
     errSignupProvinceRequired: 'กรุณาเลือกจังหวัด', myAccountFallback: 'บัญชีของฉัน', loggedOutToast: 'ออกจากระบบแล้ว',
     imageLoadFailToast: 'โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง', imageUploadFailToast: 'อัพโหลดรูปไม่สำเร็จ',
     loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ', loggingInText: 'กำลังเข้าสู่ระบบ...', signingUpText: 'กำลังสมัครสมาชิก...', submittingTopicText: 'กำลังส่งข้อมูล...',
+    forgotPasscodeLink: 'ลืม Passcode?', forgotPasscodeTitle: 'ตั้ง Passcode ใหม่',
+    forgotPasscodeHint: 'กรอกเบอร์โทรและอีเมลที่ใช้ตอนสมัคร เพื่อตั้ง Passcode ใหม่ด้วยตัวเอง',
+    newPasscodeLabel: 'Passcode ใหม่', confirmPasscodeLabel: 'ยืนยัน Passcode ใหม่',
+    forgotPasscodeSubmitBtn: 'ตั้ง Passcode ใหม่', backToLoginBtn: '← กลับไปเข้าสู่ระบบ',
+    forgotPasscodeErrorRequired: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
+    forgotPasscodeErrorTooShort: 'Passcode ใหม่ต้องมีอย่างน้อย 6 ตัวอักษร',
+    forgotPasscodeErrorMismatch: 'Passcode ใหม่ทั้งสองช่องไม่ตรงกัน',
+    resettingPasscodeText: 'กำลังตั้ง Passcode ใหม่...',
+    forgotPasscodeSuccessToast: 'ตั้ง Passcode ใหม่สำเร็จ เข้าสู่ระบบด้วย Passcode ใหม่ได้เลย',
     voteConfirmTitle: 'ยืนยันการเลือก', cancelBtn: 'ยกเลิก', voteConfirmBtnLabel: 'ยืนยันเลือก',
     okBtn: 'ตกลง', understandBtn: 'เข้าใจแล้ว', savingText: 'กำลังบันทึก...',
     sideLabelPrefix: 'ฝั่ง',
@@ -1480,6 +1528,15 @@ const I18N = {
     errSignupProvinceRequired: 'Please select a province', myAccountFallback: 'My Account', loggedOutToast: 'Logged out',
     imageLoadFailToast: 'Failed to load image, please try uploading again', imageUploadFailToast: 'Image upload failed',
     loginErrorRequired: 'Please enter your phone number and Passcode.', loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
+    forgotPasscodeLink: 'Forgot Passcode?', forgotPasscodeTitle: 'Reset your Passcode',
+    forgotPasscodeHint: 'Enter the phone number and email you signed up with to set a new Passcode yourself.',
+    newPasscodeLabel: 'New Passcode', confirmPasscodeLabel: 'Confirm New Passcode',
+    forgotPasscodeSubmitBtn: 'Reset Passcode', backToLoginBtn: '← Back to Login',
+    forgotPasscodeErrorRequired: 'Please fill in every field.',
+    forgotPasscodeErrorTooShort: 'New Passcode must be at least 6 characters.',
+    forgotPasscodeErrorMismatch: 'The two new Passcode fields don\'t match.',
+    resettingPasscodeText: 'Resetting Passcode...',
+    forgotPasscodeSuccessToast: 'Passcode reset! You can now log in with your new Passcode.',
     voteConfirmTitle: 'Share my comment', cancelBtn: 'Cancel', voteConfirmBtnLabel: 'Confirm',
     okBtn: 'OK', understandBtn: 'Got it', savingText: 'Saving...',
     sideLabelPrefix: 'Side',
@@ -1864,6 +1921,58 @@ function openSignupModalDirect(){
   openModal('signupModal');
 }
 document.getElementById('openSignupBtn').addEventListener('click', openSignupModalDirect);
+
+// ===== Forgot Passcode (self-service, ไม่มี OTP — ดูหมายเหตุที่ backend resetPasscode) =====
+document.getElementById('openForgotPasscodeBtn').addEventListener('click', ()=>{
+  document.getElementById('fpPhone').value = document.getElementById('loginPhone').value.trim();
+  document.getElementById('fpEmail').value = '';
+  document.getElementById('fpNewPasscode').value = '';
+  document.getElementById('fpConfirmPasscode').value = '';
+  document.getElementById('forgotPasscodeError').style.display = 'none';
+  closeModal('loginModal');
+  openModal('forgotPasscodeModal');
+});
+document.getElementById('backToLoginBtn').addEventListener('click', ()=>{
+  closeModal('forgotPasscodeModal');
+  openModal('loginModal');
+});
+document.getElementById('forgotPasscodeSubmitBtn').addEventListener('click', async ()=>{
+  const phone = document.getElementById('fpPhone').value.trim();
+  const email = document.getElementById('fpEmail').value.trim();
+  const newPasscode = document.getElementById('fpNewPasscode').value.trim();
+  const confirmPasscode = document.getElementById('fpConfirmPasscode').value.trim();
+  const errEl = document.getElementById('forgotPasscodeError');
+  errEl.style.display = 'none';
+  if(!phone || !email || !newPasscode || !confirmPasscode){
+    errEl.textContent = t('forgotPasscodeErrorRequired');
+    errEl.style.display = 'block';
+    return;
+  }
+  if(newPasscode.length < 6){
+    errEl.textContent = t('forgotPasscodeErrorTooShort');
+    errEl.style.display = 'block';
+    return;
+  }
+  if(newPasscode !== confirmPasscode){
+    errEl.textContent = t('forgotPasscodeErrorMismatch');
+    errEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('forgotPasscodeSubmitBtn');
+  setBtnLoading(btn, true, t('resettingPasscodeText'));
+  const res = await api('resetPasscode', { phone, email, new_passcode: newPasscode }, 'POST');
+  setBtnLoading(btn, false);
+  if(!res.success){
+    errEl.textContent = res.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  closeModal('forgotPasscodeModal');
+  document.getElementById('loginPhone').value = phone;
+  document.getElementById('loginPasscode').value = '';
+  openModal('loginModal');
+  showToast(t('forgotPasscodeSuccessToast'));
+});
 
 document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   const phone = document.getElementById('loginPhone').value.trim();
