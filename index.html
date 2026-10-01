@@ -557,6 +557,8 @@
   /* --- language picker modal --- */
   .lang-pick-grid{ display:flex; flex-direction:column; gap:6px; max-height:56vh; overflow-y:auto; }
   .lang-pick-btn{ text-align:left; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-size:14px; font-weight:500; color:var(--text); background:var(--bg); }
+  /* ไฮไลต์ภาษาที่เคยเลือกล่าสุดในเซสชันนี้ให้เห็นง่ายๆ แทนการข้าม modal ไปเลย (ดูหมายเหตุที่ buildLangPickGrid) */
+  .lang-pick-btn.picked-last{ border-color:var(--primary); border-width:2px; background:color-mix(in srgb, var(--primary) 8%, var(--bg)); }
   .lang-pick-btn:active{ background:var(--surface); border-color:var(--primary); }
 
   /* ===== Modals ===== */
@@ -3332,10 +3334,14 @@ let TR_PENDING_TOPIC = null;  // topic_id ที่กำลังรอเล�
 let TR_PENDING_RETRY = null;  // {topicId, lang} เก็บไว้ให้ปุ่ม "Try Again" เรียกซ้ำได้โดยไม่ต้องกดปุ่มแปลใหม่
 const TR_CACHE = {};          // key: `${companyId}_${lang}` -> {company_name,description} กันยิงแปลซ้ำถ้า toggle ไปมาในเซสชันเดียว
 
+// feedback ของ Pop: ลิสต์ภาษาเดิมเรียงตาม "จำนวนคนพูดทั่วโลก" (English, Chinese, Spanish, ... ) ไม่ใช่ A-Z
+// ทำให้หาภาษาที่ต้องการยาก (เช่น Korean ไปอยู่ท้ายๆ ปนกับ Russian) เรียง A-Z ตาม label ตอน render กริดแทน —
+// ไม่แก้ลำดับใน TRANSLATE_LANGS array ตรงๆ เผื่อมีจุดอื่นอิงลำดับเดิมอยู่ เรียงแค่ตอนจะโชว์ในกริดพอ
 function buildLangPickGrid(){
   const grid = document.getElementById('langPickGrid');
   if(!grid) return;
-  grid.innerHTML = TRANSLATE_LANGS.map(l => `<button type="button" class="lang-pick-btn" data-lang="${l.code}">${escapeHtml(l.label)}</button>`).join('');
+  const sorted = TRANSLATE_LANGS.slice().sort((a,b)=> a.label.localeCompare(b.label));
+  grid.innerHTML = sorted.map(l => `<button type="button" class="lang-pick-btn${l.code===TR_SESSION_LANG ? ' picked-last' : ''}" data-lang="${l.code}">${escapeHtml(l.label)}</button>`).join('');
   grid.querySelectorAll('.lang-pick-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const lang = btn.dataset.lang;
@@ -3417,7 +3423,6 @@ async function downloadCsv(csvContent, filename){
 }
 
 function handleTranslateClick(topicId){
-  if(TR_SESSION_LANG){ runTranslate(topicId, TR_SESSION_LANG); return; }
   openLangPickerFor(topicId);
 }
 function openLangPickerFor(topicId){
@@ -3439,7 +3444,8 @@ async function runTranslate(topicId, lang, attempt){
   const wrap = document.querySelector(`.translate-row[data-tr-wrap="${topicId}"]`);
   if(attempt === 1 && wrap){
     wrap.dataset.trPrevHtml = wrap.innerHTML;
-    wrap.innerHTML = '<span class="tr-spinner"></span><span class="tr-translating-text">Translating…</span>';
+    const langLabel = (TRANSLATE_LANGS.find(l => l.code === lang) || {}).label || lang;
+    wrap.innerHTML = '<span class="tr-spinner"></span><span class="tr-translating-text">Translating to ' + escapeHtml(langLabel) + '…</span>';
   }
 
   const cacheKey = topicId + '_' + lang;
@@ -3448,7 +3454,7 @@ async function runTranslate(topicId, lang, attempt){
 
   const res = await api('translateCompany', { company_id: topicId, target_lang: lang });
   if(!res.success){
-    if(res.retryable && attempt < 3){
+    if(res.retryable && attempt < 6){
       runTranslate(topicId, lang, attempt + 1);
       return;
     }
