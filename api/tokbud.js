@@ -1452,9 +1452,10 @@ async function actionGetMyCompanies(p) {
   const user = await findUserByToken(p.session_token);
   if (!user) return fail('กรุณา login ก่อน / Please log in first');
 
+  // ใช้ parseRowsWithHeaders แทน rowsToObjects เฉยๆ (เหมือน action อื่นที่ต้องเขียนกลับ) เพราะด้านล่างต้อง
+  // เขียน company.status='deleted' กลับไปด้วย ต้องมี _row/headers ไว้ชี้ตำแหน่งแถวที่จะเขียน
   const companyRows = await getSheetRows(SHEETS.COMPANIES);
-  const allCompanies = rowsToObjects(companyRows);
-  const companies = allCompanies.filter(t => t.user_id === user.user_id && t.status !== 'deleted');
+  const { headers: companyHeaders, objects: allCompanies } = parseRowsWithHeaders(companyRows);
 
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const votes = rowsToObjects(voteRows);
@@ -1464,8 +1465,34 @@ async function actionGetMyCompanies(p) {
   const userMap = buildUserMap(rowsToObjects(usersRows));
 
   const reqRows = await getSheetRows(SHEETS.DELETEREQUESTS);
+  const reqObjects = rowsToObjects(reqRows);
   const pendingDeleteIds = {};
-  rowsToObjects(reqRows).forEach(r => { if (r.status === 'pending') pendingDeleteIds[r.company_id] = true; });
+  reqObjects.forEach(r => { if (r.status === 'pending') pendingDeleteIds[r.company_id] = true; });
+
+  // feedback ของ Pop (30 ก.ย.): ตั้ง DeleteRequests.status เป็น 'delete' (ลบจริง อนุมัติแล้ว) หายจากหน้าแรกถูก
+  // (getHomeFeed เช็ค hiddenIds อยู่แล้ว) แต่ยังค้างโผล่ใน My Company เพราะหน้านี้เช็คแค่ company.status เอง
+  // ซึ่งไม่เคยมี action ไหนเขียนเป็น 'deleted' จริงๆ เลยสักจุดในทั้งระบบ (เช็คแล้วทั้งต้นฉบับ Apps Script และที่
+  // พอร์ตมา) แก้ตรงนี้ 2 ชั้น: (1) กรอง company ที่ id อยู่ใน hiddenIds ออกจากลิสต์ที่ return ทันที ไม่ต้องรอ
+  // เขียนสำเร็จก่อนถึงจะถูกซ่อน (2) เขียน company.status='deleted' กลับไปแบบ self-heal เงียบๆ ตอนเจอ mismatch
+  // (ไม่ใช่ admin action แยก เพราะระบบไม่มี trigger ที่รู้ว่า Pop เพิ่งแก้ cell ในชีทเอง จุดเดียวที่รู้ได้คือตอน
+  // อ่านข้อมูลมาเทียบแบบนี้) ให้ชีท Companies เองก็ตรงกันในที่สุด เผื่อ Pop เปิดดูชีทตรงๆ จะได้ไม่งงอีก
+  const hiddenIds = getHiddenCompanyIds(reqObjects);
+  const companies = allCompanies.filter(t =>
+    t.user_id === user.user_id && t.status !== 'deleted' && hiddenIds.indexOf(t.company_id) === -1
+  );
+
+  const toHeal = allCompanies.filter(t => t.status !== 'deleted' && hiddenIds.indexOf(t.company_id) !== -1);
+  if (toHeal.length) {
+    try {
+      for (const t of toHeal) {
+        await updateRowFields(SHEETS.COMPANIES, companyHeaders, t._row, { status: 'deleted', updated_at: formatDateForSheet(new Date()) });
+      }
+    } catch (e) {
+      // เขียน self-heal ไม่สำเร็จไม่เป็นไร — บริษัทพวกนี้ถูกกรองออกจาก companies ด้านบนไปแล้วอยู่ดี (ผู้ใช้ไม่เจอ
+      // บั๊ก) แค่คอลัมน์ status ในชีทจะยังไม่อัปเดตจนกว่า getMyCompanies จะถูกเรียกอีกครั้งแล้วลองเขียนใหม่
+      console.error('[getMyCompanies] self-heal company.status=deleted ล้มเหลว:', e);
+    }
+  }
 
   const pendingTransferByCompany = {};
   let transferredOut = [];
