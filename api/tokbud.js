@@ -1144,7 +1144,9 @@ async function actionUploadImage(p) {
     // หมายเหตุ: รูปถูกลดขนาด/บีบอัดจากฝั่งหน้าเว็บก่อนส่งมาแล้วเสมอ (ไม่เกิน 1600px, JPEG quality 0.8)
     // ขนาดไฟล์แทบไม่ใช่สาเหตุจริงของ error นี้ สาเหตุที่พบบ่อยกว่าคือเน็ตหลุดระหว่างอัพ หรือ Google Drive
     // ฝั่งเราขัดข้องชั่วคราว จึงบอก user ตามนั้นแทนที่จะเดาว่า "ไฟล์ใหญ่ไป" ซึ่งมักไม่ใช่ต้นเหตุจริง
-    return fail('อัพโหลดรูปไม่สำเร็จ ลองเช็คสัญญาณอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง / The photo didn\'t upload. Please check your connection and try again.');
+    // DEBUG ชั่วคราว (ลบออกทีหลังได้): แปะ err.message จริงไว้ใน debug field แยกจาก message หลัก เผื่อ Pop อยาก
+    // เช็คสาเหตุจริงจาก response ตรงๆ โดยไม่ต้องเปิด Vercel Logs — frontend ไม่อ่าน field นี้ ไม่กระทบ user ทั่วไป
+    return Object.assign(fail('อัพโหลดรูปไม่สำเร็จ ลองเช็คสัญญาณอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง / The photo didn\'t upload. Please check your connection and try again.'), { debug: String((err && err.message) || err) });
   }
 }
 
