@@ -1113,40 +1113,41 @@ async function actionAdminResetPasscode(p) {
 // นี้ใช้ไม่ได้จริงๆ (ถูกลบ/ย้ายเจ้าของ) จะ error ตรงๆ ให้ Pop รู้ทันที แทนที่จะสร้างโฟลเดอร์ใหม่แบบเงียบๆ
 const FIXED_UPLOAD_FOLDER_ID = '1OjIDiojfe0J8aC0CkCSIxiPn-NJXokjv';
 
+// เจอ root cause จริงจาก Vercel Logs (2 ต.ค.): GaxiosError "Service Accounts do not have storage quota."
+// ไม่เกี่ยวกับ scope หรือ permission ของโฟลเดอร์เลย (ที่แก้ไป 2 รอบก่อนหน้าไม่ตรงจุด) เป็นข้อจำกัดของ Google ตรงๆ:
+// service account ไม่มี storage quota ส่วนตัว เป็น "เจ้าของไฟล์ใหม่" ไม่ได้ไม่ว่า scope จะกว้างแค่ไหน หรือโฟลเดอร์
+// จะแชร์สิทธิ์ Editor ให้ดีแค่ไหนก็ตาม ทางแก้ตรงจุด (ไม่ต้องให้ Pop ไปหา Google Workspace/สร้าง Shared Drive เพิ่ม
+// เพราะ Gmail ส่วนตัวสร้าง Shared Drive ไม่ได้): proxy ไปให้ Apps Script เดิมเป็นคนอัพโหลดแทน เหมือนที่
+// translateCompany/translateCardQuestion proxy อยู่แล้ว เพราะ Apps Script รันภายใต้บัญชี Google ส่วนตัวของ Pop
+// เอง (ไม่ใช่ service account) จึงมี storage quota ปกติ — เป็นกลไกเดียวกับที่อัพโหลดรูปสำเร็จมา 2 ปีก่อนย้ายระบบ
+// ใช้โฟลเดอร์ปลายทางเดิม (FIXED_UPLOAD_FOLDER_ID) เดิมได้เลย ไม่ต้องตั้งอะไรใหม่ฝั่ง Google Drive
 async function actionUploadImage(p) {
   if (!p.file_data || !p.mime_type) return fail('ไม่มีข้อมูลรูปภาพ');
 
+  const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
+  if (!appsScriptUrl) return fail('เซิร์ฟเวอร์ตั้งค่าไม่ครบ (ไม่มี APPS_SCRIPT_WEB_APP_URL) / Server misconfigured');
+
+  // ไฟล์รูปหนักกว่า text translate เยอะ ให้เวลานานกว่า (รอทั้ง cold-start ของ Apps Script + เวลาอัพโหลดจริงขึ้น Drive)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
   try {
-    let base64 = String(p.file_data);
-    if (base64.indexOf(',') !== -1) base64 = base64.split(',')[1]; // ตัด prefix "data:image/png;base64,"
-    const buffer = Buffer.from(base64, 'base64');
-
-    const fileName = (p.file_name ? String(p.file_name).replace(/[^a-zA-Z0-9._-]/g, '_') : 'upload')
-      + '_' + generateCode();
-
-    const drive = getDriveClient();
-    const createRes = await drive.files.create({
-      requestBody: { name: fileName, parents: [FIXED_UPLOAD_FOLDER_ID] },
-      media: { mimeType: p.mime_type, body: Readable.from(buffer) },
-      fields: 'id'
+    const res = await fetch(appsScriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'uploadImage',
+        file_data: p.file_data,
+        mime_type: p.mime_type,
+        file_name: p.file_name || ''
+      }),
+      signal: controller.signal
     });
-    const fileId = createRes.data.id;
-
-    // เทียบเท่า setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW) เดิม
-    await drive.permissions.create({
-      fileId,
-      requestBody: { role: 'reader', type: 'anyone' }
-    });
-
-    return ok({ file_id: fileId, image_url: driveThumbUrl(fileId) });
+    const data = await res.json();
+    return data; // actionUploadImage เดิมใน Apps Script ตอบ { success, file_id, image_url } รูปแบบเดียวกับ ok()/fail() อยู่แล้ว ส่งต่อตรงๆ ได้เลย
   } catch (err) {
-    console.error('[uploadImage] ล้มเหลว:', err);
-    // หมายเหตุ: รูปถูกลดขนาด/บีบอัดจากฝั่งหน้าเว็บก่อนส่งมาแล้วเสมอ (ไม่เกิน 1600px, JPEG quality 0.8)
-    // ขนาดไฟล์แทบไม่ใช่สาเหตุจริงของ error นี้ สาเหตุที่พบบ่อยกว่าคือเน็ตหลุดระหว่างอัพ หรือ Google Drive
-    // ฝั่งเราขัดข้องชั่วคราว จึงบอก user ตามนั้นแทนที่จะเดาว่า "ไฟล์ใหญ่ไป" ซึ่งมักไม่ใช่ต้นเหตุจริง
-    // DEBUG ชั่วคราว (ลบออกทีหลังได้): แปะ err.message จริงไว้ใน debug field แยกจาก message หลัก เผื่อ Pop อยาก
-    // เช็คสาเหตุจริงจาก response ตรงๆ โดยไม่ต้องเปิด Vercel Logs — frontend ไม่อ่าน field นี้ ไม่กระทบ user ทั่วไป
-    return Object.assign(fail('อัพโหลดรูปไม่สำเร็จ ลองเช็คสัญญาณอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง / The photo didn\'t upload. Please check your connection and try again.'), { debug: String((err && err.message) || err) });
+    console.error('[uploadImage] proxy ไป Apps Script ล้มเหลว:', err);
+    return fail('อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง / The photo didn\'t upload. Please try again.');
+  } finally {
+    clearTimeout(timer);
   }
 }
 
