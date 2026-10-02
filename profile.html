@@ -1610,7 +1610,7 @@ document.getElementById('editAvatarFile').addEventListener('change', async (e)=>
       ()=>{ showToast(t18n('imageLoadFailToast')); renderAvatarPreview(); }
     );
   }catch(err){
-    showToast(t18n('uploadFailToast') + ': ' + err.message);
+    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix "Upload failed:" ซ้อนทับ (feedback ของ Pop)
     renderAvatarPreview();
   }
 });
@@ -2568,7 +2568,7 @@ document.getElementById('etCoverFile').addEventListener('change', async (e)=>{
       ()=>{ etCoverUrl = ''; preview.innerHTML = t18n('etLogoUploadPh'); showToast(t18n('uploadFailToast')); }
     );
   }catch(err){
-    showToast(t18n('uploadFailToast') + ': ' + err.message);
+    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix "Upload failed:" ซ้อนทับ (feedback ของ Pop)
     preview.innerHTML = t18n('etLogoUploadPh');
   }
 });
