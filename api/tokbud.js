@@ -63,11 +63,15 @@ function getAuthClient() {
     authClientSingleton = new google.auth.JWT({
       email: creds.client_email,
       key: creds.private_key,
-      // เพิ่ม scope drive.file เข้ามาด้วย (รอบนี้ต้องใช้ตอน uploadImage) — drive.file แคบกว่า drive เต็ม
-      // (เข้าถึงได้แค่ไฟล์ที่ service account นี้เป็นคนสร้างเอง ไม่ใช่ทุกไฟล์ใน Drive) ปลอดภัยกว่าตาม least-privilege
+      // feedback ของ Pop (1 ต.ค.): อัพโหลดรูปตอน signup พังด้วยข้อความ "เช็คเน็ต" ทั้งที่สัญญาณปกติ — root
+      // cause ตัวจริงคือ scope นี้เอง ไม่ใช่เน็ต: 'drive.file' จำกัดสิทธิ์ไว้แค่ "ไฟล์ที่ service account ตัวนี้
+      // เป็นคนสร้างเองผ่าน API เท่านั้น" การแชร์โฟลเดอร์ FIXED_UPLOAD_FOLDER_ID ให้ service account ผ่านหน้า Drive
+      // UI ตามปกติ (Share → ใส่อีเมล service account) ไม่ทำให้ scope นี้มองเห็นสิทธิ์เขียนในโฟลเดอร์นั้นเลย เพราะ
+      // ไฟล์/โฟลเดอร์นั้นไม่ได้ถูก "สร้าง" โดย service account เอง — ต้องใช้ scope 'drive' เต็มเท่านั้นถึงจะเขียน
+      // เข้าโฟลเดอร์ที่แชร์ไว้ล่วงหน้าแบบนี้ได้ (เป็นข้อจำกัดที่ Google เอกสารไว้ชัดเจน ไม่ใช่บั๊กของโค้ดเรา)
       scopes: [
         'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/drive.file'
+        'https://www.googleapis.com/auth/drive'
       ]
     });
   }
