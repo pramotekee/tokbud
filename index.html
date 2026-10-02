@@ -2402,7 +2402,7 @@ document.getElementById('signupAvatarFile').addEventListener('change', async (e)
       ()=>{ signupAvatarUrl = ''; preview.textContent = '＋'; showToast(t('imageLoadFailToast')); }
     );
   }catch(err){
-    showToast(t('imageUploadFailToast') + ': ' + err.message);
+    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix "Image upload failed:" ซ้อนทับ (feedback ของ Pop: ซ้อนกันแล้วอ่านแล้วงง ตกใจซ้อนตกใจ)
     preview.textContent = '＋';
   }
 });
@@ -2622,7 +2622,7 @@ document.getElementById('coverFile').addEventListener('change', async (e)=>{
       ()=>{ ctCoverUrl = ''; preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`; showToast(t('imageLoadFailToast')); }
     );
   }catch(err){
-    showToast(t('imageUploadFailToast') + ': ' + err.message);
+    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix "Image upload failed:" ซ้อนทับ (feedback ของ Pop: ซ้อนกันแล้วอ่านแล้วงง ตกใจซ้อนตกใจ)
     preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`;
   }
 });
