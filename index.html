@@ -920,7 +920,7 @@
     <div class="field">
       <label>Passcode</label>
       <div class="passcode-wrap">
-        <input type="text" id="loginPasscode" placeholder="Passcode" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="loginPasscode" placeholder="Passcode" autocomplete="one-time-code" autocapitalize="off" autocorrect="off" spellcheck="false">
         <button type="button" class="passcode-toggle" data-target="loginPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
       </div>
     </div>
@@ -956,14 +956,14 @@
     <div class="field">
       <label data-i18n="newPasscodeLabel">Passcode ใหม่</label>
       <div class="passcode-wrap">
-        <input type="text" id="fpNewPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="fpNewPasscode" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร / At least 6 characters" autocomplete="one-time-code" autocapitalize="off" autocorrect="off" spellcheck="false">
         <button type="button" class="passcode-toggle" data-target="fpNewPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
       </div>
     </div>
     <div class="field">
       <label data-i18n="confirmPasscodeLabel">ยืนยัน Passcode ใหม่</label>
       <div class="passcode-wrap">
-        <input type="text" id="fpConfirmPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="fpConfirmPasscode" minlength="6" autocomplete="one-time-code" autocapitalize="off" autocorrect="off" spellcheck="false">
         <button type="button" class="passcode-toggle" data-target="fpConfirmPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
       </div>
     </div>
@@ -1018,7 +1018,7 @@
       <div class="field">
         <label><span data-i18n="setPasscodeLabel">ตั้ง Passcode</span> <span class="field-hint" data-i18n="passcodeHint">(อย่างน้อย 6 หลัก)</span></label>
         <div class="passcode-wrap">
-          <input type="text" id="suPasscode" minlength="6" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <input type="text" id="suPasscode" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร / At least 6 characters" autocomplete="one-time-code" autocapitalize="off" autocorrect="off" spellcheck="false">
           <button type="button" class="passcode-toggle" data-target="suPasscode" aria-label="แสดง/ซ่อน Passcode">👁️</button>
         </div>
         <div class="su-passcode-note"><span>🔐</span><span data-i18n="suPasscodeNote">อย่าลืมนะ! โปรดจดจำหรือจัดเก็บ Passcode นี้ไว้ให้ดี เพราะต้องใช้คู่กับเบอร์โทรศัพท์ทุกครั้งที่เข้าสู่ระบบ</span></div>
@@ -1971,7 +1971,7 @@ document.getElementById('forgotPasscodeSubmitBtn').addEventListener('click', asy
   document.getElementById('loginPhone').value = phone;
   document.getElementById('loginPasscode').value = '';
   openModal('loginModal');
-  showToast(t('forgotPasscodeSuccessToast'));
+  showToast(t('forgotPasscodeSuccessToast'), 10000);
 });
 
 document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
