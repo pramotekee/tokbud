@@ -368,9 +368,82 @@ function getAgeGroup(age) {
   return '55+';
 }
 
-function validYNU(v) {
-  return v === 'yes' || v === 'no' || v === 'unsure';
+/* ================= VOTE QUESTIONS (concept ใหม่: job-seeker focus) =================
+ * side A = Recruitment Reality (ประสบการณ์ตอนสมัครงาน) / side B = Life at Work (ชีวิตเมื่อเข้าทำงานจริง)
+ * ค่าที่เก็บในชีทเป็นรหัสอังกฤษสั้นๆ ไม่ผูกกับภาษาที่แสดงผล (ป้าย TH/EN อยู่ฝั่ง frontend)
+ * ชื่อคอลัมน์ในแท็บ votes: rr_* (side A) และ law_* (side B) — ต้องตรงกับ header ในชีทเป๊ะ
+ * type: 'text' (พิมพ์เอง) | 'year' (dropdown ปี ค.ศ.) | 'choice' (เลือก 1 ใน opts) — required=false = เว้นว่างได้ */
+const SCALE_TRUE = ['not_at_all', 'not_really', 'fairly_true', 'very_true'];
+const SCALE_CLEAR = ['not_at_all', 'not_very', 'fairly_clear', 'very_clear'];
+const SCALE_MATCH = ['not_at_all', 'not_really', 'fairly_match', 'very_match'];
+const YES_NO = ['yes', 'no'];
+const VOTE_SCHEMA = {
+  A: [
+    { f: 'rr_position', type: 'text', required: false, max: 200 },
+    { f: 'rr_year_applied', type: 'year', required: true },
+    { f: 'rr_outcome', type: 'choice', required: true, opts: ['got_offer', 'not_selected', 'withdrew', 'ghosted'] },
+    { f: 'rr_selection_duration', type: 'choice', required: true, opts: ['3_days', '1_week', '2_4_weeks', 'over_1_month'] },
+    { f: 'rr_interview_rounds', type: 'choice', required: true, opts: ['1', '2', '3', '4_plus'] },
+    { f: 'rr_has_test', type: 'choice', required: true, opts: YES_NO },
+    { f: 'rr_has_assignment', type: 'choice', required: true, opts: YES_NO }
+  ],
+  B: [
+    { f: 'law_flexible_workplace', type: 'choice', required: true, opts: SCALE_TRUE },
+    { f: 'law_people_asset', type: 'choice', required: true, opts: SCALE_TRUE },
+    { f: 'law_learning_org', type: 'choice', required: true, opts: SCALE_TRUE },
+    { f: 'law_open_to_staff', type: 'choice', required: true, opts: SCALE_TRUE },
+    { f: 'law_top_down_bottom_up', type: 'choice', required: true, opts: ['very_top_down', 'top_down', 'bottom_up', 'very_bottom_up'] },
+    { f: 'law_office_politics', type: 'choice', required: true, opts: ['none', 'little', 'fairly', 'a_lot'] },
+    { f: 'law_work_life_balance', type: 'choice', required: true, opts: SCALE_TRUE },
+    { f: 'law_flat_org', type: 'choice', required: true, opts: YES_NO },
+    { f: 'law_performance_vs_tenure', type: 'choice', required: true, opts: ['performance', 'tenure'] },
+    { f: 'law_career_path_clarity', type: 'choice', required: true, opts: SCALE_CLEAR },
+    { f: 'law_vision_communication', type: 'choice', required: true, opts: SCALE_CLEAR },
+    { f: 'law_manager_feedback', type: 'choice', required: true, opts: SCALE_CLEAR },
+    { f: 'law_jd_match', type: 'choice', required: true, opts: SCALE_MATCH }
+  ]
+};
+
+// ปีปัจจุบันตามเวลาไทย (+7) — dropdown ฝั่ง frontend ย้อนหลัง 80 ปีจากปีบนเครื่อง user; ฝั่งนี้เผื่อ ±1 ปีกัน
+// เคสข้ามปีใหม่/คนละ timezone ไม่ให้ปฏิเสธคำตอบที่ถูกต้องโดยไม่จำเป็น
+function currentYearBangkok() {
+  return new Date(Date.now() + 7 * 60 * 60 * 1000).getUTCFullYear();
 }
+
+// ตรวจ + เก็บคำตอบของฝั่งที่ส่งมา คืน { error } หรือ { fields } — error เป็นข้อความสองภาษาพร้อมแสดงตรงๆ
+function validateVoteAnswers(side, p) {
+  const fields = {};
+  const cy = currentYearBangkok();
+  for (const q of VOTE_SCHEMA[side]) {
+    const raw = p[q.f] === undefined || p[q.f] === null ? '' : String(p[q.f]).trim();
+    if (q.type === 'text') {
+      fields[q.f] = raw.slice(0, q.max || 200);
+      continue;
+    }
+    if (!raw) {
+      if (q.required) return { error: 'กรุณาตอบให้ครบทุกข้อ / Please answer all questions' };
+      fields[q.f] = '';
+      continue;
+    }
+    if (q.type === 'year') {
+      const y = Number(raw);
+      if (!Number.isInteger(y) || y < cy - 81 || y > cy + 1) return { error: 'ปีที่เลือกไม่ถูกต้อง / Invalid year selected' };
+      fields[q.f] = y;
+    } else {
+      if (!q.opts.includes(raw)) return { error: 'คำตอบบางข้อไม่ถูกต้อง กรุณาลองใหม่ / Some answers are invalid, please try again' };
+      fields[q.f] = raw;
+    }
+  }
+  return { fields };
+}
+
+// ดึงเฉพาะคอลัมน์คำถามของฝั่งนั้นออกจากแถว votes (ใช้ตอนส่งกลับ frontend / export)
+function pickVoteAnswers(side, v) {
+  const out = {};
+  (VOTE_SCHEMA[side] || []).forEach(q => { out[q.f] = v[q.f]; });
+  return out;
+}
+const ALL_VOTE_QUESTION_KEYS = VOTE_SCHEMA.A.concat(VOTE_SCHEMA.B).map(q => q.f);
 
 // พอร์ตตรงจาก isEnglishOnlyName() เดิม (บรรทัด 964-970) — บังคับชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น
 function isEnglishOnlyName(str) {
@@ -589,20 +662,7 @@ async function actionGetComments(p) {
   const { pageSlice, total, page, pageSize, totalPages } = paginate(votes, p);
   const comments = pageSlice.map(v => {
     const base = { comment: v.main_reason, last_changed_at: v.last_changed_at };
-    if (p.side === 'A') {
-      return Object.assign(base, {
-        join_salary_good: v.join_salary_good, join_benefits_good: v.join_benefits_good,
-        join_brand_reputation: v.join_brand_reputation, join_growth_opportunity: v.join_growth_opportunity,
-        join_challenging_work: v.join_challenging_work, join_culture_team: v.join_culture_team,
-        join_location_flexibility: v.join_location_flexibility, join_confidence_score: v.join_confidence_score
-      });
-    }
-    return Object.assign(base, {
-      leave_salary_benefits_mismatch: v.leave_salary_benefits_mismatch, leave_no_growth: v.leave_no_growth,
-      leave_culture_mismatch: v.leave_culture_mismatch, leave_manager_mismatch: v.leave_manager_mismatch,
-      leave_team_mismatch: v.leave_team_mismatch, leave_worklife_mismatch: v.leave_worklife_mismatch,
-      leave_better_offer: v.leave_better_offer, leave_not_challenging: v.leave_not_challenging
-    });
+    return Object.assign(base, pickVoteAnswers(p.side, v));
   });
 
   return ok({ comments, count: total, page, page_size: pageSize, total_pages: totalPages });
@@ -1216,35 +1276,11 @@ async function actionVote(p) {
   if (company.status === 'deleted') return fail('ไม่พบบริษัทนี้ / Company not found');
 
   const comment = String(p.main_reason || '').trim().slice(0, 5000);
-  if (!comment) return fail('กรุณากรอกเหตุผลหลัก / Please enter your main reason');
+  if (!comment) return fail('กรุณากรอกความคิดเห็น / Please enter your comment');
 
-  let sideFields;
-  if (p.side === 'A') {
-    const ynuKeys = ['join_salary_good', 'join_benefits_good', 'join_brand_reputation', 'join_growth_opportunity',
-      'join_challenging_work', 'join_culture_team', 'join_location_flexibility'];
-    for (const k of ynuKeys) { if (!validYNU(p[k] || '')) return fail('กรุณาตอบให้ครบทุกข้อ / Please answer all questions'); }
-    const score = Number(p.join_confidence_score);
-    if (!p.join_confidence_score || isNaN(score) || score < 1 || score > 5) {
-      return fail('กรุณาเลือกคะแนน 1-5 / Please select a score from 1 to 5');
-    }
-    sideFields = {
-      join_salary_good: p.join_salary_good || '', join_benefits_good: p.join_benefits_good || '',
-      join_brand_reputation: p.join_brand_reputation || '', join_growth_opportunity: p.join_growth_opportunity || '',
-      join_challenging_work: p.join_challenging_work || '', join_culture_team: p.join_culture_team || '',
-      join_location_flexibility: p.join_location_flexibility || '', join_confidence_score: score
-    };
-  } else {
-    const ynuKeys = ['leave_salary_benefits_mismatch', 'leave_no_growth', 'leave_culture_mismatch', 'leave_manager_mismatch',
-      'leave_team_mismatch', 'leave_worklife_mismatch', 'leave_better_offer', 'leave_not_challenging'];
-    for (const k of ynuKeys) { if (!validYNU(p[k] || '')) return fail('กรุณาตอบให้ครบทุกข้อ / Please answer all questions'); }
-    sideFields = {
-      leave_salary_benefits_mismatch: p.leave_salary_benefits_mismatch || '', leave_no_growth: p.leave_no_growth || '',
-      leave_culture_mismatch: p.leave_culture_mismatch || '', leave_manager_mismatch: p.leave_manager_mismatch || '',
-      leave_team_mismatch: p.leave_team_mismatch || '', leave_worklife_mismatch: p.leave_worklife_mismatch || '',
-      leave_better_offer: p.leave_better_offer || '', leave_not_challenging: p.leave_not_challenging || '',
-      leave_improvement_suggestion: String(p.leave_improvement_suggestion || '').trim().slice(0, 5000)
-    };
-  }
+  const checked = validateVoteAnswers(p.side, p);
+  if (checked.error) return fail(checked.error);
+  const sideFields = checked.fields;
 
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const { headers: voteHeaders, objects: votes } = parseRowsWithHeaders(voteRows);
@@ -1567,15 +1603,7 @@ async function actionGetMyComments(p) {
       main_reason: v.main_reason,
       voted_at: v.voted_at,
       last_changed_at: v.last_changed_at,
-      join_salary_good: v.join_salary_good, join_benefits_good: v.join_benefits_good,
-      join_brand_reputation: v.join_brand_reputation, join_growth_opportunity: v.join_growth_opportunity,
-      join_challenging_work: v.join_challenging_work, join_culture_team: v.join_culture_team,
-      join_location_flexibility: v.join_location_flexibility, join_confidence_score: v.join_confidence_score,
-      leave_salary_benefits_mismatch: v.leave_salary_benefits_mismatch, leave_no_growth: v.leave_no_growth,
-      leave_culture_mismatch: v.leave_culture_mismatch, leave_manager_mismatch: v.leave_manager_mismatch,
-      leave_team_mismatch: v.leave_team_mismatch, leave_worklife_mismatch: v.leave_worklife_mismatch,
-      leave_better_offer: v.leave_better_offer, leave_not_challenging: v.leave_not_challenging,
-      leave_improvement_suggestion: v.leave_improvement_suggestion
+      ...pickVoteAnswers(v.side, v)
     }))
   });
 }
@@ -1838,21 +1866,17 @@ async function actionExportCompanyVotes(p) {
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const votes = rowsToObjects(voteRows).filter(v => v.company_id === p.company_id);
 
-  const header = ['no', 'timestamp', 'side', 'main_reason',
-    'join_salary_good', 'join_benefits_good', 'join_brand_reputation', 'join_growth_opportunity', 'join_challenging_work', 'join_culture_team', 'join_location_flexibility', 'join_confidence_score',
-    'leave_salary_benefits_mismatch', 'leave_no_growth', 'leave_culture_mismatch', 'leave_manager_mismatch', 'leave_team_mismatch', 'leave_worklife_mismatch', 'leave_better_offer', 'leave_not_challenging', 'leave_improvement_suggestion',
-    'gender', 'age_group'];
+  // คอลัมน์คำตอบตาม VOTE_SCHEMA (rr_* ของ side A แล้วต่อด้วย law_* ของ side B) — คนละฝั่งเว้นว่างตามธรรมชาติ
+  const header = ['no', 'timestamp', 'side', 'main_reason'].concat(ALL_VOTE_QUESTION_KEYS).concat(['gender', 'age_group']);
   const lines = [header.map(csvEscape).join(',')];
 
   votes.forEach((v, idx) => {
     const timestampStr = formatExportTimestamp(v.last_changed_at);
-    const sideLabel = v.side === 'A' ? 'Work' : (v.side === 'B' ? 'Left' : (v.side || ''));
-    lines.push([
-      idx + 1, timestampStr, sideLabel, v.main_reason || '',
-      v.join_salary_good || '', v.join_benefits_good || '', v.join_brand_reputation || '', v.join_growth_opportunity || '', v.join_challenging_work || '', v.join_culture_team || '', v.join_location_flexibility || '', v.join_confidence_score || '',
-      v.leave_salary_benefits_mismatch || '', v.leave_no_growth || '', v.leave_culture_mismatch || '', v.leave_manager_mismatch || '', v.leave_team_mismatch || '', v.leave_worklife_mismatch || '', v.leave_better_offer || '', v.leave_not_challenging || '', v.leave_improvement_suggestion || '',
-      genderToEn(v.gender_snapshot), v.age_group_snapshot || ''
-    ].map(csvEscape).join(','));
+    const sideLabel = v.side === 'A' ? 'Recruitment Reality' : (v.side === 'B' ? 'Life at Work' : (v.side || ''));
+    lines.push([idx + 1, timestampStr, sideLabel, v.main_reason || '']
+      .concat(ALL_VOTE_QUESTION_KEYS.map(k => v[k] || ''))
+      .concat([genderToEn(v.gender_snapshot), v.age_group_snapshot || ''])
+      .map(csvEscape).join(','));
   });
 
   const safeTitle = String(company.company_name || 'company').replace(/[^a-zA-Z0-9ก-๙_-]+/g, '_').slice(0, 40);
