@@ -388,19 +388,15 @@
   .req-mark{ color:#D64545; font-weight:700; }
   .ynu-btn{ flex:1; padding:8px 4px; border:1.5px solid var(--line); border-radius:8px; font-size:12.5px; background:var(--surface); color:var(--text); }
   .ynu-btn.selected{ background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
-  .score-btn{ width:34px; height:34px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; background:var(--surface); color:var(--text); }
-  .score-btn.selected{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); font-weight:700; }
+  .opt-btns{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:6px; }
+  .opt-btns .ynu-btn{ padding:9px 6px; line-height:1.3; white-space:normal; word-break:break-word; }
+  .vq-input{ width:100%; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:13.5px; outline:none; background:var(--bg); color:var(--text); }
+  .comment-head{ font-size:12px; font-weight:700; color:var(--primary); margin-bottom:6px; word-break:break-word; }
   /* หัวข้อคำถาม Yes/No/Not sure ทั้ง 8 ข้อ (ทั้งฝั่ง Join/Leave) ให้ตัวหนา+สีเข้ม เหมือนกับ "I work here because" */
   .ynu-question-label{ font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
   /* กรอบแดงล้อมข้อที่ยังไม่ได้ตอบ เวลากด Confirm แล้วตอบไม่ครบ */
   .ynu-row.ynu-missing{ border:1.5px solid #E5484D; border-radius:10px; padding:8px; margin-left:-8px; margin-right:-8px; }
   .ynu-missing-hint{ display:block; font-size:11.5px; color:#E5484D; font-weight:600; margin-top:5px; }
-  /* scale 1-5 แนวดิ่ง: เลขวงกลม + คำอธิบายในแถวเดียวกัน */
-  .score-vertical-row{ display:flex; align-items:center; gap:10px; padding:9px 10px; border:1.5px solid var(--line); border-radius:10px; margin-bottom:7px; cursor:pointer; background:var(--surface); text-align:left; width:100%; }
-  .score-vertical-row .score-num{ flex:0 0 30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13.5px; border:1.5px solid var(--line); color:var(--text); background:var(--bg); }
-  .score-vertical-row .score-desc{ font-size:12.5px; color:var(--text); line-height:1.4; }
-  .score-vertical-row.selected{ border-color:var(--accent); background:rgba(245,209,73,0.12); }
-  .score-vertical-row.selected .score-num{ background:var(--accent); border-color:var(--accent); color:var(--primary-dark); }
   .topic-card .cat-tag{ background:var(--card-color, var(--primary)); }
   .topic-card .tag-chip{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); color:var(--text-muted); }
 
@@ -456,15 +452,8 @@
     margin-top:10px; white-space:normal;
   }
   .answer-cell{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:8px 9px; min-width:0; }
-  .answer-cell-label{ font-size:10.5px; line-height:1.35; color:var(--text-muted); margin-bottom:5px; word-break:break-word; }
-  .answer-cell-value{ display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:700; line-height:1.35; word-break:break-word; }
-  .answer-cell-value svg{ flex-shrink:0; margin-top:1px; }
-  .av-yes{ color:#16a34a; }
-  .av-no{ color:#dc2626; }
-  .av-unsure{ color:var(--text-muted); }
-  .av-score-low{ color:#dc2626; }
-  .av-score-mid{ color:var(--text-muted); }
-  .av-score-high{ color:#16a34a; }
+  .answer-cell-label{ font-size:10.5px; line-height:1.35; color:var(--text); margin-bottom:5px; word-break:break-word; }
+  .answer-cell-value{ display:flex; align-items:flex-start; gap:4px; font-size:12px; font-weight:700; line-height:1.35; word-break:break-word;  color:var(--primary); }
   #commentSentinel{ height:1px; }
 
   /* --- mini dashboard --- */
@@ -1111,11 +1100,11 @@
     <div class="field" id="coverField">
       <label><span data-i18n="coverImageLabel">โลโก้บริษัท (สัดส่วน 3:4)</span> <span class="field-hint" data-i18n="coverImageHint">— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด</span></label>
       <div class="preview-3col">
-        <div class="preview-vote-btn" data-i18n="joinBtnLabel">ทำงานที่นี่เพราะ...</div>
+        <div class="preview-vote-btn" data-i18n="joinBtnLabel">ประสบการณ์การสมัครงาน</div>
         <div class="cover-upload" id="coverPreview" onclick="document.getElementById('coverFile').click()">
           <span data-i18n="coverUploadPrompt">＋ แตะเพื่อแนบโลโก้บริษัท</span>
         </div>
-        <div class="preview-vote-btn" data-i18n="leaveBtnLabel">ลาออกไปเพราะ...</div>
+        <div class="preview-vote-btn" data-i18n="leaveBtnLabel">ชีวิตการทำงานจริง</div>
       </div>
       <input type="file" accept="image/*" id="coverFile" style="display:none;">
     </div>
@@ -1197,14 +1186,14 @@
     <!-- FIX (Pop เจอบั๊ก): เดิมช่อง comment ที่ว่างเช็คผ่าน showInfoPopup() ซึ่งลบ/ซ่อนฟอร์มทั้งหมดทิ้งก่อนโชว์
          ข้อความเตือน (ดูคอมเมนต์ยาวที่ confirmVote/validateVoteFormComplete ด้านล่าง) — เพิ่ม class "ynu-row" +
          hint span ให้ไฮไลท์ได้แบบเดียวกับคำถาม Yes/No/Not sure ข้ออื่นๆ แทน ไม่ต้องซ่อน/ลบข้อมูลอะไรเลย -->
-    <div id="voteCommentWrap" class="ynu-row" style="display:none;text-align:left;margin:-4px 0 18px;">
+    <div id="voteQuestionsWrap" style="text-align:left;margin:0 0 18px;"></div>
+    <div id="voteCommentWrap" class="ynu-row" style="display:none;text-align:left;margin:0 0 18px;">
       <label id="voteCommentLabel" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;"></label>
       <textarea id="voteCommentInput" maxlength="5000" rows="3" placeholder=""
         style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;"></textarea>
       <div id="voteCommentCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">0/5000</div>
       <span id="voteCommentMissingHint" class="ynu-missing-hint" style="display:none;" data-i18n="errMainReasonRequired"></span>
     </div>
-    <div id="voteQuestionsWrap" style="text-align:left;margin:0 0 18px;"></div>
     <div style="display:flex;gap:10px;" id="voteConfirmActions">
       <button class="btn btn-ghost full-btn" id="voteCancelBtn">ยกเลิก</button>
       <button class="btn btn-primary full-btn" id="voteConfirmBtn">ยืนยันเลือก</button>
@@ -1357,24 +1346,30 @@ const I18N = {
     ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 หมวด', doneBtn: 'เสร็จสิ้น',
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     createSubmitBtn: 'สร้างบริษัท',
-    joinBtnLabel: 'ทำงานที่นี่เพราะ...', leaveBtnLabel: 'ลาออกไปเพราะ...',
-    tickerJoinBadge: 'ทำงานอยู่', tickerLeaveBadge: 'ลาออกแล้ว',
-    joinMainReasonLabel: 'ฉันทำงานที่นี่เพราะ...', joinMainReasonPh: 'พิมพ์คำตอบของคุณ...',
-    leaveMainReasonLabel: 'เหตุผลหลักที่คุณตัดสินใจลาออกคืออะไร?', leaveMainReasonPh: 'พิมพ์คำตอบของคุณ...',
+    joinBtnLabel: 'ประสบการณ์การสมัครงาน', leaveBtnLabel: 'ชีวิตการทำงานจริง',
+    tickerJoinBadge: 'สมัครงาน', tickerLeaveBadge: 'ทำงานจริง',
+    joinMainReasonLabel: 'แสดงความคิดเห็น', joinMainReasonPh: 'พิมพ์ความคิดเห็นของคุณ...',
+    leaveMainReasonLabel: 'แสดงความคิดเห็น', leaveMainReasonPh: 'พิมพ์ความคิดเห็นของคุณ...',
     requiredMark: '*', requiredHint: '(บังคับตอบ)',
-    yesOpt: 'ใช่', noOpt: 'ไม่ใช่', unsureOpt: 'ไม่แน่ใจ',
-    qSalaryGood: 'เงินเดือนดี', qBenefitsGood: 'สวัสดิการและสิทธิประโยชน์ที่ได้รับดี', qBrandReputation: 'ทำงานที่นี่เพราะชื่อเสียงของบริษัท',
-    qGrowthOpportunity: 'ได้เรียนรู้ พัฒนาตัวเอง และมีโอกาสเติบโต', qChallengingWork: 'ได้ใช้ความรู้ ความสามารถ และทักษะอย่างเต็มที่',
-    qCultureTeam: 'ได้อยู่ในวัฒนธรรมองค์กรและสภาพแวดล้อมที่ดี', qLocationFlexibility: 'มีความยืดหยุ่นเรื่องรูปแบบและวิธีการทำงาน',
-    confidenceScoreLabel: 'มองย้อนกลับไปแล้ว ยังคิดว่าการเลือกมาทำงานที่นี่เป็นการตัดสินใจที่ถูกต้องไหม',
-    scoreDesc1: 'ไม่ใช่แล้ว ตอนนี้กำลังหางานใหม่อยู่', scoreDesc2: 'เริ่มมีข้อสงสัยแล้ว',
-    scoreDesc3: 'ก็โอเคนะ ยังคิดอยู่', scoreDesc4: 'ใช่ ตัดสินใจถูกแน่นอน',
-    scoreDesc5: 'ใช่แน่นอน ยังรักการทำงานที่นี่มาก',
-    qSalaryMismatch: 'เงินเดือน/สวัสดิการไม่ตรงคาดหวัง', qNoGrowth: 'ไม่มีโอกาสเติบโต',
-    qCultureMismatch: 'วัฒนธรรมองค์กรไม่เหมาะกับฉัน', qManagerMismatch: 'หัวหน้างานไม่เหมาะกับฉัน',
-    qTeamMismatch: 'ทีมงาน/เพื่อนร่วมงานไม่เหมาะกับฉัน', qWorklifeMismatch: 'Work-life balance ไม่เหมาะกับฉัน',
-    qBetterOffer: 'ได้รับ offer ที่ดีกว่าจากที่อื่น', qNotChallenging: 'งานไม่ท้าทาย/ไม่ตรงสาย',
-    leaveImprovementLabel: 'ถ้าปรับปรุงสิ่งนี้ คุณอาจจะอยู่ต่อ?', leaveImprovementPh: 'พิมพ์คำตอบของคุณ... (ไม่บังคับ)',
+    yesOpt: 'ใช่', noOpt: 'ไม่ใช่',
+    rrQPosition: 'ชื่อตำแหน่งที่สมัคร', rrQPositionPh: 'พิมพ์ชื่อตำแหน่ง...', rrOptionalHint: '(ไม่บังคับ)',
+    rrQYear: 'ปีที่สมัคร (ค.ศ.)', rrYearPh: 'เลือกปี',
+    rrQOutcome: 'ผลลัพธ์', rrOutGotOffer: 'ได้งาน', rrOutNotSelected: 'ไม่ได้งาน', rrOutWithdrew: 'ฉันขอถอนตัว', rrOutGhosted: 'บริษัทเงียบหาย ไม่แจ้งใดๆ',
+    rrQDuration: 'ระยะเวลาคัดเลือก (นับตั้งแต่ได้รับการติดต่อครั้งแรกจนสิ้นสุด)', rrDur1: '3 วัน', rrDur2: '1 สัปดาห์', rrDur3: '2–4 สัปดาห์', rrDur4: 'เกิน 1 เดือน',
+    rrQRounds: 'สัมภาษณ์กี่รอบ', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQTest: 'การทดสอบ', rrQAssignment: 'Assignment', hasOpt: 'มี', hasNotOpt: 'ไม่มี',
+    lawQFlexible: 'สถานที่ทำงานยืดหยุ่น (Flexible workplace)', lawQPeopleAsset: 'คนคือทรัพย์สินที่มีค่าที่สุดขององค์กร',
+    lawQLearningOrg: 'องค์กรแห่งการเรียนรู้ (Learning organization)', lawQOpenToStaff: 'กล้าเสี่ยง รับฟัง เปิดรับสิ่งใหม่จากพนักงาน',
+    lawQTopDown: 'Top down หรือ Bottom up', lawQPolitics: 'การเมืองในองค์กร', lawQWorkLife: 'Work-life balance',
+    lawQFlat: 'องค์กรแบบ Flat (โครงสร้างแนวราบ)', lawQPerfTenure: 'ให้ความสำคัญกับผลงาน หรืออายุงานมากกว่ากัน',
+    lawQCareerPath: 'ความชัดเจนของ career path', lawQVision: 'สื่อสาร Company Vision/Mission/Strategy ชัดเจน',
+    lawQFeedback: 'การให้ feedback จากหัวหน้างาน', lawQJdMatch: 'JD ตรงกับงานจริงที่ได้ทำ',
+    scTrue1: 'ไม่จริงเลย', scTrue2: 'ไม่ค่อยจริง', scTrue3: 'ค่อนข้างจริง', scTrue4: 'จริงมาก',
+    scClear1: 'ไม่ชัดเจนเลย', scClear2: 'ไม่ค่อยชัดเจน', scClear3: 'ค่อนข้างชัดเจน', scClear4: 'ชัดเจนมาก',
+    scMatch1: 'ไม่ตรงเลย', scMatch2: 'ไม่ค่อยตรง', scMatch3: 'ค่อนข้างตรง', scMatch4: 'ตรงมาก',
+    tdOpt1: 'Top down มาก', tdOpt2: 'Top down', tdOpt3: 'Bottom up', tdOpt4: 'Bottom up มาก',
+    polOpt1: 'ไม่มีเลย', polOpt2: 'ไม่ค่อยมี', polOpt3: 'ค่อนข้างมี', polOpt4: 'มีมาก',
+    pvtOpt1: 'ผลงาน', pvtOpt2: 'อายุงาน',
     voteSubmitBtn: 'ส่งความคิดเห็น', voteUpdateBtn: 'บันทึกการแก้ไข',
     myCompanyNavLabel: 'บริษัทของฉัน', myCommentNavLabel: 'ความคิดเห็นของฉัน',
     editBtn: 'แก้ไข', deleteRequestBtn: 'ขอลบบริษัทนี้',
@@ -1482,24 +1477,30 @@ const I18N = {
     ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
-    joinBtnLabel: 'I WORK here because...', leaveBtnLabel: 'I LEFT here because...',
-    tickerJoinBadge: 'I WORK', tickerLeaveBadge: 'I LEFT',
-    joinMainReasonLabel: 'I WORK here because...', joinMainReasonPh: 'Type your answer...',
-    leaveMainReasonLabel: 'What was the main reason you decided to leave?', leaveMainReasonPh: 'Type your answer...',
+    joinBtnLabel: 'Recruitment Reality', leaveBtnLabel: 'Life at Work',
+    tickerJoinBadge: 'APPLIED', tickerLeaveBadge: 'WORKING',
+    joinMainReasonLabel: 'Share your thoughts', joinMainReasonPh: 'Type your comment...',
+    leaveMainReasonLabel: 'Share your thoughts', leaveMainReasonPh: 'Type your comment...',
     requiredMark: '*', requiredHint: '(required)',
-    yesOpt: 'Yes', noOpt: 'No', unsureOpt: 'Not sure',
-    qSalaryGood: 'Good salary', qBenefitsGood: 'Good benefits & employee perks', qBrandReputation: 'Company reputation',
-    qGrowthOpportunity: 'Growth & learning opportunities', qChallengingWork: 'I can use my skills to the fullest',
-    qCultureTeam: 'Good culture & people', qLocationFlexibility: 'Flexible ways of working',
-    confidenceScoreLabel: 'Was joining this company the right choice for you?',
-    scoreDesc1: "Not anymore. I'm looking for a new job.", scoreDesc2: "I'm starting to have doubts.",
-    scoreDesc3: "It's okay. I'm still figuring it out.", scoreDesc4: 'Yes, definitely.',
-    scoreDesc5: "Absolutely. I still love working here.",
-    qSalaryMismatch: 'Salary/benefits didn\'t meet expectations', qNoGrowth: 'No growth opportunity',
-    qCultureMismatch: "Culture didn't fit me", qManagerMismatch: "Manager didn't fit me",
-    qTeamMismatch: "Team/colleagues didn't fit me", qWorklifeMismatch: "Work-life balance didn't fit me",
-    qBetterOffer: 'Got a better offer elsewhere', qNotChallenging: "Work wasn't challenging / not my field",
-    leaveImprovementLabel: 'What could have made you stay?', leaveImprovementPh: 'Type your answer... (optional)',
+    yesOpt: 'Yes', noOpt: 'No',
+    rrQPosition: 'Position applied for', rrQPositionPh: 'Type the job title...', rrOptionalHint: '(optional)',
+    rrQYear: 'Year applied', rrYearPh: 'Select year',
+    rrQOutcome: 'Outcome', rrOutGotOffer: 'Got the job', rrOutNotSelected: 'Did not get the job', rrOutWithdrew: 'I withdrew', rrOutGhosted: 'Company went silent, no notice at all',
+    rrQDuration: 'Selection duration (from first contact until the end)', rrDur1: '3 days', rrDur2: '1 week', rrDur3: '2–4 weeks', rrDur4: 'Over 1 month',
+    rrQRounds: 'Number of interview rounds', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQTest: 'Test', rrQAssignment: 'Assignment', hasOpt: 'Yes', hasNotOpt: 'No',
+    lawQFlexible: 'Flexible workplace', lawQPeopleAsset: 'People are our greatest asset',
+    lawQLearningOrg: 'Learning organization', lawQOpenToStaff: 'Willing to take risks, listen to and embrace new ideas from employees',
+    lawQTopDown: 'Top down or Bottom up', lawQPolitics: 'Office politics', lawQWorkLife: 'Work-life balance',
+    lawQFlat: 'Flat organization', lawQPerfTenure: 'What matters more: performance or tenure?',
+    lawQCareerPath: 'Clarity of career path', lawQVision: 'Company Vision/Mission/Strategy is clearly communicated',
+    lawQFeedback: 'Feedback from my manager', lawQJdMatch: 'The JD matches the work I actually did',
+    scTrue1: 'Not true at all', scTrue2: 'Not really true', scTrue3: 'Fairly true', scTrue4: 'Very true',
+    scClear1: 'Not clear at all', scClear2: 'Not very clear', scClear3: 'Fairly clear', scClear4: 'Very clear',
+    scMatch1: 'Not matching at all', scMatch2: 'Not really matching', scMatch3: 'Fairly matching', scMatch4: 'Very matching',
+    tdOpt1: 'Very top down', tdOpt2: 'Top down', tdOpt3: 'Bottom up', tdOpt4: 'Very bottom up',
+    polOpt1: 'None at all', polOpt2: 'Not much', polOpt3: 'Fairly present', polOpt4: 'A lot',
+    pvtOpt1: 'Performance', pvtOpt2: 'Tenure',
     voteSubmitBtn: 'Submit', voteUpdateBtn: 'Save changes',
     myCompanyNavLabel: 'My Company', myCommentNavLabel: 'My Comment',
     editBtn: 'Edit', deleteRequestBtn: 'Request to delete this company',
@@ -3708,102 +3709,115 @@ function handleVoteClick(topicId, side, btnEl){
   openModal('voteConfirmModal');
 }
 
-// คำถามย่อย 7 ข้อ (join) / 8 ข้อ (leave) แบบ Yes/No/Unsure ทุกข้อ optional (ไม่บังคับตอบ ต่างจาก main reason ที่บังคับ)
-const JOIN_QUESTIONS = ['join_salary_good','join_benefits_good','join_brand_reputation','join_growth_opportunity','join_challenging_work','join_culture_team','join_location_flexibility'];
-const JOIN_QUESTION_LABELS = { join_salary_good:'qSalaryGood', join_benefits_good:'qBenefitsGood', join_brand_reputation:'qBrandReputation', join_growth_opportunity:'qGrowthOpportunity', join_challenging_work:'qChallengingWork', join_culture_team:'qCultureTeam', join_location_flexibility:'qLocationFlexibility' };
-const LEAVE_QUESTIONS = ['leave_salary_benefits_mismatch','leave_no_growth','leave_culture_mismatch','leave_manager_mismatch','leave_team_mismatch','leave_worklife_mismatch','leave_better_offer','leave_not_challenging'];
-const LEAVE_QUESTION_LABELS = { leave_salary_benefits_mismatch:'qSalaryMismatch', leave_no_growth:'qNoGrowth', leave_culture_mismatch:'qCultureMismatch', leave_manager_mismatch:'qManagerMismatch', leave_team_mismatch:'qTeamMismatch', leave_worklife_mismatch:'qWorklifeMismatch', leave_better_offer:'qBetterOffer', leave_not_challenging:'qNotChallenging' };
+/* ================= VOTE QUESTIONS (concept ใหม่: job-seeker focus) =================
+ * ฝั่ง A = Recruitment Reality (ประสบการณ์ตอนสมัครงาน) / ฝั่ง B = Life at Work (ชีวิตเมื่อเข้าทำงานจริง)
+ * ทุกคำถามนิยามไว้ที่เดียวใน VOTE_SCHEMA ฟอร์ม / ตัวตรวจครบ / ตัวเก็บคำตอบ / answer grid อ่านจากที่นี่หมด
+ * ค่า (value) ที่ส่งเข้า backend เป็นรหัสอังกฤษ ต้องตรงกับ VOTE_SCHEMA ใน tokbud.js เป๊ะ ส่วนป้ายที่แสดงดึงจาก dict TH/EN
+ * type: 'text' (พิมพ์เอง) | 'year' (dropdown ค.ศ. ย้อนหลัง 80 ปี) | 'choice' (เลือก 1 ใน opts = [[ค่า, คีย์ป้าย], ...]) */
+const OPT_HAS = [['yes','hasOpt'],['no','hasNotOpt']];
+const OPT_YES_NO = [['yes','yesOpt'],['no','noOpt']];
+const OPT_TRUE = [['not_at_all','scTrue1'],['not_really','scTrue2'],['fairly_true','scTrue3'],['very_true','scTrue4']];
+const OPT_CLEAR = [['not_at_all','scClear1'],['not_very','scClear2'],['fairly_clear','scClear3'],['very_clear','scClear4']];
+const OPT_MATCH = [['not_at_all','scMatch1'],['not_really','scMatch2'],['fairly_match','scMatch3'],['very_match','scMatch4']];
+const VOTE_SCHEMA = {
+  A: [
+    { f:'rr_position', type:'text', label:'rrQPosition', ph:'rrQPositionPh', required:false, max:200 },
+    { f:'rr_year_applied', type:'year', label:'rrQYear', required:true },
+    { f:'rr_outcome', type:'choice', label:'rrQOutcome', required:true, opts:[['got_offer','rrOutGotOffer'],['not_selected','rrOutNotSelected'],['withdrew','rrOutWithdrew'],['ghosted','rrOutGhosted']] },
+    { f:'rr_selection_duration', type:'choice', label:'rrQDuration', required:true, opts:[['3_days','rrDur1'],['1_week','rrDur2'],['2_4_weeks','rrDur3'],['over_1_month','rrDur4']] },
+    { f:'rr_interview_rounds', type:'choice', label:'rrQRounds', required:true, opts:[['1','rrRounds1'],['2','rrRounds2'],['3','rrRounds3'],['4_plus','rrRounds4']] },
+    { f:'rr_has_test', type:'choice', label:'rrQTest', required:true, opts:OPT_HAS },
+    { f:'rr_has_assignment', type:'choice', label:'rrQAssignment', required:true, opts:OPT_HAS }
+  ],
+  B: [
+    { f:'law_flexible_workplace', type:'choice', label:'lawQFlexible', required:true, opts:OPT_TRUE },
+    { f:'law_people_asset', type:'choice', label:'lawQPeopleAsset', required:true, opts:OPT_TRUE },
+    { f:'law_learning_org', type:'choice', label:'lawQLearningOrg', required:true, opts:OPT_TRUE },
+    { f:'law_open_to_staff', type:'choice', label:'lawQOpenToStaff', required:true, opts:OPT_TRUE },
+    { f:'law_top_down_bottom_up', type:'choice', label:'lawQTopDown', required:true, opts:[['very_top_down','tdOpt1'],['top_down','tdOpt2'],['bottom_up','tdOpt3'],['very_bottom_up','tdOpt4']] },
+    { f:'law_office_politics', type:'choice', label:'lawQPolitics', required:true, opts:[['none','polOpt1'],['little','polOpt2'],['fairly','polOpt3'],['a_lot','polOpt4']] },
+    { f:'law_work_life_balance', type:'choice', label:'lawQWorkLife', required:true, opts:OPT_TRUE },
+    { f:'law_flat_org', type:'choice', label:'lawQFlat', required:true, opts:OPT_YES_NO },
+    { f:'law_performance_vs_tenure', type:'choice', label:'lawQPerfTenure', required:true, opts:[['performance','pvtOpt1'],['tenure','pvtOpt2']] },
+    { f:'law_career_path_clarity', type:'choice', label:'lawQCareerPath', required:true, opts:OPT_CLEAR },
+    { f:'law_vision_communication', type:'choice', label:'lawQVision', required:true, opts:OPT_CLEAR },
+    { f:'law_manager_feedback', type:'choice', label:'lawQFeedback', required:true, opts:OPT_CLEAR },
+    { f:'law_jd_match', type:'choice', label:'lawQJdMatch', required:true, opts:OPT_MATCH }
+  ]
+};
+const VOTE_QUESTION_BY_FIELD = {};
+VOTE_SCHEMA.A.concat(VOTE_SCHEMA.B).forEach(q => { VOTE_QUESTION_BY_FIELD[q.f] = q; });
 
-/* --- answer grid (read-only): แสดงคำตอบ Yes/No/Not sure + คะแนนตัดสินใจถูกไหม ใต้คอมเมนต์แต่ละอัน
-   ใช้ JOIN_QUESTIONS/LEAVE_QUESTIONS/JOIN_QUESTION_LABELS/LEAVE_QUESTION_LABELS ชุดเดียวกับฟอร์มโหวตด้านบน
-   ให้ label ตรงกันเป๊ะเสมอ ไม่ต้อง maintain รายการคำถามซ้ำ 2 ที่ --- */
-const AG_ICON_YES = '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,10 8,14 16,6"/></svg>';
-const AG_ICON_NO = '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>';
-const AG_ICON_UNSURE = '<svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="10" x2="16" y2="10"/></svg>';
-
-function answerCellHTML(labelText, iconSvg, valueText, colorClass){
+/* --- answer grid (read-only): แสดงคำตอบใต้คอมเมนต์แต่ละอัน — คำถามสีดำ คำตอบสีน้ำเงินของเว็บ (สีกลางทุกข้อ
+   ไม่ตัดสินเองว่าคำตอบไหนดี/ไม่ดี เพราะขึ้นอยู่กับคนอ่าน) ชื่อตำแหน่ง+ปีที่สมัครของฝั่ง A ขึ้นเป็นบรรทัดหัวเหนือคอมเมนต์แทน --- */
+function answerCellHTML(labelText, valueText){
   return `<div class="answer-cell">
     <div class="answer-cell-label">${escapeHtml(labelText)}</div>
-    <div class="answer-cell-value ${colorClass}">${iconSvg}<span>${escapeHtml(valueText)}</span></div>
+    <div class="answer-cell-value">${escapeHtml(valueText)}</div>
   </div>`;
 }
 
-// เกรดสีคะแนน 1-5: 1-2=แดง(ไม่โอเค) 3=เทา(เฉยๆ) 4-5=เขียว(โอเค) — ตามที่ Pop ยืนยัน ให้ความรู้สึกบวก/ลบเหมือนเซลล์ YNU อื่น
-function scoreColorClass(n){
-  n = Number(n);
-  if(n <= 2) return 'av-score-low';
-  if(n === 3) return 'av-score-mid';
-  return 'av-score-high';
+function voteOptionText(q, value){
+  const o = (q.opts || []).find(x => x[0] === String(value));
+  return o ? t18n(o[1]) : '';
 }
 
 function buildAnswerGridHTML(side, data){
   data = data || {};
-  const fields = side === 'A' ? JOIN_QUESTIONS : LEAVE_QUESTIONS;
-  const labels = side === 'A' ? JOIN_QUESTION_LABELS : LEAVE_QUESTION_LABELS;
-
-  let cells = fields.map(f => {
-    const v = data[f];
-    let icon = AG_ICON_UNSURE, text = t18n('unsureOpt'), cls = 'av-unsure';
-    if(v === 'yes'){ icon = AG_ICON_YES; text = t18n('yesOpt'); cls = 'av-yes'; }
-    else if(v === 'no'){ icon = AG_ICON_NO; text = t18n('noOpt'); cls = 'av-no'; }
-    return answerCellHTML(t18n(labels[f]), icon, text, cls);
-  }).join('');
-
-  if(side === 'A' && data.join_confidence_score){
-    cells += answerCellHTML(t18n('confidenceScoreLabel'), '', t18n('scoreDesc' + data.join_confidence_score), scoreColorClass(data.join_confidence_score));
-  }
-
+  const cells = (VOTE_SCHEMA[side] || [])
+    .filter(q => q.type === 'choice')
+    .map(q => answerCellHTML(t18n(q.label), voteOptionText(q, data[q.f]) || '–'))
+    .join('');
   return `<div class="answer-grid">${cells}</div>`;
 }
 
-function ynuRowHTML(fieldId, labelKey, prefill){
-  const v = prefill || '';
-  return `<div class="ynu-row" data-ynu-field="${fieldId}" style="margin-bottom:14px;">
-    <div class="ynu-question-label">${t18n(labelKey)}</div>
-    <div class="ynu-btns" style="display:flex;gap:6px;">
-      <button type="button" class="ynu-btn${v==='yes'?' selected':''}" data-ynu-value="yes">${t18n('yesOpt')}</button>
-      <button type="button" class="ynu-btn${v==='no'?' selected':''}" data-ynu-value="no">${t18n('noOpt')}</button>
-      <button type="button" class="ynu-btn${v==='unsure'?' selected':''}" data-ynu-value="unsure">${t18n('unsureOpt')}</button>
-    </div>
+// บรรทัดหัวเหนือคอมเมนต์ (เฉพาะฝั่ง A): "ตำแหน่ง · ปี" — ไม่มีตำแหน่งก็แสดงแค่ปี ไม่มีทั้งคู่ก็ไม่แสดงอะไร
+function buildCommentHeadHTML(side, data){
+  if(side !== 'A' || !data) return '';
+  const parts = [];
+  const pos = String(data.rr_position || '').trim();
+  const yr = String(data.rr_year_applied || '').trim();
+  if(pos) parts.push(escapeHtml(pos));
+  if(yr) parts.push(escapeHtml(yr));
+  return parts.length ? `<div class="comment-head">${parts.join(' · ')}</div>` : '';
+}
+
+/* --- ฟอร์มคำถาม --- */
+function yearOptionsHTML(selected){
+  const cy = new Date().getFullYear();
+  const sel = Number(selected) || 0;
+  const maxY = Math.max(cy, sel || cy);
+  const minY = Math.min(cy - 80, sel || cy);
+  let html = `<option value="">${escapeHtml(t18n('rrYearPh'))}</option>`;
+  for(let y = maxY; y >= minY; y--){
+    html += `<option value="${y}"${sel === y ? ' selected' : ''}>${y}</option>`;
+  }
+  return html;
+}
+
+function questionRowHTML(q, prefill){
+  const v = (prefill === undefined || prefill === null) ? '' : String(prefill);
+  const optionalMark = q.required ? '' : ` <span style="font-weight:400;color:var(--text-muted);">${escapeHtml(t18n('rrOptionalHint'))}</span>`;
+  let control;
+  if(q.type === 'text'){
+    control = `<input type="text" class="vq-input" maxlength="${q.max || 200}" value="${escapeHtml(v)}" placeholder="${escapeHtml(t18n(q.ph))}">`;
+  } else if(q.type === 'year'){
+    control = `<select class="vq-input vq-select">${yearOptionsHTML(v)}</select>`;
+  } else {
+    control = `<div class="opt-btns">${q.opts.map(o =>
+      `<button type="button" class="ynu-btn${v === o[0] ? ' selected' : ''}" data-ynu-value="${o[0]}">${escapeHtml(t18n(o[1]))}</button>`
+    ).join('')}</div>`;
+  }
+  return `<div class="ynu-row" data-ynu-field="${q.f}" style="margin-bottom:14px;">
+    <div class="ynu-question-label">${escapeHtml(t18n(q.label))}${optionalMark}</div>
+    ${control}
     <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
   </div>`;
 }
 
-function scoreRowHTML(n, score){
-  return `<button type="button" class="score-vertical-row${String(score)===String(n)?' selected':''}" data-score-value="${n}">
-    <span class="score-num">${n}</span><span class="score-desc">${t18n('scoreDesc'+n)}</span>
-  </button>`;
-}
-
 function buildVoteQuestionsHTML(side, prefillData){
   prefillData = prefillData || {};
-  if(side === 'A'){
-    const rows = JOIN_QUESTIONS.map(f => ynuRowHTML(f, JOIN_QUESTION_LABELS[f], prefillData[f])).join('');
-    const score = prefillData.join_confidence_score || '';
-    const scoreRows = [1,2,3,4,5].map(n => scoreRowHTML(n, score)).join('');
-    return `${rows}
-      <div class="ynu-row" data-ynu-field="join_confidence_score" style="margin-bottom:6px;">
-        <div class="ynu-question-label">${t18n('confidenceScoreLabel')}</div>
-        <div id="confidenceScoreBtns">${scoreRows}</div>
-        <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
-      </div>`;
-  }
-  const rows = LEAVE_QUESTIONS.map(f => ynuRowHTML(f, LEAVE_QUESTION_LABELS[f], prefillData[f])).join('');
-  // FIX x2 (feedback ของ Pop):
-  // 1) label นี้เดิมใช้ inline style เดี่ยวๆ (13px ไม่ตัวหนา) ไม่ได้ใช้ class .ynu-question-label เหมือนคำถาม
-  //    ข้ออื่นทุกข้อ (13.5px + ตัวหนา) เลยดูแตกต่างกันโดยไม่ตั้งใจ -> เปลี่ยนมาใช้ class เดียวกันให้เหมือนกันหมด
-  // 2) เดิมไม่มีตัวนับตัวอักษรมุมขวาล่างเหมือนช่อง comment หลัก ทั้งที่ maxlength เท่ากัน (5000) -> เพิ่มตัวนับ
-  //    ด้วย oninput inline ตรงนี้เลย (ไม่ผูก addEventListener แยกเหมือน voteCommentInput เพราะ textarea นี้ถูก
-  //    re-render ทิ้ง/สร้างใหม่ทุกครั้งที่เปิดฟอร์มผ่าน innerHTML — ผูก listener แยกแล้วจะหลุดทุกรอบ)
-  const leaveImprovementLen = String(prefillData.leave_improvement_suggestion || '').length;
-  return `${rows}
-    <div class="ynu-row" style="margin-bottom:6px;">
-      <div class="ynu-question-label">${t18n('leaveImprovementLabel')}</div>
-      <textarea id="leaveImprovementInput" maxlength="5000" rows="2" placeholder="${t18n('leaveImprovementPh')}"
-        oninput="document.getElementById('leaveImprovementCounter').textContent=this.value.length+'/5000'"
-        style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;outline:none;background:var(--bg);resize:vertical;">${escapeHtml(prefillData.leave_improvement_suggestion || '')}</textarea>
-      <div id="leaveImprovementCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">${leaveImprovementLen}/5000</div>
-    </div>`;
+  return (VOTE_SCHEMA[side] || []).map(q => questionRowHTML(q, prefillData[q.f])).join('');
 }
 
 function clearYnuMissing(row){
@@ -3821,40 +3835,64 @@ function bindVoteQuestionToggles(){
       clearYnuMissing(row);
     });
   });
-  document.querySelectorAll('#confidenceScoreBtns .score-vertical-row').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('#confidenceScoreBtns .score-vertical-row').forEach(b=> b.classList.remove('selected'));
-      btn.classList.add('selected');
-      clearYnuMissing(btn.closest('.ynu-row'));
-    });
+  document.querySelectorAll('.ynu-row[data-ynu-field] .vq-select').forEach(sel=>{
+    sel.addEventListener('change', ()=> clearYnuMissing(sel.closest('.ynu-row')));
   });
 }
 
-function collectVoteQuestionAnswers(side){
+function collectVoteQuestionAnswers(){
   const answers = {};
   document.querySelectorAll('.ynu-row[data-ynu-field]').forEach(row=>{
-    const field = row.dataset.ynuField;
-    const selected = row.querySelector('.ynu-btn.selected');
-    answers[field] = selected ? selected.dataset.ynuValue : '';
+    const q = VOTE_QUESTION_BY_FIELD[row.dataset.ynuField];
+    if(!q) return;
+    if(q.type === 'text'){
+      const el = row.querySelector('.vq-input');
+      answers[q.f] = el ? el.value.trim() : '';
+    } else if(q.type === 'year'){
+      const el = row.querySelector('.vq-select');
+      answers[q.f] = el ? el.value : '';
+    } else {
+      const selected = row.querySelector('.ynu-btn.selected');
+      answers[q.f] = selected ? selected.dataset.ynuValue : '';
+    }
   });
-  if(side === 'A'){
-    const scoreBtn = document.querySelector('#confidenceScoreBtns .score-vertical-row.selected');
-    answers.join_confidence_score = scoreBtn ? scoreBtn.dataset.scoreValue : '';
-  } else {
-    const improvementEl = document.getElementById('leaveImprovementInput');
-    answers.leave_improvement_suggestion = improvementEl ? improvementEl.value.trim() : '';
-  }
   return answers;
 }
 
+// ข้อนี้ตอบแล้วหรือยัง (ข้อที่ไม่บังคับ = ผ่านเสมอ)
+function voteRowAnswered(row){
+  const q = VOTE_QUESTION_BY_FIELD[row.dataset.ynuField];
+  if(!q || !q.required) return true;
+  if(q.type === 'year'){
+    const el = row.querySelector('.vq-select');
+    return !!(el && el.value);
+  }
+  return !!row.querySelector('.ynu-btn.selected');
+}
+
+// ไล่เช็คทุกข้อใน scope ตามลำดับบนหน้าจอ: ข้อที่ขาดล้อมกรอบแดง + แสดง hint (ไม่ลบข้อมูลที่กรอกไว้) คืน element
+// ของข้อแรกที่ขาด (null = ครบทุกข้อ)
+function markMissingVoteQuestions(scopeSelector){
+  let firstMissingRow = null;
+  document.querySelectorAll(`${scopeSelector} .ynu-row[data-ynu-field]`).forEach(row=>{
+    if(voteRowAnswered(row)){
+      clearYnuMissing(row);
+    } else {
+      row.classList.add('ynu-missing');
+      const hint = row.querySelector('.ynu-missing-hint');
+      if(hint) hint.style.display = 'block';
+      if(!firstMissingRow) firstMissingRow = row;
+    }
+  });
+  return firstMissingRow;
+}
+
 // FIX ใหญ่ (บั๊กที่ Pop เจอ): เดิมช่อง comment ว่าง -> เรียก showInfoPopup() ซึ่งลบ/ซ่อนฟอร์มทั้งใบทิ้งก่อนโชว์
-// ข้อความเตือน (ดู showInfoPopup ด้านบน) กด "Got it" แล้วเลยเจอฟอร์มว่างเปล่า/โดนพากลับ home เพราะข้อมูลที่กรอก
-// ไปแล้วถูกลบไปตั้งแต่ก่อนกด Got it ด้วยซ้ำ ส่วนคำถาม Yes/No/Not sure ใช้วิธีล้อมกรอบแดง+เลื่อนจอไปข้อที่ขาด
-// (ไม่ลบข้อมูล) ถูกต้องอยู่แล้ว -> รวม 2 การเช็คเป็นฟังก์ชันเดียว ให้ช่อง comment ใช้วิธีเดียวกับคำถามข้ออื่นๆ
-// เช็คครบทุกข้อพร้อมกันในรอบเดียว (ไม่ใช่เช็ค comment ก่อนแล้วค่อยเช็ค YNU ทีหลัง) ตามที่ Pop ขอ แล้วเลื่อนจอไป
-// ข้อแรกสุดที่ขาดเท่านั้น ไม่ปิด/ล้าง modal หรือข้อมูลที่กรอกไว้แล้วเลยแม้แต่นิดเดียว
+// ข้อความเตือน กด "Got it" แล้วเจอฟอร์มว่างเปล่า เพราะข้อมูลที่กรอกไปแล้วถูกลบไปก่อน -> เช็คทุกข้อ (รวม comment)
+// พร้อมกันในรอบเดียวแบบล้อมกรอบแดง + hint ไม่ลบ/ไม่ปิด modal/ไม่ล้างข้อมูลที่กรอกไว้เลยแม้แต่นิดเดียว แล้วเลื่อนจอไป
+// ข้อแรกที่ขาด (ลำดับตามหน้าจอ: คำถามทั้งหมดก่อน ช่อง comment อยู่ล่างสุด)
 function validateVoteFormComplete(){
-  let firstMissingEl = null;
+  let firstMissingEl = markMissingVoteQuestions('#voteQuestionsWrap');
 
   const commentWrap = document.getElementById('voteCommentWrap');
   const commentInput = document.getElementById('voteCommentInput');
@@ -3864,26 +3902,8 @@ function validateVoteFormComplete(){
   } else {
     commentWrap.classList.add('ynu-missing');
     if(commentHint) commentHint.style.display = 'block';
-    firstMissingEl = commentWrap;
+    if(!firstMissingEl) firstMissingEl = commentWrap;
   }
-
-  document.querySelectorAll('#voteQuestionsWrap .ynu-row[data-ynu-field]').forEach(row=>{
-    const field = row.dataset.ynuField;
-    let answered;
-    if(field === 'join_confidence_score'){
-      answered = !!row.querySelector('#confidenceScoreBtns .score-vertical-row.selected');
-    } else {
-      answered = !!row.querySelector('.ynu-btn.selected');
-    }
-    if(answered){
-      clearYnuMissing(row);
-    } else {
-      row.classList.add('ynu-missing');
-      const hint = row.querySelector('.ynu-missing-hint');
-      if(hint) hint.style.display = 'block';
-      if(!firstMissingEl) firstMissingEl = row;
-    }
-  });
 
   if(firstMissingEl){
     firstMissingEl.scrollIntoView({ behavior:'smooth', block:'center' });
@@ -3996,7 +4016,7 @@ async function loadMoreComments(isFirst){
     listEl.innerHTML = `<div class="comment-empty">${t18n('commentEmptyMsg')}</div>`;
   } else {
     listEl.insertAdjacentHTML('beforeend', res.comments.map(c => `
-      <div class="comment-item">${linkifyEscapedText(escapeHtml(c.comment))}${buildAnswerGridHTML(CM_STATE.side, c)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
+      <div class="comment-item">${buildCommentHeadHTML(CM_STATE.side, c)}${linkifyEscapedText(escapeHtml(c.comment))}${buildAnswerGridHTML(CM_STATE.side, c)}<span class="comment-item-time">${formatCommentTime(c.last_changed_at)}</span></div>
     `).join(''));
   }
 
