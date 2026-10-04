@@ -781,7 +781,13 @@ async function actionGetMyDashboard(p) {
   const user = findUserInMap(userMap, p.session_token);
   if (!user) return fail('กรุณา login ก่อน / Please log in first');
 
-  const myCompanies = data.companies.filter(t => t.user_id === user.user_id);
+  // feedback ของ Pop (4 ต.ค.): บริษัทที่ admin อนุมัติลบแล้ว (deleterequests.status='delete' หรือ company.status='deleted')
+  // ต้องไม่ถูกนับในตัวเลข Dashboard ของเจ้าของอีก (บริษัท + โหวตทั้งหมดที่อยู่ใต้บริษัทนั้น) เพื่อให้ข้อมูลตรงกับ
+  // ที่เห็นใน My Company เสมอ แม้ตอนนี้หน้าเว็บยังไม่แสดงตัวเลขนี้ก็ตาม (เตรียมข้อมูลให้ถูกไว้ก่อนเปิดใช้)
+  const hiddenIds = getHiddenCompanyIds(data.deleteRequests);
+  const myCompanies = data.companies.filter(t =>
+    t.user_id === user.user_id && t.status !== 'deleted' && hiddenIds.indexOf(t.company_id) === -1
+  );
   const myCompanyIds = myCompanies.map(t => t.company_id);
   const myVotes = data.votes.filter(v => myCompanyIds.indexOf(v.company_id) !== -1);
 
@@ -1588,9 +1594,14 @@ async function actionGetMyComments(p) {
   const companyMap = {};
   companies.forEach(c => { companyMap[c.company_id] = c; });
 
+  // feedback ของ Pop (4 ต.ค.): บริษัทที่ถูกลบแล้ว (admin อนุมัติ) คอมเมนต์/คำตอบทั้งหมดที่อยู่ใต้บริษัทนั้นถือว่าถูกลบตามไปด้วย
+  // ไม่แสดงใน My Comment ของใครทั้งนั้น (ซ่อนตอนอ่านจาก company.status / deleterequests ไม่ได้ลบแถวโหวตออกจากชีท)
+  const hiddenIds = getHiddenCompanyIds(rowsToObjects(await getSheetRows(SHEETS.DELETEREQUESTS)));
+  const isCompanyGone = (id) => hiddenIds.indexOf(id) !== -1 || !!(companyMap[id] && companyMap[id].status === 'deleted');
+
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const votes = rowsToObjects(voteRows);
-  const myVotes = votes.filter(v => v.user_id === user.user_id);
+  const myVotes = votes.filter(v => v.user_id === user.user_id && !isCompanyGone(v.company_id));
   myVotes.sort((a, b) => new Date(b.last_changed_at) - new Date(a.last_changed_at));
 
   return ok({
