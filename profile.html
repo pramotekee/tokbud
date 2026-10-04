@@ -33,8 +33,8 @@
     --text: #0B1D7F;         /* ใช้โทนน้ำเงินเข้มแทนดำ ให้ฟีลแบรนด์ชัด แต่ยังคมชัดอ่านง่าย */
     --text-muted: #5C6B9E;
     --line: #DCE4F7;
-    --side-a: #2143C8;        /* Join because... = น้ำเงินฟ้า */
-    --side-b: #F5D149;        /* Leave because... = เหลืองสด */
+    --side-a: #2143C8;        /* ฝั่ง A (Recruitment Reality / apply) = น้ำเงินฟ้า */
+    --side-b: #F5D149;        /* ฝั่ง B (Life at Work / work) = เหลืองสด */
     --danger: #D64545;
     --radius: 16px;
     --shadow: 0 4px 20px rgba(11, 29, 127, 0.12);
@@ -400,6 +400,8 @@
   .opt-btns{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:6px; }
   .opt-btns .ynu-btn{ padding:9px 6px; line-height:1.3; white-space:normal; word-break:break-word; }
   .vq-input{ width:100%; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:13.5px; outline:none; background:var(--bg); color:var(--text); }
+  .ynu-question-hint{ font-size:11.5px; line-height:1.4; color:var(--text-muted); margin-bottom:6px; }
+  .opt-btns .ynu-btn:last-child:nth-child(odd){ grid-column:1 / -1; }
   .comment-head{ font-size:12px; font-weight:700; color:var(--primary); margin-bottom:6px; word-break:break-word; }
   .ynu-question-label{ font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
   .ynu-row.ynu-missing{ border:1.5px solid #E5484D; border-radius:10px; padding:8px; margin-left:-8px; margin-right:-8px; }
@@ -1024,24 +1026,24 @@ const I18N = {
     dcAlreadyPendingTitle: 'มีคำขอลบที่รอดำเนินการอยู่แล้ว',
     dcAlreadyPendingMsg: 'คุณเคยส่งคำร้องขอลบบริษัทนี้ไปแล้ว โปรดรอทีมงานพิจารณา เมื่ออนุมัติแล้วชื่อบริษัทนี้จะไม่ปรากฏให้เห็นอีกต่อไป แต่หากคุณเปลี่ยนใจ ไม่ต้องการลบแล้ว โปรดเลือก "Cancel request"',
     dcCancelRequestBtn: 'Cancel request',
-    joinBtnLabel: 'ประสบการณ์การสมัครงาน', leaveBtnLabel: 'ชีวิตการทำงานจริง',
+    applyBtnLabel: 'ประสบการณ์การสมัครงาน', workBtnLabel: 'ชีวิตการทำงานจริง',
     mtEmptyState: 'ยังไม่มีบริษัทที่คุณสร้าง', mcEmptyState: 'ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้',
     ecModalTitle: 'แก้ไขคอมเมนต์',
-    joinMainReasonLabel: 'แสดงความคิดเห็น',
-    leaveMainReasonLabel: 'แสดงความคิดเห็น',
+    applyCommentLabel: 'แสดงความคิดเห็น',
+    workCommentLabel: 'แสดงความคิดเห็น',
     requiredMark: '*', yesOpt: 'ใช่', noOpt: 'ไม่ใช่',
-    rrQPosition: 'ชื่อตำแหน่งที่สมัคร', rrQPositionPh: 'พิมพ์ชื่อตำแหน่ง...', rrOptionalHint: '(ไม่บังคับ)',
+    rrQPosition: 'ชื่อตำแหน่งที่สมัคร', lawQFeedbackHint: '(รู้ว่าทำดีตรงไหน ต้องปรับตรงไหน)', lawQFlatHint: '(ลำดับชั้นน้อย ติดต่อข้ามระดับได้ง่าย)', lawQPoliticsHint: '(การแบ่งฝ่าย เส้นสาย การแข่งขันเชิงอำนาจ)', lawQTopDownHint: '(Top down = ผู้บริหารสั่งลงมา / Bottom up = มาจากข้อเสนอของพนักงาน)', lawQFlexibleHint: '(สถานที่/เวลาทำงาน เช่น Hybrid, WFH, เข้า-ออกงานยืดหยุ่น)', rrQAssignmentHint: '(โจทย์งานที่ต้องทำแล้วส่ง)', rrQTestHint: '(เช่น ข้อสอบ ทดสอบภาษา/ทักษะ/จิตวิทยา)', rrRounds0: 'ไม่ได้สัมภาษณ์', rrQRoundsHint: '(นับรวมทุกรูปแบบ เช่น โทรคัดกรอง ออนไลน์ ที่บริษัท)', rrQDurationHint: '(ตั้งแต่บริษัทติดต่อครั้งแรก จนรู้ผลหรือติดต่อครั้งสุดท้าย)', rrQPositionPh: 'พิมพ์ชื่อตำแหน่ง...', rrOptionalHint: '(ไม่บังคับ)',
     rrQYear: 'ปีที่สมัคร (ค.ศ.)', rrYearPh: 'เลือกปี',
-    rrQOutcome: 'ผลลัพธ์', rrOutGotOffer: 'ได้งาน', rrOutNotSelected: 'ไม่ได้งาน', rrOutWithdrew: 'ฉันขอถอนตัว', rrOutGhosted: 'บริษัทเงียบหาย ไม่แจ้งใดๆ',
-    rrQDuration: 'ระยะเวลาคัดเลือก (นับตั้งแต่ได้รับการติดต่อครั้งแรกจนสิ้นสุด)', rrDur1: '3 วัน', rrDur2: '1 สัปดาห์', rrDur3: '2–4 สัปดาห์', rrDur4: 'เกิน 1 เดือน',
-    rrQRounds: 'สัมภาษณ์กี่รอบ', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
-    rrQTest: 'การทดสอบ', rrQAssignment: 'Assignment', hasOpt: 'มี', hasNotOpt: 'ไม่มี',
-    lawQFlexible: 'สถานที่ทำงานยืดหยุ่น (Flexible workplace)', lawQPeopleAsset: 'คนคือทรัพย์สินที่มีค่าที่สุดขององค์กร',
-    lawQLearningOrg: 'องค์กรแห่งการเรียนรู้ (Learning organization)', lawQOpenToStaff: 'กล้าเสี่ยง รับฟัง เปิดรับสิ่งใหม่จากพนักงาน',
-    lawQTopDown: 'Top down หรือ Bottom up', lawQPolitics: 'การเมืองในองค์กร', lawQWorkLife: 'Work-life balance',
-    lawQFlat: 'องค์กรแบบ Flat (โครงสร้างแนวราบ)', lawQPerfTenure: 'ให้ความสำคัญกับผลงาน หรืออายุงานมากกว่ากัน',
-    lawQCareerPath: 'ความชัดเจนของ career path', lawQVision: 'สื่อสาร Company Vision/Mission/Strategy ชัดเจน',
-    lawQFeedback: 'การให้ feedback จากหัวหน้างาน', lawQJdMatch: 'JD ตรงกับงานจริงที่ได้ทำ',
+    rrQOutcome: 'ผลลัพธ์', rrOutGotOffer: 'ได้รับ offer', rrOutNotSelected: 'ไม่ผ่านการคัดเลือก (บริษัทแจ้งผล)', rrOutWithdrew: 'ฉันถอนตัวเอง', rrOutGhosted: 'บริษัทเงียบหาย ไม่แจ้งผล',
+    rrQDuration: 'ระยะเวลาคัดเลือกทั้งกระบวนการ', rrDur1: 'ภายใน 3 วัน', rrDur2: '4 วัน–1 สัปดาห์', rrDur3: '1–4 สัปดาห์', rrDur4: 'เกิน 1 เดือน',
+    rrQRounds: 'จำนวนรอบสัมภาษณ์ทั้งหมด', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQTest: 'มีการทดสอบระหว่างคัดเลือกไหม', rrQAssignment: 'มี Assignment ไหม', hasOpt: 'มี', hasNotOpt: 'ไม่มี',
+    lawQFlexible: 'ที่นี่ทำงานได้ยืดหยุ่นจริง', lawQPeopleAsset: 'บริษัทปฏิบัติกับพนักงานสมกับที่พูดว่า “คนคือทรัพย์สินที่มีค่าที่สุดขององค์กร”',
+    lawQLearningOrg: 'องค์กรส่งเสริมการเรียนรู้และพัฒนาพนักงานอย่างจริงจัง', lawQOpenToStaff: 'ผู้บริหารและหัวหน้ารับฟังและเปิดรับไอเดียใหม่ๆ จากพนักงาน',
+    lawQTopDown: 'การตัดสินใจส่วนใหญ่เป็นแบบไหน', lawQPolitics: 'การเมืองในองค์กรมีมากแค่ไหน', lawQWorkLife: 'ที่นี่แบ่งเวลางานกับชีวิตส่วนตัวได้ดี',
+    lawQFlat: 'เป็นองค์กรแบบ Flat ใช่หรือไม่', lawQPerfTenure: 'ในการเลื่อนตำแหน่งและขึ้นเงินเดือน บริษัทให้ความสำคัญกับอะไรมากกว่า',
+    lawQCareerPath: 'เส้นทางความก้าวหน้า (career path) ในสายงานของฉันชัดเจน', lawQVision: 'บริษัทสื่อสาร Vision / Mission / Strategy ได้ชัดเจน',
+    lawQFeedback: 'หัวหน้าให้ feedback ชัดเจน', lawQJdMatch: 'JD (Job Description) ตรงกับงานจริงที่ได้ทำ',
     scTrue1: 'ไม่จริงเลย', scTrue2: 'ไม่ค่อยจริง', scTrue3: 'ค่อนข้างจริง', scTrue4: 'จริงมาก',
     scClear1: 'ไม่ชัดเจนเลย', scClear2: 'ไม่ค่อยชัดเจน', scClear3: 'ค่อนข้างชัดเจน', scClear4: 'ชัดเจนมาก',
     scMatch1: 'ไม่ตรงเลย', scMatch2: 'ไม่ค่อยตรง', scMatch3: 'ค่อนข้างตรง', scMatch4: 'ตรงมาก',
@@ -1183,24 +1185,24 @@ const I18N = {
     dcAlreadyPendingTitle: 'Delete request already pending',
     dcAlreadyPendingMsg: 'You already submitted a delete request for this company. Please wait for review — it\'ll be removed from the feed once approved. If you\'ve changed your mind, choose "Cancel request".',
     dcCancelRequestBtn: 'Cancel request',
-    joinBtnLabel: 'Recruitment Reality', leaveBtnLabel: 'Life at Work',
+    applyBtnLabel: 'Recruitment Reality', workBtnLabel: 'Life at Work',
     mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
-    joinMainReasonLabel: 'Share your thoughts',
-    leaveMainReasonLabel: 'Share your thoughts',
+    applyCommentLabel: 'Share your thoughts',
+    workCommentLabel: 'Share your thoughts',
     requiredMark: '*', yesOpt: 'Yes', noOpt: 'No',
-    rrQPosition: 'Position applied for', rrQPositionPh: 'Type the job title...', rrOptionalHint: '(optional)',
+    rrQPosition: 'Position applied for', lawQFeedbackHint: '(I know what I do well and what to improve)', lawQFlatHint: '(few layers, easy to reach across levels)', lawQPoliticsHint: '(factions, connections, power competition)', lawQTopDownHint: '(Top down = handed down from management / Bottom up = driven by employee input)', lawQFlexibleHint: '(location/hours, e.g. hybrid, remote)', rrQAssignmentHint: '(a task you completed and submitted)', rrQTestHint: '(e.g. skills, language, aptitude)', rrRounds0: 'No interview', rrQRoundsHint: '(all formats, incl. phone screening)', rrQDurationHint: '(from the company’s first contact until you got the result or their last contact)', rrQPositionPh: 'Type the job title...', rrOptionalHint: '(optional)',
     rrQYear: 'Year applied', rrYearPh: 'Select year',
-    rrQOutcome: 'Outcome', rrOutGotOffer: 'Got the job', rrOutNotSelected: 'Did not get the job', rrOutWithdrew: 'I withdrew', rrOutGhosted: 'Company went silent, no notice at all',
-    rrQDuration: 'Selection duration (from first contact until the end)', rrDur1: '3 days', rrDur2: '1 week', rrDur3: '2–4 weeks', rrDur4: 'Over 1 month',
-    rrQRounds: 'Number of interview rounds', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
-    rrQTest: 'Test', rrQAssignment: 'Assignment', hasOpt: 'Yes', hasNotOpt: 'No',
-    lawQFlexible: 'Flexible workplace', lawQPeopleAsset: 'People are our greatest asset',
-    lawQLearningOrg: 'Learning organization', lawQOpenToStaff: 'Willing to take risks, listen to and embrace new ideas from employees',
-    lawQTopDown: 'Top down or Bottom up', lawQPolitics: 'Office politics', lawQWorkLife: 'Work-life balance',
-    lawQFlat: 'Flat organization', lawQPerfTenure: 'What matters more: performance or tenure?',
-    lawQCareerPath: 'Clarity of career path', lawQVision: 'Company Vision/Mission/Strategy is clearly communicated',
-    lawQFeedback: 'Feedback from my manager', lawQJdMatch: 'The JD matches the work I actually did',
+    rrQOutcome: 'Outcome', rrOutGotOffer: 'Got an offer', rrOutNotSelected: 'Rejected (company informed me)', rrOutWithdrew: 'I withdrew', rrOutGhosted: 'Company went silent, never told me',
+    rrQDuration: 'Total selection duration', rrDur1: 'Within 3 days', rrDur2: '4 days–1 week', rrDur3: '1–4 weeks', rrDur4: 'Over 1 month',
+    rrQRounds: 'Total interview rounds', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQTest: 'Was there a test?', rrQAssignment: 'Was there an assignment?', hasOpt: 'Yes', hasNotOpt: 'No',
+    lawQFlexible: 'Working here is genuinely flexible', lawQPeopleAsset: 'The company lives up to “People are our greatest asset”',
+    lawQLearningOrg: 'The company genuinely supports employee learning and development', lawQOpenToStaff: 'Management listens and is open to new ideas from employees',
+    lawQTopDown: 'How are decisions mostly made?', lawQPolitics: 'How present is office politics?', lawQWorkLife: 'I can keep a healthy work-life balance here',
+    lawQFlat: 'Is it a flat organization?', lawQPerfTenure: 'For promotions and raises, what does the company value more?',
+    lawQCareerPath: 'The career path for my role is clear', lawQVision: 'The company communicates its Vision / Mission / Strategy clearly',
+    lawQFeedback: 'My manager gives clear feedback', lawQJdMatch: 'The job description matches the work I actually did',
     scTrue1: 'Not true at all', scTrue2: 'Not really true', scTrue3: 'Fairly true', scTrue4: 'Very true',
     scClear1: 'Not clear at all', scClear2: 'Not very clear', scClear3: 'Fairly clear', scClear4: 'Very clear',
     scMatch1: 'Not matching at all', scMatch2: 'Not really matching', scMatch3: 'Fairly matching', scMatch4: 'Very matching',
@@ -1860,8 +1862,8 @@ function renderMyTopics(){
     const toggleBtn = t.status === 'inactive'
       ? `<button class="mt-action-btn publish" data-action="publish" data-topic="${t.company_id}">Publish</button>`
       : `<button class="mt-action-btn hide" data-action="hide" data-topic="${t.company_id}">Hide</button>`;
-    const joinPct = t.total_votes > 0 ? Math.round(t.join_count / t.total_votes * 100) : 0;
-    const leavePct = t.total_votes > 0 ? 100 - joinPct : 0;
+    const applyPct = t.total_votes > 0 ? Math.round(t.apply_count / t.total_votes * 100) : 0;
+    const workPct = t.total_votes > 0 ? 100 - applyPct : 0;
     // category เก็บเป็น string comma-separated เดียว (multi-select, ดู data model ใน handoff) — แยกเป็น
     // เม็ด pill ทีละหมวดตอนแสดงผล ไม่ใช่ยัดทั้งก้อนสตริงลง pill เดียวเหมือนก่อนหน้านี้ (อ่านยาก/ดูรก)
     const catPillsHtml = t.category
@@ -1877,18 +1879,18 @@ function renderMyTopics(){
           </div>
           <div class="mt-meta">${catPillsHtml}</div>
           <div class="mt-bar">
-            <span class="a" style="width:${joinPct}%"></span>
-            <span class="b" style="width:${leavePct}%"></span>
+            <span class="a" style="width:${applyPct}%"></span>
+            <span class="b" style="width:${workPct}%"></span>
           </div>
           <div class="mt-votes">
             <span class="mv-total">${t.total_votes} ${escapeHtml(t18n('mvTotalLabel'))} (100%)</span>
-            <span class="mv-row"><i class="mv-dot" style="background:var(--side-a)"></i>${escapeHtml(t18n('joinBtnLabel'))} (${joinPct}%)</span>
-            <span class="mv-row"><i class="mv-dot" style="background:var(--side-b)"></i>${escapeHtml(t18n('leaveBtnLabel'))} (${leavePct}%)</span>
+            <span class="mv-row"><i class="mv-dot" style="background:var(--side-a)"></i>${escapeHtml(t18n('applyBtnLabel'))} (${applyPct}%)</span>
+            <span class="mv-row"><i class="mv-dot" style="background:var(--side-b)"></i>${escapeHtml(t18n('workBtnLabel'))} (${workPct}%)</span>
           </div>
         </a>
         <div class="comment-row">
-          <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="A" data-comment-label="${escapeHtml(t18n('joinBtnLabel'))}">💬 ${t._commentCountA !== undefined ? `${t._commentCountA} comment` : 'Comment'}</button>
-          <button type="button" class="comment-btn comment-btn-b" data-comment-topic="${t.company_id}" data-comment-side="B" data-comment-label="${escapeHtml(t18n('leaveBtnLabel'))}">💬 ${t._commentCountB !== undefined ? `${t._commentCountB} comment` : 'Comment'}</button>
+          <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="A" data-comment-label="${escapeHtml(t18n('applyBtnLabel'))}">💬 ${t._commentCountA !== undefined ? `${t._commentCountA} comment` : 'Comment'}</button>
+          <button type="button" class="comment-btn comment-btn-b" data-comment-topic="${t.company_id}" data-comment-side="B" data-comment-label="${escapeHtml(t18n('workBtnLabel'))}">💬 ${t._commentCountB !== undefined ? `${t._commentCountB} comment` : 'Comment'}</button>
         </div>
         <div class="mt-actions">
           ${toggleBtn}
@@ -2245,6 +2247,10 @@ function renderTransferred(){
  * ทุกคำถามนิยามไว้ที่เดียวใน VOTE_SCHEMA ฟอร์ม / ตัวตรวจครบ / ตัวเก็บคำตอบ / answer grid อ่านจากที่นี่หมด
  * ค่า (value) ที่ส่งเข้า backend เป็นรหัสอังกฤษ ต้องตรงกับ VOTE_SCHEMA ใน tokbud.js เป๊ะ ส่วนป้ายที่แสดงดึงจาก dict TH/EN
  * type: 'text' (พิมพ์เอง) | 'year' (dropdown ค.ศ. ย้อนหลัง 80 ปี) | 'choice' (เลือก 1 ใน opts = [[ค่า, คีย์ป้าย], ...]) */
+// ภาษาที่ใช้แสดงฟอร์มโหวต: null = ใช้ภาษาเว็บ (TH/EN) ตามปกติ / object = ชุดคำแปลของภาษาที่ user เลือกแปลการ์ดไว้
+// (index.html ตั้งค่าตอนเปิดฟอร์มโหวต, profile.html ไม่เคยตั้ง = ใช้ภาษาเว็บเสมอ) ใช้เฉพาะฟังก์ชันสร้างฟอร์มด้านล่าง
+let FORM_I18N = null;
+function tv(key){ return (FORM_I18N && FORM_I18N[key] !== undefined) ? FORM_I18N[key] : t18n(key); }
 const OPT_HAS = [['yes','hasOpt'],['no','hasNotOpt']];
 const OPT_YES_NO = [['yes','yesOpt'],['no','noOpt']];
 const OPT_TRUE = [['not_at_all','scTrue1'],['not_really','scTrue2'],['fairly_true','scTrue3'],['very_true','scTrue4']];
@@ -2255,24 +2261,24 @@ const VOTE_SCHEMA = {
     { f:'rr_position', type:'text', label:'rrQPosition', ph:'rrQPositionPh', required:false, max:200 },
     { f:'rr_year_applied', type:'year', label:'rrQYear', required:true },
     { f:'rr_outcome', type:'choice', label:'rrQOutcome', required:true, opts:[['got_offer','rrOutGotOffer'],['not_selected','rrOutNotSelected'],['withdrew','rrOutWithdrew'],['ghosted','rrOutGhosted']] },
-    { f:'rr_selection_duration', type:'choice', label:'rrQDuration', required:true, opts:[['3_days','rrDur1'],['1_week','rrDur2'],['2_4_weeks','rrDur3'],['over_1_month','rrDur4']] },
-    { f:'rr_interview_rounds', type:'choice', label:'rrQRounds', required:true, opts:[['1','rrRounds1'],['2','rrRounds2'],['3','rrRounds3'],['4_plus','rrRounds4']] },
-    { f:'rr_has_test', type:'choice', label:'rrQTest', required:true, opts:OPT_HAS },
-    { f:'rr_has_assignment', type:'choice', label:'rrQAssignment', required:true, opts:OPT_HAS }
+    { f:'rr_selection_duration', type:'choice', label:'rrQDuration', hint:'rrQDurationHint', required:true, opts:[['3_days','rrDur1'],['1_week','rrDur2'],['2_4_weeks','rrDur3'],['over_1_month','rrDur4']] },
+    { f:'rr_interview_rounds', type:'choice', label:'rrQRounds', hint:'rrQRoundsHint', required:true, opts:[['0','rrRounds0'],['1','rrRounds1'],['2','rrRounds2'],['3','rrRounds3'],['4_plus','rrRounds4']] },
+    { f:'rr_has_test', type:'choice', label:'rrQTest', hint:'rrQTestHint', required:true, opts:OPT_HAS },
+    { f:'rr_has_assignment', type:'choice', label:'rrQAssignment', hint:'rrQAssignmentHint', required:true, opts:OPT_HAS }
   ],
   B: [
-    { f:'law_flexible_workplace', type:'choice', label:'lawQFlexible', required:true, opts:OPT_TRUE },
+    { f:'law_flexible_workplace', type:'choice', label:'lawQFlexible', hint:'lawQFlexibleHint', required:true, opts:OPT_TRUE },
     { f:'law_people_asset', type:'choice', label:'lawQPeopleAsset', required:true, opts:OPT_TRUE },
     { f:'law_learning_org', type:'choice', label:'lawQLearningOrg', required:true, opts:OPT_TRUE },
     { f:'law_open_to_staff', type:'choice', label:'lawQOpenToStaff', required:true, opts:OPT_TRUE },
-    { f:'law_top_down_bottom_up', type:'choice', label:'lawQTopDown', required:true, opts:[['very_top_down','tdOpt1'],['top_down','tdOpt2'],['bottom_up','tdOpt3'],['very_bottom_up','tdOpt4']] },
-    { f:'law_office_politics', type:'choice', label:'lawQPolitics', required:true, opts:[['none','polOpt1'],['little','polOpt2'],['fairly','polOpt3'],['a_lot','polOpt4']] },
+    { f:'law_top_down_bottom_up', type:'choice', label:'lawQTopDown', hint:'lawQTopDownHint', required:true, opts:[['very_top_down','tdOpt1'],['top_down','tdOpt2'],['bottom_up','tdOpt3'],['very_bottom_up','tdOpt4']] },
+    { f:'law_office_politics', type:'choice', label:'lawQPolitics', hint:'lawQPoliticsHint', required:true, opts:[['none','polOpt1'],['little','polOpt2'],['fairly','polOpt3'],['a_lot','polOpt4']] },
     { f:'law_work_life_balance', type:'choice', label:'lawQWorkLife', required:true, opts:OPT_TRUE },
-    { f:'law_flat_org', type:'choice', label:'lawQFlat', required:true, opts:OPT_YES_NO },
+    { f:'law_flat_org', type:'choice', label:'lawQFlat', hint:'lawQFlatHint', required:true, opts:OPT_YES_NO },
     { f:'law_performance_vs_tenure', type:'choice', label:'lawQPerfTenure', required:true, opts:[['performance','pvtOpt1'],['tenure','pvtOpt2']] },
     { f:'law_career_path_clarity', type:'choice', label:'lawQCareerPath', required:true, opts:OPT_CLEAR },
     { f:'law_vision_communication', type:'choice', label:'lawQVision', required:true, opts:OPT_CLEAR },
-    { f:'law_manager_feedback', type:'choice', label:'lawQFeedback', required:true, opts:OPT_CLEAR },
+    { f:'law_manager_feedback', type:'choice', label:'lawQFeedback', hint:'lawQFeedbackHint', required:true, opts:OPT_CLEAR },
     { f:'law_jd_match', type:'choice', label:'lawQJdMatch', required:true, opts:OPT_MATCH }
   ]
 };
@@ -2319,7 +2325,7 @@ function yearOptionsHTML(selected){
   const sel = Number(selected) || 0;
   const maxY = Math.max(cy, sel || cy);
   const minY = Math.min(cy - 80, sel || cy);
-  let html = `<option value="">${escapeHtml(t18n('rrYearPh'))}</option>`;
+  let html = `<option value="">${escapeHtml(tv('rrYearPh'))}</option>`;
   for(let y = maxY; y >= minY; y--){
     html += `<option value="${y}"${sel === y ? ' selected' : ''}>${y}</option>`;
   }
@@ -2328,21 +2334,23 @@ function yearOptionsHTML(selected){
 
 function questionRowHTML(q, prefill){
   const v = (prefill === undefined || prefill === null) ? '' : String(prefill);
-  const optionalMark = q.required ? '' : ` <span style="font-weight:400;color:var(--text-muted);">${escapeHtml(t18n('rrOptionalHint'))}</span>`;
+  const optionalMark = q.required ? '' : ` <span style="font-weight:400;color:var(--text-muted);">${escapeHtml(tv('rrOptionalHint'))}</span>`;
+  const hintHTML = q.hint ? `<div class="ynu-question-hint">${escapeHtml(tv(q.hint))}</div>` : '';
   let control;
   if(q.type === 'text'){
-    control = `<input type="text" class="vq-input" maxlength="${q.max || 200}" value="${escapeHtml(v)}" placeholder="${escapeHtml(t18n(q.ph))}">`;
+    control = `<input type="text" class="vq-input" maxlength="${q.max || 200}" value="${escapeHtml(v)}" placeholder="${escapeHtml(tv(q.ph))}">`;
   } else if(q.type === 'year'){
     control = `<select class="vq-input vq-select">${yearOptionsHTML(v)}</select>`;
   } else {
     control = `<div class="opt-btns">${q.opts.map(o =>
-      `<button type="button" class="ynu-btn${v === o[0] ? ' selected' : ''}" data-ynu-value="${o[0]}">${escapeHtml(t18n(o[1]))}</button>`
+      `<button type="button" class="ynu-btn${v === o[0] ? ' selected' : ''}" data-ynu-value="${o[0]}">${escapeHtml(tv(o[1]))}</button>`
     ).join('')}</div>`;
   }
   return `<div class="ynu-row" data-ynu-field="${q.f}" style="margin-bottom:14px;">
-    <div class="ynu-question-label">${escapeHtml(t18n(q.label))}${optionalMark}</div>
+    <div class="ynu-question-label"${hintHTML ? ' style="margin-bottom:2px;"' : ''}>${escapeHtml(tv(q.label))}${optionalMark}</div>
+    ${hintHTML}
     ${control}
-    <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
+    <span class="ynu-missing-hint" style="display:none;">${tv('errAnswerRequired')}</span>
   </div>`;
 }
 
@@ -2443,7 +2451,7 @@ function renderMyComments(){
     return;
   }
   el.innerHTML = STATE.myComments.map(c=>{
-    const sideLabel = c.side === 'A' ? t18n('joinBtnLabel') : t18n('leaveBtnLabel');
+    const sideLabel = c.side === 'A' ? t18n('applyBtnLabel') : t18n('workBtnLabel');
     const dateStr = c.last_changed_at ? new Date(c.last_changed_at).toLocaleDateString(getLang()==='th'?'th-TH':'en-US', {year:'numeric', month:'short', day:'numeric'}) : '';
     // FIX (ขอบการ์ดสีฟ้าตายตัวเสมอ ไม่ตรงกับสีจริงของการ์ดบริษัทนั้นๆ): .my-comment-card ใน CSS รองรับ
     // var(--card-color, var(--primary)) อยู่แล้ว แค่ไม่เคยมีใครตั้ง --card-color ให้จริงเลย ตั้งผ่าน inline
@@ -2457,7 +2465,7 @@ function renderMyComments(){
           <span class="mc-side-badge ${c.side === 'A' ? 'a' : 'b'}">${escapeHtml(sideLabel)}</span>
         </div>
         ${buildCommentHeadHTML(c.side, c)}
-        <div class="mc-reason">${escapeHtml(c.main_reason || '')}</div>
+        <div class="mc-reason">${escapeHtml(c.comment || '')}</div>
         ${buildAnswerGridHTML(c.side, c)}
         <div class="mc-date">${dateStr}</div>
       </button>`;
@@ -2478,8 +2486,8 @@ function openEditCommentModal(comment){
   document.getElementById('ecError').style.display = 'none';
   document.getElementById('ecModalTitle').textContent = `${t18n('ecModalTitle')} — ${comment.company_name}`;
   document.getElementById('ecMainReasonLabel').innerHTML =
-    `${t18n(comment.side === 'A' ? 'joinMainReasonLabel' : 'leaveMainReasonLabel')} <span class="req-mark">${t18n('requiredMark')}</span>`;
-  document.getElementById('ecMainReasonInput').value = comment.main_reason || '';
+    `${t18n(comment.side === 'A' ? 'applyCommentLabel' : 'workCommentLabel')} <span class="req-mark">${t18n('requiredMark')}</span>`;
+  document.getElementById('ecMainReasonInput').value = comment.comment || '';
   document.getElementById('ecQuestionsWrap').innerHTML = buildVoteQuestionsHTML(comment.side, comment);
   bindVoteQuestionToggles();
   openModal('editCommentModal');
@@ -2497,7 +2505,7 @@ document.getElementById('ecSaveBtn').addEventListener('click', async ()=>{
     session_token: STATE.session.session_token,
     company_id: ecCurrentComment.company_id,
     side: ecCurrentComment.side,
-    main_reason: mainReason
+    comment: mainReason
   }, collectVoteQuestionAnswers(ecCurrentComment.side));
 
   const btn = document.getElementById('ecSaveBtn');
