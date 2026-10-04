@@ -49,8 +49,8 @@
     --text: #0B1D7F;         /* ใช้โทนน้ำเงินเข้มแทนดำ ให้ฟีลแบรนด์ชัด แต่ยังคมชัดอ่านง่าย */
     --text-muted: #5C6B9E;
     --line: #DCE4F7;
-    --side-a: #2143C8;        /* Join because... = น้ำเงินฟ้า */
-    --side-b: #F5D149;        /* Leave because... = เหลืองสด แยกชัดเจนจากฝั่ง Join */
+    --side-a: #2143C8;        /* ฝั่ง A (Recruitment Reality / apply) = น้ำเงินฟ้า */
+    --side-b: #F5D149;        /* ฝั่ง B (Life at Work / work) = เหลืองสด แยกชัดเจนจากฝั่ง Join */
     --radius: 16px;
     --shadow: 0 4px 20px rgba(11, 29, 127, 0.12);
   }
@@ -391,6 +391,8 @@
   .opt-btns{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:6px; }
   .opt-btns .ynu-btn{ padding:9px 6px; line-height:1.3; white-space:normal; word-break:break-word; }
   .vq-input{ width:100%; padding:11px 14px; border:1.5px solid var(--line); border-radius:10px; font-size:13.5px; outline:none; background:var(--bg); color:var(--text); }
+  .ynu-question-hint{ font-size:11.5px; line-height:1.4; color:var(--text-muted); margin-bottom:6px; }
+  .opt-btns .ynu-btn:last-child:nth-child(odd){ grid-column:1 / -1; }
   .comment-head{ font-size:12px; font-weight:700; color:var(--primary); margin-bottom:6px; word-break:break-word; }
   /* หัวข้อคำถาม Yes/No/Not sure ทั้ง 8 ข้อ (ทั้งฝั่ง Join/Leave) ให้ตัวหนา+สีเข้ม เหมือนกับ "I work here because" */
   .ynu-question-label{ font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:6px; }
@@ -406,7 +408,7 @@
     flex:1; padding:16px 10px; border-radius:12px; text-align:center;
     background:var(--bg); border:2px solid var(--line); transition:all .15s ease;
   }
-  .vote-btn .vb-label{ font-size:14.5px; font-weight:600; margin-bottom:4px; }
+  .vote-btn .vb-label{ font-size:14.5px; font-weight:600; margin-bottom:4px; overflow-wrap:break-word; hyphens:auto; -webkit-hyphens:auto; }
   .vote-btn .vb-pct{ font-size:22px; font-weight:700; font-family:'Antonio',sans-serif; }
   .vote-btn.side-a{ }
   .vote-btn.side-b{ }
@@ -1100,11 +1102,11 @@
     <div class="field" id="coverField">
       <label><span data-i18n="coverImageLabel">โลโก้บริษัท (สัดส่วน 3:4)</span> <span class="field-hint" data-i18n="coverImageHint">— พรีวิวนี้คือหน้าตาที่จะแสดงจริงในฟีด</span></label>
       <div class="preview-3col">
-        <div class="preview-vote-btn" data-i18n="joinBtnLabel">ประสบการณ์การสมัครงาน</div>
+        <div class="preview-vote-btn" data-i18n="applyBtnLabel">ประสบการณ์การสมัครงาน</div>
         <div class="cover-upload" id="coverPreview" onclick="document.getElementById('coverFile').click()">
           <span data-i18n="coverUploadPrompt">＋ แตะเพื่อแนบโลโก้บริษัท</span>
         </div>
-        <div class="preview-vote-btn" data-i18n="leaveBtnLabel">ชีวิตการทำงานจริง</div>
+        <div class="preview-vote-btn" data-i18n="workBtnLabel">ชีวิตการทำงานจริง</div>
       </div>
       <input type="file" accept="image/*" id="coverFile" style="display:none;">
     </div>
@@ -1346,24 +1348,24 @@ const I18N = {
     ctCategoryLabel: 'บริษัทนี้อยู่ในธุรกิจ/แวดวงอะไร', ctCategoryChoose: 'เลือกได้สูงสุด 5 หมวด', doneBtn: 'เสร็จสิ้น',
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     createSubmitBtn: 'สร้างบริษัท',
-    joinBtnLabel: 'ประสบการณ์การสมัครงาน', leaveBtnLabel: 'ชีวิตการทำงานจริง',
-    tickerJoinBadge: 'สมัครงาน', tickerLeaveBadge: 'ทำงานจริง',
-    joinMainReasonLabel: 'แสดงความคิดเห็น', joinMainReasonPh: 'พิมพ์ความคิดเห็นของคุณ...',
-    leaveMainReasonLabel: 'แสดงความคิดเห็น', leaveMainReasonPh: 'พิมพ์ความคิดเห็นของคุณ...',
+    applyBtnLabel: 'ประสบการณ์การสมัครงาน', workBtnLabel: 'ชีวิตการทำงานจริง',
+    tickerApplyBadge: 'สมัครงาน', tickerWorkBadge: 'ทำงานจริง',
+    applyCommentLabel: 'แสดงความคิดเห็น', applyCommentPh: 'พิมพ์ความคิดเห็นของคุณ...',
+    workCommentLabel: 'แสดงความคิดเห็น', workCommentPh: 'พิมพ์ความคิดเห็นของคุณ...',
     requiredMark: '*', requiredHint: '(บังคับตอบ)',
     yesOpt: 'ใช่', noOpt: 'ไม่ใช่',
-    rrQPosition: 'ชื่อตำแหน่งที่สมัคร', rrQPositionPh: 'พิมพ์ชื่อตำแหน่ง...', rrOptionalHint: '(ไม่บังคับ)',
+    rrQPosition: 'ชื่อตำแหน่งที่สมัคร', lawQFeedbackHint: '(รู้ว่าทำดีตรงไหน ต้องปรับตรงไหน)', lawQFlatHint: '(ลำดับชั้นน้อย ติดต่อข้ามระดับได้ง่าย)', lawQPoliticsHint: '(การแบ่งฝ่าย เส้นสาย การแข่งขันเชิงอำนาจ)', lawQTopDownHint: '(Top down = ผู้บริหารสั่งลงมา / Bottom up = มาจากข้อเสนอของพนักงาน)', lawQFlexibleHint: '(สถานที่/เวลาทำงาน เช่น Hybrid, WFH, เข้า-ออกงานยืดหยุ่น)', rrQAssignmentHint: '(โจทย์งานที่ต้องทำแล้วส่ง)', rrQTestHint: '(เช่น ข้อสอบ ทดสอบภาษา/ทักษะ/จิตวิทยา)', rrRounds0: 'ไม่ได้สัมภาษณ์', rrQRoundsHint: '(นับรวมทุกรูปแบบ เช่น โทรคัดกรอง ออนไลน์ ที่บริษัท)', rrQDurationHint: '(ตั้งแต่บริษัทติดต่อครั้งแรก จนรู้ผลหรือติดต่อครั้งสุดท้าย)', rrQPositionPh: 'พิมพ์ชื่อตำแหน่ง...', rrOptionalHint: '(ไม่บังคับ)',
     rrQYear: 'ปีที่สมัคร (ค.ศ.)', rrYearPh: 'เลือกปี',
-    rrQOutcome: 'ผลลัพธ์', rrOutGotOffer: 'ได้งาน', rrOutNotSelected: 'ไม่ได้งาน', rrOutWithdrew: 'ฉันขอถอนตัว', rrOutGhosted: 'บริษัทเงียบหาย ไม่แจ้งใดๆ',
-    rrQDuration: 'ระยะเวลาคัดเลือก (นับตั้งแต่ได้รับการติดต่อครั้งแรกจนสิ้นสุด)', rrDur1: '3 วัน', rrDur2: '1 สัปดาห์', rrDur3: '2–4 สัปดาห์', rrDur4: 'เกิน 1 เดือน',
-    rrQRounds: 'สัมภาษณ์กี่รอบ', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
-    rrQTest: 'การทดสอบ', rrQAssignment: 'Assignment', hasOpt: 'มี', hasNotOpt: 'ไม่มี',
-    lawQFlexible: 'สถานที่ทำงานยืดหยุ่น (Flexible workplace)', lawQPeopleAsset: 'คนคือทรัพย์สินที่มีค่าที่สุดขององค์กร',
-    lawQLearningOrg: 'องค์กรแห่งการเรียนรู้ (Learning organization)', lawQOpenToStaff: 'กล้าเสี่ยง รับฟัง เปิดรับสิ่งใหม่จากพนักงาน',
-    lawQTopDown: 'Top down หรือ Bottom up', lawQPolitics: 'การเมืองในองค์กร', lawQWorkLife: 'Work-life balance',
-    lawQFlat: 'องค์กรแบบ Flat (โครงสร้างแนวราบ)', lawQPerfTenure: 'ให้ความสำคัญกับผลงาน หรืออายุงานมากกว่ากัน',
-    lawQCareerPath: 'ความชัดเจนของ career path', lawQVision: 'สื่อสาร Company Vision/Mission/Strategy ชัดเจน',
-    lawQFeedback: 'การให้ feedback จากหัวหน้างาน', lawQJdMatch: 'JD ตรงกับงานจริงที่ได้ทำ',
+    rrQOutcome: 'ผลลัพธ์', rrOutGotOffer: 'ได้รับ offer', rrOutNotSelected: 'ไม่ผ่านการคัดเลือก (บริษัทแจ้งผล)', rrOutWithdrew: 'ฉันถอนตัวเอง', rrOutGhosted: 'บริษัทเงียบหาย ไม่แจ้งผล',
+    rrQDuration: 'ระยะเวลาคัดเลือกทั้งกระบวนการ', rrDur1: 'ภายใน 3 วัน', rrDur2: '4 วัน–1 สัปดาห์', rrDur3: '1–4 สัปดาห์', rrDur4: 'เกิน 1 เดือน',
+    rrQRounds: 'จำนวนรอบสัมภาษณ์ทั้งหมด', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQTest: 'มีการทดสอบระหว่างคัดเลือกไหม', rrQAssignment: 'มี Assignment ไหม', hasOpt: 'มี', hasNotOpt: 'ไม่มี',
+    lawQFlexible: 'ที่นี่ทำงานได้ยืดหยุ่นจริง', lawQPeopleAsset: 'บริษัทปฏิบัติกับพนักงานสมกับที่พูดว่า “คนคือทรัพย์สินที่มีค่าที่สุดขององค์กร”',
+    lawQLearningOrg: 'องค์กรส่งเสริมการเรียนรู้และพัฒนาพนักงานอย่างจริงจัง', lawQOpenToStaff: 'ผู้บริหารและหัวหน้ารับฟังและเปิดรับไอเดียใหม่ๆ จากพนักงาน',
+    lawQTopDown: 'การตัดสินใจส่วนใหญ่เป็นแบบไหน', lawQPolitics: 'การเมืองในองค์กรมีมากแค่ไหน', lawQWorkLife: 'ที่นี่แบ่งเวลางานกับชีวิตส่วนตัวได้ดี',
+    lawQFlat: 'เป็นองค์กรแบบ Flat ใช่หรือไม่', lawQPerfTenure: 'ในการเลื่อนตำแหน่งและขึ้นเงินเดือน บริษัทให้ความสำคัญกับอะไรมากกว่า',
+    lawQCareerPath: 'เส้นทางความก้าวหน้า (career path) ในสายงานของฉันชัดเจน', lawQVision: 'บริษัทสื่อสาร Vision / Mission / Strategy ได้ชัดเจน',
+    lawQFeedback: 'หัวหน้าให้ feedback ชัดเจน', lawQJdMatch: 'JD (Job Description) ตรงกับงานจริงที่ได้ทำ',
     scTrue1: 'ไม่จริงเลย', scTrue2: 'ไม่ค่อยจริง', scTrue3: 'ค่อนข้างจริง', scTrue4: 'จริงมาก',
     scClear1: 'ไม่ชัดเจนเลย', scClear2: 'ไม่ค่อยชัดเจน', scClear3: 'ค่อนข้างชัดเจน', scClear4: 'ชัดเจนมาก',
     scMatch1: 'ไม่ตรงเลย', scMatch2: 'ไม่ค่อยตรง', scMatch3: 'ค่อนข้างตรง', scMatch4: 'ตรงมาก',
@@ -1477,24 +1479,24 @@ const I18N = {
     ctCategoryLabel: 'Business Category', ctCategoryChoose: 'Select up to 5 categories', doneBtn: 'Done',
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     createSubmitBtn: 'Create Company',
-    joinBtnLabel: 'Recruitment Reality', leaveBtnLabel: 'Life at Work',
-    tickerJoinBadge: 'APPLIED', tickerLeaveBadge: 'WORKING',
-    joinMainReasonLabel: 'Share your thoughts', joinMainReasonPh: 'Type your comment...',
-    leaveMainReasonLabel: 'Share your thoughts', leaveMainReasonPh: 'Type your comment...',
+    applyBtnLabel: 'Recruitment Reality', workBtnLabel: 'Life at Work',
+    tickerApplyBadge: 'APPLIED', tickerWorkBadge: 'WORKING',
+    applyCommentLabel: 'Share your thoughts', applyCommentPh: 'Type your comment...',
+    workCommentLabel: 'Share your thoughts', workCommentPh: 'Type your comment...',
     requiredMark: '*', requiredHint: '(required)',
     yesOpt: 'Yes', noOpt: 'No',
-    rrQPosition: 'Position applied for', rrQPositionPh: 'Type the job title...', rrOptionalHint: '(optional)',
+    rrQPosition: 'Position applied for', lawQFeedbackHint: '(I know what I do well and what to improve)', lawQFlatHint: '(few layers, easy to reach across levels)', lawQPoliticsHint: '(factions, connections, power competition)', lawQTopDownHint: '(Top down = handed down from management / Bottom up = driven by employee input)', lawQFlexibleHint: '(location/hours, e.g. hybrid, remote)', rrQAssignmentHint: '(a task you completed and submitted)', rrQTestHint: '(e.g. skills, language, aptitude)', rrRounds0: 'No interview', rrQRoundsHint: '(all formats, incl. phone screening)', rrQDurationHint: '(from the company’s first contact until you got the result or their last contact)', rrQPositionPh: 'Type the job title...', rrOptionalHint: '(optional)',
     rrQYear: 'Year applied', rrYearPh: 'Select year',
-    rrQOutcome: 'Outcome', rrOutGotOffer: 'Got the job', rrOutNotSelected: 'Did not get the job', rrOutWithdrew: 'I withdrew', rrOutGhosted: 'Company went silent, no notice at all',
-    rrQDuration: 'Selection duration (from first contact until the end)', rrDur1: '3 days', rrDur2: '1 week', rrDur3: '2–4 weeks', rrDur4: 'Over 1 month',
-    rrQRounds: 'Number of interview rounds', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
-    rrQTest: 'Test', rrQAssignment: 'Assignment', hasOpt: 'Yes', hasNotOpt: 'No',
-    lawQFlexible: 'Flexible workplace', lawQPeopleAsset: 'People are our greatest asset',
-    lawQLearningOrg: 'Learning organization', lawQOpenToStaff: 'Willing to take risks, listen to and embrace new ideas from employees',
-    lawQTopDown: 'Top down or Bottom up', lawQPolitics: 'Office politics', lawQWorkLife: 'Work-life balance',
-    lawQFlat: 'Flat organization', lawQPerfTenure: 'What matters more: performance or tenure?',
-    lawQCareerPath: 'Clarity of career path', lawQVision: 'Company Vision/Mission/Strategy is clearly communicated',
-    lawQFeedback: 'Feedback from my manager', lawQJdMatch: 'The JD matches the work I actually did',
+    rrQOutcome: 'Outcome', rrOutGotOffer: 'Got an offer', rrOutNotSelected: 'Rejected (company informed me)', rrOutWithdrew: 'I withdrew', rrOutGhosted: 'Company went silent, never told me',
+    rrQDuration: 'Total selection duration', rrDur1: 'Within 3 days', rrDur2: '4 days–1 week', rrDur3: '1–4 weeks', rrDur4: 'Over 1 month',
+    rrQRounds: 'Total interview rounds', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQTest: 'Was there a test?', rrQAssignment: 'Was there an assignment?', hasOpt: 'Yes', hasNotOpt: 'No',
+    lawQFlexible: 'Working here is genuinely flexible', lawQPeopleAsset: 'The company lives up to “People are our greatest asset”',
+    lawQLearningOrg: 'The company genuinely supports employee learning and development', lawQOpenToStaff: 'Management listens and is open to new ideas from employees',
+    lawQTopDown: 'How are decisions mostly made?', lawQPolitics: 'How present is office politics?', lawQWorkLife: 'I can keep a healthy work-life balance here',
+    lawQFlat: 'Is it a flat organization?', lawQPerfTenure: 'For promotions and raises, what does the company value more?',
+    lawQCareerPath: 'The career path for my role is clear', lawQVision: 'The company communicates its Vision / Mission / Strategy clearly',
+    lawQFeedback: 'My manager gives clear feedback', lawQJdMatch: 'The job description matches the work I actually did',
     scTrue1: 'Not true at all', scTrue2: 'Not really true', scTrue3: 'Fairly true', scTrue4: 'Very true',
     scClear1: 'Not clear at all', scClear2: 'Not very clear', scClear3: 'Fairly clear', scClear4: 'Very clear',
     scMatch1: 'Not matching at all', scMatch2: 'Not really matching', scMatch3: 'Fairly matching', scMatch4: 'Very matching',
@@ -3102,8 +3104,8 @@ function setupDescMoreButtons(){
   });
 }
 
-function joinCaption(t){ return t.join_caption || t18n('joinBtnLabel'); }
-function leaveCaption(t){ return t.leave_caption || t18n('leaveBtnLabel'); }
+function applyCaption(t){ return t.apply_caption || t18n('applyBtnLabel'); }
+function workCaption(t){ return t.work_caption || t18n('workBtnLabel'); }
 
 function topicCardHTML(t){
   // คำอธิบาย: จำกัดไว้ 2 บรรทัดในการ์ด (ไม่ลิมิตความยาวตอนพิมพ์) ยาวเกินให้กดปุ่ม "อ่านเพิ่มเติม" เปิด popup อ่านเต็ม
@@ -3116,15 +3118,15 @@ function topicCardHTML(t){
   // TOKBUD: ทุกบริษัทมีโลโก้เสมอ (บังคับตอน create) ผู้ใช้กดฝั่งไหนก็ได้ ไม่ผูกกัน ไม่มีเปอร์เซ็นต์รวม 100% แบบ WEZIDE เดิม (เพราะคนเดียวโหวตได้ทั้ง 2 ฝั่ง)
   const voteRowHTML = `<div class="vote-row vote-row-image">
         <button class="vote-btn side-a" data-topic="${t.company_id}" data-side="A">
-          <div class="vb-label">${escapeHtml(joinCaption(t))}</div>
-          <div class="vb-pct">${t.join_count}</div>
+          <div class="vb-label"${t._translatedLang ? ` lang="${t._translatedLang}"` : ''}>${escapeHtml(applyCaption(t))}</div>
+          <div class="vb-pct">${t.apply_count}</div>
         </button>
         <div class="cover-img-wrap" data-lightbox="${t.image_url}">
           <img class="cover-img" src="${t.image_url}" alt="${escapeHtml(t.company_name)}">
         </div>
         <button class="vote-btn side-b" data-topic="${t.company_id}" data-side="B">
-          <div class="vb-label">${escapeHtml(leaveCaption(t))}</div>
-          <div class="vb-pct">${t.leave_count}</div>
+          <div class="vb-label"${t._translatedLang ? ` lang="${t._translatedLang}"` : ''}>${escapeHtml(workCaption(t))}</div>
+          <div class="vb-pct">${t.work_count}</div>
         </button>
       </div>`;
 
@@ -3135,9 +3137,9 @@ function topicCardHTML(t){
   const cntA = t._commentCountA !== undefined ? `${t._commentCountA} comment` : 'Comment';
   const cntB = t._commentCountB !== undefined ? `${t._commentCountB} comment` : 'Comment';
   const commentRowHTML = `<div class="comment-row comment-row-image">
-        <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="A" data-comment-label="${escapeHtml(joinCaption(t))}">💬 ${cntA}</button>
+        <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="A" data-comment-label="${escapeHtml(applyCaption(t))}">💬 ${cntA}</button>
         <div></div>
-        <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="B" data-comment-label="${escapeHtml(leaveCaption(t))}">💬 ${cntB}</button>
+        <button type="button" class="comment-btn" data-comment-topic="${t.company_id}" data-comment-side="B" data-comment-label="${escapeHtml(workCaption(t))}">💬 ${cntB}</button>
       </div>`;
 
   return `
@@ -3550,6 +3552,31 @@ function openLangPickerFor(topicId){
 // เป็นสปินเนอร์ระหว่างรอ (เก็บ HTML เดิมไว้ใน dataset ก่อน 1 ครั้งตอนเริ่ม ไม่ใช่ทุกรอบ retry เผื่อต้องคืนกลับ
 // ถ้า fail ถาวร) เมื่อสำเร็จ ไม่ต้องคืน HTML เอง เพราะ applyTranslation() เรียก rerenderSingleCard() อยู่แล้ว
 // ซึ่งสร้าง DOM การ์ดใหม่ทั้งใบ ล้างสถานะ loading ไปเองโดยอัตโนมัติ
+/* ---------- ข้อความฟอร์มโหวต/ป้ายปุ่มการ์ดของภาษาที่ user เลือกแปล (แปลล่วงหน้าไว้ที่ /vote-i18n.json) ----------
+ * TH/EN ใช้ dict มาตรฐานของเว็บ (I18N) ภาษาอื่น (13 ภาษา) ดึงจากไฟล์ JSON ครั้งเดียวต่อเซสชัน (เบราว์เซอร์ cache ให้)
+ * ถ้าโหลดไม่ได้/ช้าเกิน -> คืน null แล้วฟอร์มใช้ภาษาเว็บตามปกติ ไม่ error ไม่ค้าง */
+const FORM_I18N_URL = '/vote-i18n.json';
+let FORM_I18N_ALL = null, FORM_I18N_PROMISE = null;
+function loadFormI18nAll(){
+  if(FORM_I18N_ALL) return Promise.resolve(FORM_I18N_ALL);
+  if(!FORM_I18N_PROMISE){
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(()=> ctrl.abort(), 8000) : null;
+    FORM_I18N_PROMISE = fetch(FORM_I18N_URL, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(r => { if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(j => { FORM_I18N_ALL = j; return j; })
+      .catch(() => { FORM_I18N_PROMISE = null; return null; }) // ล้มเหลว = ครั้งหน้าลองใหม่ได้
+      .finally(() => { if(timer) clearTimeout(timer); });
+  }
+  return FORM_I18N_PROMISE;
+}
+async function getFormI18nForLang(lang, maxWaitMs){
+  if(!lang) return null;
+  if(lang === 'th' || lang === 'en') return I18N[lang];
+  const all = await Promise.race([loadFormI18nAll(), new Promise(r => setTimeout(()=> r(null), maxWaitMs || 6000))]);
+  return (all && all[lang]) || null;
+}
+
 async function runTranslate(topicId, lang, attempt){
   attempt = attempt || 1;
   const wrap = document.querySelector(`.translate-row[data-tr-wrap="${topicId}"]`);
@@ -3563,7 +3590,14 @@ async function runTranslate(topicId, lang, attempt){
   const cached = TR_CACHE[cacheKey];
   if(cached){ applyTranslation(topicId, cached, lang); return; }
 
-  const res = await api('translateCompany', { company_id: topicId, target_lang: lang });
+  // คำอธิบายบริษัทแปลผ่าน Apps Script (LanguageApp) ส่วนป้ายปุ่มการ์ด/ข้อความฟอร์มโหวตมาจาก vote-i18n.json แปลล่วงหน้าไว้แล้ว
+  // โหลดคู่ขนานกัน ไม่ต้องรอต่อคิว และถ้าบริษัทไม่มีคำอธิบายก็ไม่ต้องยิง Apps Script เลย (เร็วทันที)
+  const topicNow = STATE.topics.find(x=> x.company_id === topicId);
+  const needServer = !!(topicNow && String(topicNow.description || '').trim());
+  const [res, formDict] = await Promise.all([
+    needServer ? api('translateCompany', { company_id: topicId, target_lang: lang }) : Promise.resolve({ success:true, translated:{ description:'' } }),
+    getFormI18nForLang(lang)
+  ]);
   if(!res.success){
     if(res.retryable && attempt < 6){
       runTranslate(topicId, lang, attempt + 1);
@@ -3576,8 +3610,9 @@ async function runTranslate(topicId, lang, attempt){
     openModal('translateErrorModal');
     return;
   }
-  TR_CACHE[cacheKey] = res.translated;
-  applyTranslation(topicId, res.translated, lang);
+  const translatedFull = Object.assign({}, res.translated, formDict ? { apply_caption: formDict.applyBtnLabel, work_caption: formDict.workBtnLabel } : {});
+  if(formDict) TR_CACHE[cacheKey] = translatedFull; // ไม่ cache ถ้าป้ายปุ่มยังไม่มา (ครั้งหน้าจะได้ลองใหม่ให้ครบ)
+  applyTranslation(topicId, translatedFull, lang);
 }
 
 function applyTranslation(topicId, translated, lang){
@@ -3586,11 +3621,11 @@ function applyTranslation(topicId, translated, lang){
   // เก็บต้นฉบับไว้ครั้งแรกที่แปลเท่านั้น เผื่อ toggle "See original" กลับไปกลับมาหลายรอบ
   // company_name ไม่แปล ไม่ต้องเก็บ/ไม่ต้องคืนค่า (ห้ามแปลชื่อเฉพาะ ป้องกันความหมายเพี้ยน)
   if(!t._original){
-    t._original = { description:t.description, join_caption:t.join_caption, leave_caption:t.leave_caption };
+    t._original = { description:t.description, apply_caption:t.apply_caption, work_caption:t.work_caption };
   }
   t.description = translated.description;
-  t.join_caption = translated.join_caption;
-  t.leave_caption = translated.leave_caption;
+  t.apply_caption = translated.apply_caption;
+  t.work_caption = translated.work_caption;
   t._translated = true;
   t._translatedLang = lang;
   rerenderSingleCard(topicId);
@@ -3633,6 +3668,7 @@ function pickLang(msg){
 // title: ไม่ระบุ = ใช้หัวข้อ default ("Share my comment" ตาม voteConfirmTitle) ระบุ = override ชั่วคราว
 // (ใช้กับ popup ทั่วไปที่ยืมกล่อง modal เดียวกันนี้ เช่น export gate — ไม่งั้นหัวข้อจะค้างผิดบริบท)
 function showInfoPopup(message, btnLabel, title){
+  applyFormDir(false); // popup ทั่วไปใช้ทิศทางตามเว็บเสมอ (flow โหวตที่ต้องการ RTL จะเรียก applyFormDir ซ้ำหลังเรียกฟังก์ชันนี้)
   document.getElementById('voteConfirmModalTitle').textContent = title || t18n('voteConfirmTitle');
   document.getElementById('voteConfirmText').textContent = message;
   document.getElementById('voteAnonymityNotice').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์กล่อง anonymity
@@ -3649,12 +3685,12 @@ function showInfoPopup(message, btnLabel, title){
 // popup แยกเฉพาะตอนโหวตสำเร็จจากฟีดหน้า home (index.html) — ข้อความขอบคุณตายตัว ไม่ใช้ res.message จาก backend
 // กดปุ่มแล้วแค่ปิด modal เฉยๆ พอ (อยู่หน้า home อยู่แล้ว ไม่ต้อง redirect ไปไหน)
 function showVoteSuccessPopup(){
-  document.getElementById('voteConfirmText').textContent = t18n('voteThankYouMsg');
+  document.getElementById('voteConfirmText').textContent = tv('voteThankYouMsg');
   document.getElementById('voteAnonymityNotice').style.display = 'none';
   document.getElementById('voteCommentWrap').style.display = 'none';
   document.getElementById('voteQuestionsWrap').innerHTML = '';
   document.getElementById('voteConfirmActions').innerHTML =
-    `<button class="btn btn-primary full-btn" id="voteOkBtn">${t18n('okBtn')}</button>`;
+    `<button class="btn btn-primary full-btn" id="voteOkBtn">${tv('okBtn')}</button>`;
   document.getElementById('voteOkBtn').addEventListener('click', ()=> closeModal('voteConfirmModal'));
   openModal('voteConfirmModal');
   const box = document.getElementById('voteConfirmModalBox');
@@ -3667,7 +3703,20 @@ document.getElementById('voteCommentInput').addEventListener('input', (e)=>{
   document.getElementById('voteCommentCounter').textContent = `${e.target.value.length}/5000`;
 });
 
-function handleVoteClick(topicId, side, btnEl){
+// ภาษาของฟอร์มโหวตตอนนี้ (null = ภาษาเว็บ) / ตั้งค่าตอนเปิดฟอร์มจากภาษาที่ user เลือกแปลการ์ดนั้นไว้
+let FORM_LANG = null;
+const RTL_LANGS = ['ar'];
+// ทิศทางข้อความของกล่องโหวต: ภาษาอาหรับอ่านขวาไปซ้าย ที่เหลือซ้ายไปขวา (ช่องที่ตั้ง text-align:left ไว้ใน HTML ต้องสลับมือด้วย)
+function applyFormDir(rtl){
+  const box = document.getElementById('voteConfirmModalBox');
+  if(box) box.dir = rtl ? 'rtl' : '';
+  ['voteAnonymityNotice','voteQuestionsWrap','voteCommentWrap'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.textAlign = rtl ? 'right' : 'left';
+  });
+}
+
+async function handleVoteClick(topicId, side, btnEl){
   if(!isLoggedIn()){
     STATE.pendingVote = { topicId, side };
     openLoginModal('redirect');
@@ -3676,21 +3725,32 @@ function handleVoteClick(topicId, side, btnEl){
   const t = STATE.topics.find(x=> x.company_id === topicId);
 
   pendingVoteConfirm = { topicId, side, btnEl };
+  const myPending = pendingVoteConfirm;
+
+  // ถ้า user แปลการ์ดนี้เป็นภาษาอื่นไว้ ฟอร์มทั้งใบ (คำถาม/ตัวเลือก/ปุ่ม/ข้อความ) ใช้ภาษานั้นตาม (ปกติโหลดไว้แล้วตั้งแต่ตอนกดแปล
+  // จึงไม่รอ) ถ้าไม่มีคำแปลก็ใช้ภาษาเว็บตามปกติ
+  const formLang = (t && t._translated && t._translatedLang) ? t._translatedLang : null;
+  const dict = formLang ? await getFormI18nForLang(formLang) : null;
+  if(pendingVoteConfirm !== myPending) return; // ระหว่างรอ user กดซ้ำ/เปลี่ยนใจไปแล้ว ไม่ต้องเปิดฟอร์มเก่าทับ
+  FORM_I18N = dict;
+  FORM_LANG = dict ? formLang : null;
+  applyFormDir(!!(FORM_LANG && RTL_LANGS.indexOf(FORM_LANG) !== -1));
 
   // กัน title ค้างผิดบริบท เผื่อ modal เดียวกันนี้เพิ่งถูกยืมไปโชว์ popup อื่น (เช่น export gate) มาก่อนหน้า
-  document.getElementById('voteConfirmModalTitle').textContent = t18n('voteConfirmTitle');
-  document.getElementById('voteConfirmText').textContent = t18n('voteConfirmMsg').replace('{side}', side === 'A' ? joinCaption(t||{}) : leaveCaption(t||{}));
+  document.getElementById('voteConfirmModalTitle').textContent = tv('voteConfirmTitle');
+  document.getElementById('voteConfirmText').textContent = tv('voteConfirmMsg').replace('{side}', side === 'A' ? applyCaption(t||{}) : workCaption(t||{}));
   const anonNotice = document.getElementById('voteAnonymityNotice');
   // FIX (feedback ของ Pop): ต้องใช้ innerHTML ไม่ใช่ textContent เพื่อให้ <strong><u> ในข้อความ dict เรนเดอร์
-  // จริงๆ (ไม่งั้นจะเห็น tag เป็นตัวหนังสือดิบ) ปลอดภัยเพราะ string มาจาก dict คงที่ในโค้ดเราเอง ไม่ใช่ user input
-  anonNotice.innerHTML = t18n('voteAnonymityNotice');
+  // จริงๆ (ไม่งั้นจะเห็น tag เป็นตัวหนังสือดิบ) ปลอดภัยเพราะ string มาจาก dict/ไฟล์คำแปลคงที่ของเราเอง ไม่ใช่ user input
+  anonNotice.innerHTML = tv('voteAnonymityNotice');
   anonNotice.style.display = 'block';
 
   const commentInput = document.getElementById('voteCommentInput');
   const commentLabel = document.getElementById('voteCommentLabel');
   commentInput.value = '';
-  commentLabel.innerHTML = `${t18n(side === 'A' ? 'joinMainReasonLabel' : 'leaveMainReasonLabel')} <span class="req-mark">${t18n('requiredMark')}</span>`;
-  commentInput.placeholder = t18n(side === 'A' ? 'joinMainReasonPh' : 'leaveMainReasonPh');
+  commentLabel.innerHTML = `${tv(side === 'A' ? 'applyCommentLabel' : 'workCommentLabel')} <span class="req-mark">${tv('requiredMark')}</span>`;
+  commentInput.placeholder = tv(side === 'A' ? 'applyCommentPh' : 'workCommentPh');
+  document.getElementById('voteCommentMissingHint').textContent = tv('errMainReasonRequired');
   document.getElementById('voteCommentCounter').textContent = '0/5000';
   document.getElementById('voteCommentWrap').style.display = 'block';
 
@@ -3698,8 +3758,8 @@ function handleVoteClick(topicId, side, btnEl){
   bindVoteQuestionToggles();
 
   document.getElementById('voteConfirmActions').innerHTML =
-    `<button class="btn btn-ghost full-btn" id="voteCancelBtn">${t18n('cancelBtn')}</button>
-     <button class="btn btn-primary full-btn" id="voteConfirmBtn">${t18n('voteConfirmBtnLabel')}</button>`;
+    `<button class="btn btn-ghost full-btn" id="voteCancelBtn">${tv('cancelBtn')}</button>
+     <button class="btn btn-primary full-btn" id="voteConfirmBtn">${tv('voteConfirmBtnLabel')}</button>`;
   document.getElementById('voteCancelBtn').addEventListener('click', ()=>{
     pendingVoteConfirm = null;
     closeModal('voteConfirmModal');
@@ -3714,6 +3774,10 @@ function handleVoteClick(topicId, side, btnEl){
  * ทุกคำถามนิยามไว้ที่เดียวใน VOTE_SCHEMA ฟอร์ม / ตัวตรวจครบ / ตัวเก็บคำตอบ / answer grid อ่านจากที่นี่หมด
  * ค่า (value) ที่ส่งเข้า backend เป็นรหัสอังกฤษ ต้องตรงกับ VOTE_SCHEMA ใน tokbud.js เป๊ะ ส่วนป้ายที่แสดงดึงจาก dict TH/EN
  * type: 'text' (พิมพ์เอง) | 'year' (dropdown ค.ศ. ย้อนหลัง 80 ปี) | 'choice' (เลือก 1 ใน opts = [[ค่า, คีย์ป้าย], ...]) */
+// ภาษาที่ใช้แสดงฟอร์มโหวต: null = ใช้ภาษาเว็บ (TH/EN) ตามปกติ / object = ชุดคำแปลของภาษาที่ user เลือกแปลการ์ดไว้
+// (index.html ตั้งค่าตอนเปิดฟอร์มโหวต, profile.html ไม่เคยตั้ง = ใช้ภาษาเว็บเสมอ) ใช้เฉพาะฟังก์ชันสร้างฟอร์มด้านล่าง
+let FORM_I18N = null;
+function tv(key){ return (FORM_I18N && FORM_I18N[key] !== undefined) ? FORM_I18N[key] : t18n(key); }
 const OPT_HAS = [['yes','hasOpt'],['no','hasNotOpt']];
 const OPT_YES_NO = [['yes','yesOpt'],['no','noOpt']];
 const OPT_TRUE = [['not_at_all','scTrue1'],['not_really','scTrue2'],['fairly_true','scTrue3'],['very_true','scTrue4']];
@@ -3724,24 +3788,24 @@ const VOTE_SCHEMA = {
     { f:'rr_position', type:'text', label:'rrQPosition', ph:'rrQPositionPh', required:false, max:200 },
     { f:'rr_year_applied', type:'year', label:'rrQYear', required:true },
     { f:'rr_outcome', type:'choice', label:'rrQOutcome', required:true, opts:[['got_offer','rrOutGotOffer'],['not_selected','rrOutNotSelected'],['withdrew','rrOutWithdrew'],['ghosted','rrOutGhosted']] },
-    { f:'rr_selection_duration', type:'choice', label:'rrQDuration', required:true, opts:[['3_days','rrDur1'],['1_week','rrDur2'],['2_4_weeks','rrDur3'],['over_1_month','rrDur4']] },
-    { f:'rr_interview_rounds', type:'choice', label:'rrQRounds', required:true, opts:[['1','rrRounds1'],['2','rrRounds2'],['3','rrRounds3'],['4_plus','rrRounds4']] },
-    { f:'rr_has_test', type:'choice', label:'rrQTest', required:true, opts:OPT_HAS },
-    { f:'rr_has_assignment', type:'choice', label:'rrQAssignment', required:true, opts:OPT_HAS }
+    { f:'rr_selection_duration', type:'choice', label:'rrQDuration', hint:'rrQDurationHint', required:true, opts:[['3_days','rrDur1'],['1_week','rrDur2'],['2_4_weeks','rrDur3'],['over_1_month','rrDur4']] },
+    { f:'rr_interview_rounds', type:'choice', label:'rrQRounds', hint:'rrQRoundsHint', required:true, opts:[['0','rrRounds0'],['1','rrRounds1'],['2','rrRounds2'],['3','rrRounds3'],['4_plus','rrRounds4']] },
+    { f:'rr_has_test', type:'choice', label:'rrQTest', hint:'rrQTestHint', required:true, opts:OPT_HAS },
+    { f:'rr_has_assignment', type:'choice', label:'rrQAssignment', hint:'rrQAssignmentHint', required:true, opts:OPT_HAS }
   ],
   B: [
-    { f:'law_flexible_workplace', type:'choice', label:'lawQFlexible', required:true, opts:OPT_TRUE },
+    { f:'law_flexible_workplace', type:'choice', label:'lawQFlexible', hint:'lawQFlexibleHint', required:true, opts:OPT_TRUE },
     { f:'law_people_asset', type:'choice', label:'lawQPeopleAsset', required:true, opts:OPT_TRUE },
     { f:'law_learning_org', type:'choice', label:'lawQLearningOrg', required:true, opts:OPT_TRUE },
     { f:'law_open_to_staff', type:'choice', label:'lawQOpenToStaff', required:true, opts:OPT_TRUE },
-    { f:'law_top_down_bottom_up', type:'choice', label:'lawQTopDown', required:true, opts:[['very_top_down','tdOpt1'],['top_down','tdOpt2'],['bottom_up','tdOpt3'],['very_bottom_up','tdOpt4']] },
-    { f:'law_office_politics', type:'choice', label:'lawQPolitics', required:true, opts:[['none','polOpt1'],['little','polOpt2'],['fairly','polOpt3'],['a_lot','polOpt4']] },
+    { f:'law_top_down_bottom_up', type:'choice', label:'lawQTopDown', hint:'lawQTopDownHint', required:true, opts:[['very_top_down','tdOpt1'],['top_down','tdOpt2'],['bottom_up','tdOpt3'],['very_bottom_up','tdOpt4']] },
+    { f:'law_office_politics', type:'choice', label:'lawQPolitics', hint:'lawQPoliticsHint', required:true, opts:[['none','polOpt1'],['little','polOpt2'],['fairly','polOpt3'],['a_lot','polOpt4']] },
     { f:'law_work_life_balance', type:'choice', label:'lawQWorkLife', required:true, opts:OPT_TRUE },
-    { f:'law_flat_org', type:'choice', label:'lawQFlat', required:true, opts:OPT_YES_NO },
+    { f:'law_flat_org', type:'choice', label:'lawQFlat', hint:'lawQFlatHint', required:true, opts:OPT_YES_NO },
     { f:'law_performance_vs_tenure', type:'choice', label:'lawQPerfTenure', required:true, opts:[['performance','pvtOpt1'],['tenure','pvtOpt2']] },
     { f:'law_career_path_clarity', type:'choice', label:'lawQCareerPath', required:true, opts:OPT_CLEAR },
     { f:'law_vision_communication', type:'choice', label:'lawQVision', required:true, opts:OPT_CLEAR },
-    { f:'law_manager_feedback', type:'choice', label:'lawQFeedback', required:true, opts:OPT_CLEAR },
+    { f:'law_manager_feedback', type:'choice', label:'lawQFeedback', hint:'lawQFeedbackHint', required:true, opts:OPT_CLEAR },
     { f:'law_jd_match', type:'choice', label:'lawQJdMatch', required:true, opts:OPT_MATCH }
   ]
 };
@@ -3788,7 +3852,7 @@ function yearOptionsHTML(selected){
   const sel = Number(selected) || 0;
   const maxY = Math.max(cy, sel || cy);
   const minY = Math.min(cy - 80, sel || cy);
-  let html = `<option value="">${escapeHtml(t18n('rrYearPh'))}</option>`;
+  let html = `<option value="">${escapeHtml(tv('rrYearPh'))}</option>`;
   for(let y = maxY; y >= minY; y--){
     html += `<option value="${y}"${sel === y ? ' selected' : ''}>${y}</option>`;
   }
@@ -3797,21 +3861,23 @@ function yearOptionsHTML(selected){
 
 function questionRowHTML(q, prefill){
   const v = (prefill === undefined || prefill === null) ? '' : String(prefill);
-  const optionalMark = q.required ? '' : ` <span style="font-weight:400;color:var(--text-muted);">${escapeHtml(t18n('rrOptionalHint'))}</span>`;
+  const optionalMark = q.required ? '' : ` <span style="font-weight:400;color:var(--text-muted);">${escapeHtml(tv('rrOptionalHint'))}</span>`;
+  const hintHTML = q.hint ? `<div class="ynu-question-hint">${escapeHtml(tv(q.hint))}</div>` : '';
   let control;
   if(q.type === 'text'){
-    control = `<input type="text" class="vq-input" maxlength="${q.max || 200}" value="${escapeHtml(v)}" placeholder="${escapeHtml(t18n(q.ph))}">`;
+    control = `<input type="text" class="vq-input" maxlength="${q.max || 200}" value="${escapeHtml(v)}" placeholder="${escapeHtml(tv(q.ph))}">`;
   } else if(q.type === 'year'){
     control = `<select class="vq-input vq-select">${yearOptionsHTML(v)}</select>`;
   } else {
     control = `<div class="opt-btns">${q.opts.map(o =>
-      `<button type="button" class="ynu-btn${v === o[0] ? ' selected' : ''}" data-ynu-value="${o[0]}">${escapeHtml(t18n(o[1]))}</button>`
+      `<button type="button" class="ynu-btn${v === o[0] ? ' selected' : ''}" data-ynu-value="${o[0]}">${escapeHtml(tv(o[1]))}</button>`
     ).join('')}</div>`;
   }
   return `<div class="ynu-row" data-ynu-field="${q.f}" style="margin-bottom:14px;">
-    <div class="ynu-question-label">${escapeHtml(t18n(q.label))}${optionalMark}</div>
+    <div class="ynu-question-label"${hintHTML ? ' style="margin-bottom:2px;"' : ''}>${escapeHtml(tv(q.label))}${optionalMark}</div>
+    ${hintHTML}
     ${control}
-    <span class="ynu-missing-hint" style="display:none;">${t18n('errAnswerRequired')}</span>
+    <span class="ynu-missing-hint" style="display:none;">${tv('errAnswerRequired')}</span>
   </div>`;
 }
 
@@ -3924,13 +3990,13 @@ async function confirmVote(){
   const confirmBtn = document.getElementById('voteConfirmBtn');
   const cancelBtn = document.getElementById('voteCancelBtn');
   confirmBtn.disabled = true; if(cancelBtn) cancelBtn.disabled = true;
-  confirmBtn.textContent = t18n('savingText');
+  confirmBtn.textContent = tv('savingText');
 
   const payload = Object.assign({
     session_token: STATE.session.session_token,
     company_id: topicId,
     side,
-    main_reason: mainReason
+    comment: mainReason
   }, collectVoteQuestionAnswers(side));
 
   const res = await api('vote', payload, 'POST');
@@ -3939,7 +4005,8 @@ async function confirmVote(){
 
   if(!res.success){
     // เออเรอร์ก็ต้องเป็น pop up เหมือนกัน ไม่ใช่ toast
-    showInfoPopup(pickLang(res.message), t18n('understandBtn'));
+    showInfoPopup(pickLang(res.message), tv('understandBtn'), tv('voteConfirmTitle'));
+    applyFormDir(!!(FORM_LANG && RTL_LANGS.indexOf(FORM_LANG) !== -1)); // popup นี้ยังอยู่ใน flow โหวต ใช้ภาษา/ทิศทางเดียวกับฟอร์ม
     return;
   }
 
@@ -4074,7 +4141,7 @@ function shareTopic(topicId){
   const t = STATE.topics.find(x=> x.company_id === topicId);
   if(!t) return;
   const url = buildShareUrl(topicId);
-  const teaser = `${joinCaption(t)} หรือ ${leaveCaption(t)} — มาดูว่าคนที่มีประสบการณ์ทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง 👀`;
+  const teaser = `${applyCaption(t)} หรือ ${workCaption(t)} — มาดูว่าคนที่มีประสบการณ์ทำงานที่ "${t.company_name}" คิดยังไงกันบ้าง 👀`;
   // P0-fix (share order mismatch): เดิมส่ง url แยก field ให้ navigator.share() ทำให้แอปปลายทาง (เช่น LINE)
   // เป็นคนตัดสินใจเองว่าจะเรียงข้อความ/ลิงก์ยังไงตอนแปะ (บางแอปดันลิงก์ขึ้นก่อนข้อความ) เราคุมลำดับไม่ได้เลย
   // -> ฝังลิงก์ไว้ท้าย text เป็นก้อนเดียวกันเหมือนฝั่ง clipboard (desktop) ด้านล่าง แล้วไม่ส่ง url แยกอีกต่อไป
@@ -4218,12 +4285,12 @@ function smartTruncate(text, maxLen){
 }
 
 function tickerItemHTML(item){
-  const isJoin = item.side === 'A';
-  const badgeText = t18n(isJoin ? 'tickerJoinBadge' : 'tickerLeaveBadge');
-  const sideLabel = t18n(isJoin ? 'joinBtnLabel' : 'leaveBtnLabel');
+  const isApply = item.side === 'A';
+  const badgeText = t18n(isApply ? 'tickerApplyBadge' : 'tickerWorkBadge');
+  const sideLabel = t18n(isApply ? 'applyBtnLabel' : 'workBtnLabel');
   const snippet = smartTruncate(item.comment, 100);
   return `<button type="button" class="ticker-item" data-topic="${item.company_id}" data-side="${item.side}" data-side-label="${escapeHtml(sideLabel)}">
-    <span class="ticker-badge ${isJoin ? 'a' : 'b'}">${escapeHtml(badgeText)}</span>
+    <span class="ticker-badge ${isApply ? 'a' : 'b'}">${escapeHtml(badgeText)}</span>
     <span class="ticker-text">${escapeHtml(snippet)}<span class="tk-ellipsis">... </span><span class="tk-company">(${escapeHtml(item.company_name || '')})</span></span>
   </button><span class="ticker-sep">•</span>`;
 }
