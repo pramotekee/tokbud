@@ -167,8 +167,8 @@ function buildVotesByCompany(votes) {
 // พอร์ตตรงจาก summarizeCompany() เดิม (appscript.txt บรรทัด 1010-1031)
 function summarizeCompany(t, votes, userMap) {
   const companyVotes = votes.filter(v => v.company_id === t.company_id);
-  const joinVotes = companyVotes.filter(v => v.side === 'A');
-  const leaveVotes = companyVotes.filter(v => v.side === 'B');
+  const applyVotes = companyVotes.filter(v => v.side === 'A');
+  const workVotes = companyVotes.filter(v => v.side === 'B');
   const creator = userMap ? userMap[t.user_id] : null;
 
   return {
@@ -180,8 +180,8 @@ function summarizeCompany(t, votes, userMap) {
     category: t.category,
     tags: [t.tag_1, t.tag_2, t.tag_3, t.tag_4, t.tag_5].filter(Boolean),
     total_votes: companyVotes.length,
-    join_count: joinVotes.length,
-    leave_count: leaveVotes.length,
+    apply_count: applyVotes.length,
+    work_count: workVotes.length,
     start_date: t.start_date,
     creator_username: creator ? creator.username : '',
     creator_profile_image: creator ? creator.profile_image_url : ''
@@ -383,7 +383,7 @@ const VOTE_SCHEMA = {
     { f: 'rr_year_applied', type: 'year', required: true },
     { f: 'rr_outcome', type: 'choice', required: true, opts: ['got_offer', 'not_selected', 'withdrew', 'ghosted'] },
     { f: 'rr_selection_duration', type: 'choice', required: true, opts: ['3_days', '1_week', '2_4_weeks', 'over_1_month'] },
-    { f: 'rr_interview_rounds', type: 'choice', required: true, opts: ['1', '2', '3', '4_plus'] },
+    { f: 'rr_interview_rounds', type: 'choice', required: true, opts: ['0', '1', '2', '3', '4_plus'] },
     { f: 'rr_has_test', type: 'choice', required: true, opts: YES_NO },
     { f: 'rr_has_assignment', type: 'choice', required: true, opts: YES_NO }
   ],
@@ -608,7 +608,7 @@ function buildTickerComments(companies, votesByCompany) {
 
   let votes = [];
   companies.forEach(c => { (votesByCompany[c.company_id] || []).forEach(v => votes.push(v)); });
-  votes = votes.filter(v => String(v.main_reason || '').trim() !== '');
+  votes = votes.filter(v => String(v.comment || '').trim() !== '');
   if (votes.length < TICKER_MIN_COMMENTS) return [];
 
   const shuffled = votes.slice();
@@ -626,7 +626,7 @@ function buildTickerComments(companies, votesByCompany) {
     if (out.length < TICKER_SAMPLE_SIZE && bi < sideB.length) out.push(sideB[bi++]);
   }
   return out.map(v => ({
-    comment: v.main_reason, company_id: v.company_id,
+    comment: v.comment, company_id: v.company_id,
     company_name: companyMap[v.company_id] ? companyMap[v.company_id].company_name : v.company_name, side: v.side
   }));
 }
@@ -655,13 +655,13 @@ async function actionGetComments(p) {
 
   const voteRows = await getSheetRows(SHEETS.VOTES);
   const votes = rowsToObjects(voteRows).filter(v =>
-    v.company_id === p.company_id && v.side === p.side && String(v.main_reason || '').trim() !== ''
+    v.company_id === p.company_id && v.side === p.side && String(v.comment || '').trim() !== ''
   );
   votes.sort((a, b) => new Date(b.last_changed_at) - new Date(a.last_changed_at));
 
   const { pageSlice, total, page, pageSize, totalPages } = paginate(votes, p);
   const comments = pageSlice.map(v => {
-    const base = { comment: v.main_reason, last_changed_at: v.last_changed_at };
+    const base = { comment: v.comment, last_changed_at: v.last_changed_at };
     return Object.assign(base, pickVoteAnswers(p.side, v));
   });
 
@@ -691,7 +691,7 @@ async function actionGetCompanyDetail(p) {
       const grp = getAgeGroup(calculateAge(u.birthday));
       ageGroupCount[grp] = (ageGroupCount[grp] || 0) + 1;
     }
-    if (String(v.main_reason || '').trim() !== '') {
+    if (String(v.comment || '').trim() !== '') {
       if (v.side === 'A') commentCountA++; else if (v.side === 'B') commentCountB++;
     }
   });
@@ -1275,7 +1275,7 @@ async function actionVote(p) {
   if (!company) return fail('ไม่พบบริษัทนี้ / Company not found');
   if (company.status === 'deleted') return fail('ไม่พบบริษัทนี้ / Company not found');
 
-  const comment = String(p.main_reason || '').trim().slice(0, 5000);
+  const comment = String(p.comment || '').trim().slice(0, 5000);
   if (!comment) return fail('กรุณากรอกความคิดเห็น / Please enter your comment');
 
   const checked = validateVoteAnswers(p.side, p);
@@ -1293,7 +1293,7 @@ async function actionVote(p) {
     const voteId = generateUniqueCode(existingVoteIds);
     const rowMap = Object.assign({
       vote_id: voteId, company_id: p.company_id, user_id: user.user_id, side: p.side,
-      main_reason: comment, voted_at: nowIso, last_changed_at: nowIso,
+      comment: comment, voted_at: nowIso, last_changed_at: nowIso,
       gender_snapshot: user.gender,
       age_group_snapshot: user.birthday ? getAgeGroup(calculateAge(user.birthday)) : '',
       province_snapshot: user.province, company_name: company.company_name
@@ -1310,9 +1310,9 @@ async function actionVote(p) {
     return ok({ message: 'ส่งความคิดเห็นสำเร็จ / Submitted successfully', is_new: true });
   }
 
-  // แก้ไขของเดิม: update ทีละเซลล์เฉพาะคอลัมน์ที่เปลี่ยน (main_reason, last_changed_at, + sideFields ทั้งหมด)
+  // แก้ไขของเดิม: update ทีละเซลล์เฉพาะคอลัมน์ที่เปลี่ยน (comment, last_changed_at, + sideFields ทั้งหมด)
   // ไม่ใช่ overwrite ทั้งแถว กัน column อื่นที่ไม่เกี่ยว (เช่น voted_at, snapshot ตอนโหวตครั้งแรก) โดนทับหายไป
-  const updateMap = Object.assign({ main_reason: comment, last_changed_at: nowIso }, sideFields);
+  const updateMap = Object.assign({ comment: comment, last_changed_at: nowIso }, sideFields);
   const data = Object.keys(updateMap).map(key => {
     const col = colIndexByName(voteHeaders, key);
     return {
@@ -1600,7 +1600,7 @@ async function actionGetMyComments(p) {
       company_name: companyMap[v.company_id] ? companyMap[v.company_id].company_name : v.company_name,
       card_color: companyMap[v.company_id] ? companyMap[v.company_id].card_color : '',
       side: v.side,
-      main_reason: v.main_reason,
+      comment: v.comment,
       voted_at: v.voted_at,
       last_changed_at: v.last_changed_at,
       ...pickVoteAnswers(v.side, v)
@@ -1867,13 +1867,13 @@ async function actionExportCompanyVotes(p) {
   const votes = rowsToObjects(voteRows).filter(v => v.company_id === p.company_id);
 
   // คอลัมน์คำตอบตาม VOTE_SCHEMA (rr_* ของ side A แล้วต่อด้วย law_* ของ side B) — คนละฝั่งเว้นว่างตามธรรมชาติ
-  const header = ['no', 'timestamp', 'side', 'main_reason'].concat(ALL_VOTE_QUESTION_KEYS).concat(['gender', 'age_group']);
+  const header = ['no', 'timestamp', 'side', 'comment'].concat(ALL_VOTE_QUESTION_KEYS).concat(['gender', 'age_group']);
   const lines = [header.map(csvEscape).join(',')];
 
   votes.forEach((v, idx) => {
     const timestampStr = formatExportTimestamp(v.last_changed_at);
     const sideLabel = v.side === 'A' ? 'Recruitment Reality' : (v.side === 'B' ? 'Life at Work' : (v.side || ''));
-    lines.push([idx + 1, timestampStr, sideLabel, v.main_reason || '']
+    lines.push([idx + 1, timestampStr, sideLabel, v.comment || '']
       .concat(ALL_VOTE_QUESTION_KEYS.map(k => v[k] || ''))
       .concat([genderToEn(v.gender_snapshot), v.age_group_snapshot || ''])
       .map(csvEscape).join(','));
