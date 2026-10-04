@@ -3565,7 +3565,10 @@ function loadFormI18nAll(){
     FORM_I18N_PROMISE = fetch(FORM_I18N_URL, ctrl ? { signal: ctrl.signal } : undefined)
       .then(r => { if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
       .then(j => { FORM_I18N_ALL = j; return j; })
-      .catch(() => { FORM_I18N_PROMISE = null; return null; }) // ล้มเหลว = ครั้งหน้าลองใหม่ได้
+      .catch(err => { // ล้มเหลว = ครั้งหน้าลองใหม่ได้ + บอกสาเหตุใน Console (F12) ไว้ไล่ปัญหา ไม่ล้มเงียบ
+        console.warn('[vote-i18n] load failed (' + FORM_I18N_URL + '):', (err && err.message) ? err.message : err);
+        FORM_I18N_PROMISE = null; return null;
+      })
       .finally(() => { if(timer) clearTimeout(timer); });
   }
   return FORM_I18N_PROMISE;
@@ -3701,6 +3704,7 @@ function showVoteSuccessPopup(){
 // แต่ยังโชว์ตัวนับให้ user เห็นความคืบหน้า element เป็น static (อยู่ใน DOM ตลอด ไม่โดน re-render ทิ้ง) จึง bind ครั้งเดียวพอ
 document.getElementById('voteCommentInput').addEventListener('input', (e)=>{
   document.getElementById('voteCommentCounter').textContent = `${e.target.value.length}/5000`;
+  if(e.target.value.trim()) clearYnuMissing(document.getElementById('voteCommentWrap'));
 });
 
 // ภาษาของฟอร์มโหวตตอนนี้ (null = ภาษาเว็บ) / ตั้งค่าตอนเปิดฟอร์มจากภาษาที่ user เลือกแปลการ์ดนั้นไว้
@@ -3748,6 +3752,7 @@ async function handleVoteClick(topicId, side, btnEl){
   const commentInput = document.getElementById('voteCommentInput');
   const commentLabel = document.getElementById('voteCommentLabel');
   commentInput.value = '';
+  clearYnuMissing(document.getElementById('voteCommentWrap')); // ล้างกรอบแดง/ข้อความเตือนค้างจากการกด Confirm ตอนยังไม่กรอกรอบก่อน (กล่อง comment เป็น element คงที่ ไม่ได้ถูกสร้างใหม่ทุกครั้งเหมือนช่องคำถาม)
   commentLabel.innerHTML = `${tv(side === 'A' ? 'applyCommentLabel' : 'workCommentLabel')} <span class="req-mark">${tv('requiredMark')}</span>`;
   commentInput.placeholder = tv(side === 'A' ? 'applyCommentPh' : 'workCommentPh');
   document.getElementById('voteCommentMissingHint').textContent = tv('errMainReasonRequired');
@@ -3762,6 +3767,7 @@ async function handleVoteClick(topicId, side, btnEl){
      <button class="btn btn-primary full-btn" id="voteConfirmBtn">${tv('voteConfirmBtnLabel')}</button>`;
   document.getElementById('voteCancelBtn').addEventListener('click', ()=>{
     pendingVoteConfirm = null;
+    clearYnuMissing(document.getElementById('voteCommentWrap'));
     closeModal('voteConfirmModal');
   });
   document.getElementById('voteConfirmBtn').addEventListener('click', confirmVote);
