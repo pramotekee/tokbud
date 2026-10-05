@@ -1358,7 +1358,7 @@ const I18N = {
     rrQYear: 'ปีที่สมัคร (ค.ศ.)', rrYearPh: 'เลือกปี',
     rrQOutcome: 'ผลลัพธ์', rrOutGotOffer: 'ได้รับ offer', rrOutNotSelected: 'ไม่ผ่านการคัดเลือก (บริษัทแจ้งผล)', rrOutWithdrew: 'ฉันถอนตัวเอง', rrOutGhosted: 'บริษัทเงียบหาย ไม่แจ้งผล',
     rrQDuration: 'ระยะเวลาคัดเลือกทั้งกระบวนการ', rrDur1: 'ภายใน 3 วัน', rrDur2: '4 วัน–1 สัปดาห์', rrDur3: '1–4 สัปดาห์', rrDur4: 'เกิน 1 เดือน',
-    rrQRounds: 'จำนวนรอบสัมภาษณ์ทั้งหมด', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQRounds: 'จำนวนรอบสัมภาษณ์ทั้งหมด', rrQFeel: 'หลังจากสัมภาษณ์ คุณอยากร่วมงานกับบริษัทนี้มากขึ้นหรือน้อยลง?', rrFeel1: '😣 น้อยลงมาก', rrFeel2: '🙁 น้อยลง', rrFeel3: '😐 ความรู้สึกไม่เปลี่ยน', rrFeel4: '🙂 มากขึ้น', rrFeel5: '🤩 มากขึ้นมาก', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
     rrQTest: 'มีการทดสอบระหว่างคัดเลือกไหม', rrQAssignment: 'มี Assignment ไหม', hasOpt: 'มี', hasNotOpt: 'ไม่มี',
     lawQFlexible: 'ที่นี่ทำงานได้ยืดหยุ่นจริง', lawQPeopleAsset: 'บริษัทปฏิบัติกับพนักงานสมกับที่พูดว่า “คนคือทรัพย์สินที่มีค่าที่สุดขององค์กร”',
     lawQLearningOrg: 'องค์กรส่งเสริมการเรียนรู้และพัฒนาพนักงานอย่างจริงจัง', lawQOpenToStaff: 'ผู้บริหารและหัวหน้ารับฟังและเปิดรับไอเดียใหม่ๆ จากพนักงาน',
@@ -1489,7 +1489,7 @@ const I18N = {
     rrQYear: 'Year applied', rrYearPh: 'Select year',
     rrQOutcome: 'Outcome', rrOutGotOffer: 'Got an offer', rrOutNotSelected: 'Rejected (company informed me)', rrOutWithdrew: 'I withdrew', rrOutGhosted: 'Company went silent, never told me',
     rrQDuration: 'Total selection duration', rrDur1: 'Within 3 days', rrDur2: '4 days–1 week', rrDur3: '1–4 weeks', rrDur4: 'Over 1 month',
-    rrQRounds: 'Total interview rounds', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
+    rrQRounds: 'Total interview rounds', rrQFeel: 'After the interview, did you want to work at this company more or less?', rrFeel1: '😣 Much less', rrFeel2: '🙁 Less', rrFeel3: '😐 No change', rrFeel4: '🙂 More', rrFeel5: '🤩 Much more', rrRounds1: '1', rrRounds2: '2', rrRounds3: '3', rrRounds4: '4+',
     rrQTest: 'Was there a test?', rrQAssignment: 'Was there an assignment?', hasOpt: 'Yes', hasNotOpt: 'No',
     lawQFlexible: 'Working here is genuinely flexible', lawQPeopleAsset: 'The company lives up to “People are our greatest asset”',
     lawQLearningOrg: 'The company genuinely supports employee learning and development', lawQOpenToStaff: 'Management listens and is open to new ideas from employees',
@@ -3789,6 +3789,7 @@ const OPT_YES_NO = [['yes','yesOpt'],['no','noOpt']];
 const OPT_TRUE = [['not_at_all','scTrue1'],['not_really','scTrue2'],['fairly_true','scTrue3'],['very_true','scTrue4']];
 const OPT_CLEAR = [['not_at_all','scClear1'],['not_very','scClear2'],['fairly_clear','scClear3'],['very_clear','scClear4']];
 const OPT_MATCH = [['not_at_all','scMatch1'],['not_really','scMatch2'],['fairly_match','scMatch3'],['very_match','scMatch4']];
+const OPT_FEEL = [['very_negative','rrFeel1'],['negative','rrFeel2'],['no_change','rrFeel3'],['positive','rrFeel4'],['very_positive','rrFeel5']];
 const VOTE_SCHEMA = {
   A: [
     { f:'rr_position', type:'text', label:'rrQPosition', ph:'rrQPositionPh', required:false, max:200 },
@@ -3796,6 +3797,8 @@ const VOTE_SCHEMA = {
     { f:'rr_outcome', type:'choice', label:'rrQOutcome', required:true, opts:[['got_offer','rrOutGotOffer'],['not_selected','rrOutNotSelected'],['withdrew','rrOutWithdrew'],['ghosted','rrOutGhosted']] },
     { f:'rr_selection_duration', type:'choice', label:'rrQDuration', hint:'rrQDurationHint', required:true, opts:[['3_days','rrDur1'],['1_week','rrDur2'],['2_4_weeks','rrDur3'],['over_1_month','rrDur4']] },
     { f:'rr_interview_rounds', type:'choice', label:'rrQRounds', hint:'rrQRoundsHint', required:true, opts:[['0','rrRounds0'],['1','rrRounds1'],['2','rrRounds2'],['3','rrRounds3'],['4_plus','rrRounds4']] },
+    // ข้อเงื่อนไข: ไม่แสดงเลยจนกว่าจะเลือกจำนวนรอบ ≠ 0 (ไม่เคยสัมภาษณ์ = ไม่มีข้อนี้) ต้องอยู่ถัดจาก rr_interview_rounds
+    { f:'rr_interview_experience', type:'choice', label:'rrQFeel', required:true, skipIf:{ f:'rr_interview_rounds', eq:'0' }, opts:OPT_FEEL },
     { f:'rr_has_test', type:'choice', label:'rrQTest', hint:'rrQTestHint', required:true, opts:OPT_HAS },
     { f:'rr_has_assignment', type:'choice', label:'rrQAssignment', hint:'rrQAssignmentHint', required:true, opts:OPT_HAS }
   ],
@@ -3835,7 +3838,7 @@ function voteOptionText(q, value){
 function buildAnswerGridHTML(side, data){
   data = data || {};
   const cells = (VOTE_SCHEMA[side] || [])
-    .filter(q => q.type === 'choice')
+    .filter(q => q.type === 'choice' && !(q.skipIf && !String(data[q.f] || '').trim()))
     .map(q => answerCellHTML(t18n(q.label), voteOptionText(q, data[q.f]) || '–'))
     .join('');
   return `<div class="answer-grid">${cells}</div>`;
@@ -3865,7 +3868,7 @@ function yearOptionsHTML(selected){
   return html;
 }
 
-function questionRowHTML(q, prefill){
+function questionRowHTML(q, prefill, hidden){
   const v = (prefill === undefined || prefill === null) ? '' : String(prefill);
   const optionalMark = q.required ? '' : ` <span style="font-weight:400;color:var(--text-muted);">${escapeHtml(tv('rrOptionalHint'))}</span>`;
   const hintHTML = q.hint ? `<div class="ynu-question-hint">${escapeHtml(tv(q.hint))}</div>` : '';
@@ -3879,7 +3882,8 @@ function questionRowHTML(q, prefill){
       `<button type="button" class="ynu-btn${v === o[0] ? ' selected' : ''}" data-ynu-value="${o[0]}">${escapeHtml(tv(o[1]))}</button>`
     ).join('')}</div>`;
   }
-  return `<div class="ynu-row" data-ynu-field="${q.f}" style="margin-bottom:14px;">
+  const skipAttr = q.skipIf ? ` data-skip-field="${q.skipIf.f}" data-skip-eq="${q.skipIf.eq}"` : '';
+  return `<div class="ynu-row" data-ynu-field="${q.f}"${skipAttr} style="margin-bottom:14px;${hidden ? 'display:none;' : ''}">
     <div class="ynu-question-label"${hintHTML ? ' style="margin-bottom:2px;"' : ''}>${escapeHtml(tv(q.label))}${optionalMark}</div>
     ${hintHTML}
     ${control}
@@ -3889,13 +3893,36 @@ function questionRowHTML(q, prefill){
 
 function buildVoteQuestionsHTML(side, prefillData){
   prefillData = prefillData || {};
-  return (VOTE_SCHEMA[side] || []).map(q => questionRowHTML(q, prefillData[q.f])).join('');
+  return (VOTE_SCHEMA[side] || []).map(q => {
+    // ข้อเงื่อนไข: เริ่มต้นซ่อนไว้ จนกว่าข้อควบคุมจะมีคำตอบที่ ≠ eq (ฟอร์มใหม่ = ยังไม่ตอบ = ซ่อน / ฟอร์มแก้ไข = ดูจากค่าเดิม)
+    const gate = q.skipIf ? String(prefillData[q.skipIf.f] || '') : '';
+    const hidden = !!q.skipIf && (!gate || gate === q.skipIf.eq);
+    return questionRowHTML(q, prefillData[q.f], hidden);
+  }).join('');
 }
 
 function clearYnuMissing(row){
   row.classList.remove('ynu-missing');
   const hint = row.querySelector('.ynu-missing-hint');
   if(hint) hint.style.display = 'none';
+}
+
+// โชว์/ซ่อนข้อเงื่อนไขตามคำตอบของข้อควบคุม (ใน scope เดียวกัน) — ซ่อน = หายจากหน้าจอจริง + ล้างตัวเลือกที่เคยกดไว้
+// + ล้างกรอบแดง เพื่อให้ตอนส่งไม่มีคำตอบค้างของข้อที่ไม่ active
+function syncVoteConditionals(scope){
+  scope = scope || document;
+  scope.querySelectorAll('.ynu-row[data-skip-field]').forEach(row=>{
+    const ctrl = scope.querySelector(`.ynu-row[data-ynu-field="${row.dataset.skipField}"]`);
+    const sel = ctrl ? ctrl.querySelector('.ynu-btn.selected') : null;
+    const val = sel ? sel.dataset.ynuValue : '';
+    if(val && val !== row.dataset.skipEq){
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+      row.querySelectorAll('.ynu-btn.selected').forEach(b=> b.classList.remove('selected'));
+      clearYnuMissing(row);
+    }
+  });
 }
 
 function bindVoteQuestionToggles(){
@@ -3905,6 +3932,7 @@ function bindVoteQuestionToggles(){
       row.querySelectorAll('.ynu-btn').forEach(b=> b.classList.remove('selected'));
       btn.classList.add('selected');
       clearYnuMissing(row);
+      syncVoteConditionals(row.parentElement);
     });
   });
   document.querySelectorAll('.ynu-row[data-ynu-field] .vq-select').forEach(sel=>{
@@ -3933,6 +3961,7 @@ function collectVoteQuestionAnswers(){
 
 // ข้อนี้ตอบแล้วหรือยัง (ข้อที่ไม่บังคับ = ผ่านเสมอ)
 function voteRowAnswered(row){
+  if(row.style.display === 'none') return true; // ข้อเงื่อนไขที่ไม่ active (ซ่อนอยู่) ไม่ต้องตอบ
   const q = VOTE_QUESTION_BY_FIELD[row.dataset.ynuField];
   if(!q || !q.required) return true;
   if(q.type === 'year'){
