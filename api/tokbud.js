@@ -384,6 +384,8 @@ const VOTE_SCHEMA = {
     { f: 'rr_outcome', type: 'choice', required: true, opts: ['got_offer', 'not_selected', 'withdrew', 'ghosted'] },
     { f: 'rr_selection_duration', type: 'choice', required: true, opts: ['3_days', '1_week', '2_4_weeks', 'over_1_month'] },
     { f: 'rr_interview_rounds', type: 'choice', required: true, opts: ['0', '1', '2', '3', '4_plus'] },
+    // ข้อเงื่อนไข: active เฉพาะคนที่เคยสัมภาษณ์ (rounds ≠ '0') — ต้องอยู่ถัดจาก rr_interview_rounds เสมอ เพราะ validate ไล่ตามลำดับ
+    { f: 'rr_interview_experience', type: 'choice', required: true, skipIf: { f: 'rr_interview_rounds', eq: '0' }, opts: ['very_negative', 'negative', 'no_change', 'positive', 'very_positive'] },
     { f: 'rr_has_test', type: 'choice', required: true, opts: YES_NO },
     { f: 'rr_has_assignment', type: 'choice', required: true, opts: YES_NO }
   ],
@@ -415,6 +417,12 @@ function validateVoteAnswers(side, p) {
   const fields = {};
   const cy = currentYearBangkok();
   for (const q of VOTE_SCHEMA[side]) {
+    // ข้อที่มีเงื่อนไข (skipIf): ถ้าข้อควบคุมตรงกับ eq (เช่น ไม่เคยสัมภาษณ์ rounds='0') ข้อนี้ไม่ active — เก็บเป็นค่าว่างเสมอ
+    // ไม่สนว่า client ส่งอะไรมา (กันข้อมูลเพี้ยน) และตอนแก้ไขของเดิมค่าว่างนี้จะทับค่าเก่าที่ค้างอยู่ให้ด้วย
+    if (q.skipIf) {
+      const gate = p[q.skipIf.f] === undefined || p[q.skipIf.f] === null ? '' : String(p[q.skipIf.f]).trim();
+      if (gate === q.skipIf.eq) { fields[q.f] = ''; continue; }
+    }
     const raw = p[q.f] === undefined || p[q.f] === null ? '' : String(p[q.f]).trim();
     if (q.type === 'text') {
       fields[q.f] = raw.slice(0, q.max || 200);
