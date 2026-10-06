@@ -1339,6 +1339,11 @@ const RETRYABLE_POST_ACTIONS = ['exportCompanyVotes'];
 // uploadImage ต้องรอนานกว่า action อื่น: backend ต้องผ่าน Vercel -> Apps Script -> Google Drive แล้วคำตอบเดินทางกลับมาทางเดิม
 // (ช่วงขากลับเคยช้ากว่า 15 วิทั้งที่ไฟล์ขึ้น Drive เรียบร้อยแล้ว จึงฟ้อง timeout ทั้งที่จริงๆ สำเร็จ) ต้องให้มากกว่า timeout ของ proxy ใน tokbud.js (35 วิ) เสมอ
 const API_TIMEOUT_MS_BY_ACTION = { uploadImage: 45000 };
+// 6 ต.ค.: อัพโหลดรูปส่งตรงจากเบราว์เซอร์ไป Apps Script (เหมือนก่อนย้ายระบบ) ไม่ผ่าน Vercel proxy แล้ว
+// หลักฐาน: Apps Script บันทึกรูปลง Drive สำเร็จทุกครั้ง (ไฟล์ขึ้นครบทุกรอบที่ทดสอบ) แต่คำตอบกลับไม่ถึงหน้าเว็บผ่านทาง Vercel -> ตัดทางนั้นทิ้ง
+// ⚠️ ต้องตรงกับ URL ของ deployment ปัจจุบัน (WEBAPP_URL ใน appscript.txt) ถ้า redeploy แบบ "New deployment" แล้ว URL เปลี่ยน ต้องแก้ที่นี่ด้วย
+// ถ้าต้องการกลับไปใช้ทาง Vercel: เปลี่ยนค่านี้เป็น CONFIG.API_URL
+const UPLOAD_API_URL = 'https://script.google.com/macros/s/AKfycbwH_KorLbUReFtJ0q3uxLBcc802Crm451rlc31PlOeBZCL2oL9bUu-Jlb3bJnMBQnlbgw/exec';
 
 async function api(action, params = {}, method = 'GET', _isRetry = false, _firstDiag = ''){
   const controller = new AbortController();
@@ -1351,7 +1356,7 @@ async function api(action, params = {}, method = 'GET', _isRetry = false, _first
       const qs = new URLSearchParams({action, ...params}).toString();
       res = await fetch(`${CONFIG.API_URL}?${qs}`, { signal: controller.signal });
     } else {
-      res = await fetch(CONFIG.API_URL, {
+      res = await fetch(action === 'uploadImage' ? UPLOAD_API_URL : CONFIG.API_URL, {
         method: 'POST',
         body: JSON.stringify({action, ...params}),
         signal: controller.signal
