@@ -655,6 +655,11 @@
     font-size:12.5px; font-weight:600; color:var(--text-muted); padding:6px 4px; word-break:break-word;
   }
   #coverField .cover-upload{ background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white); }
+  .cover-upload{ cursor:pointer; }
+  .cover-upload.drag-over, #coverField .cover-upload.drag-over{
+    border-style:solid; border-color:var(--card-color, var(--primary));
+    background:color-mix(in srgb, var(--card-color, var(--primary)) 25%, white);
+  }
   .color-swatches{ display:flex; flex-wrap:wrap; gap:10px; }
   .color-swatch{
     width:30px; height:30px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line);
@@ -1401,6 +1406,7 @@ const I18N = {
     errSignupGenderRequired: 'กรุณาเลือกเพศ', errSignupCountryRequired: 'กรุณาเลือกประเทศ',
     errSignupProvinceRequired: 'กรุณาเลือกจังหวัด', myAccountFallback: 'บัญชีของฉัน', loggedOutToast: 'ออกจากระบบแล้ว',
     imageLoadFailToast: 'โหลดรูปไม่สำเร็จ กรุณาลองอัพโหลดรูปใหม่อีกครั้ง', imageUploadFailToast: 'อัพโหลดรูปไม่สำเร็จ',
+    imageOnlyToast: 'ไฟล์นี้ไม่ใช่รูปภาพ กรุณาเลือกไฟล์รูป เช่น JPG หรือ PNG', imageReadFailToast: 'เปิดรูปนี้ไม่ได้ ลองเลือกรูปอื่น (เช่น JPG หรือ PNG) นะ',
     loginErrorRequired: 'กรุณากรอกเบอร์โทรและ Passcode ให้ครบ', loggingInText: 'กำลังเข้าสู่ระบบ...', signingUpText: 'กำลังสมัครสมาชิก...', submittingTopicText: 'กำลังส่งข้อมูล...',
     forgotPasscodeLink: 'ลืม Passcode?', forgotPasscodeTitle: 'ตั้ง Passcode ใหม่',
     forgotPasscodeHint: 'กรอกเบอร์โทรและอีเมลที่ใช้ตอนสมัคร เพื่อตั้ง Passcode ใหม่ด้วยตัวเอง',
@@ -1531,6 +1537,7 @@ const I18N = {
     errSignupGenderRequired: 'Please select your gender', errSignupCountryRequired: 'Please select a country',
     errSignupProvinceRequired: 'Please select a province', myAccountFallback: 'My Account', loggedOutToast: 'Logged out',
     imageLoadFailToast: 'Failed to load image, please try uploading again', imageUploadFailToast: 'Image upload failed',
+    imageOnlyToast: 'That file isn\'t an image. Please choose a photo, like a JPG or PNG.', imageReadFailToast: 'We couldn\'t open that image. Try a different one, like a JPG or PNG.',
     loginErrorRequired: 'Please enter your phone number and Passcode.', loggingInText: 'Logging in...', signingUpText: 'Signing up...', submittingTopicText: 'Submitting...',
     forgotPasscodeLink: 'Forgot Passcode?', forgotPasscodeTitle: 'Reset your Passcode',
     forgotPasscodeHint: 'Enter the phone number and email you signed up with to set a new Passcode yourself.',
@@ -2362,10 +2369,14 @@ function fileToBase64(file){
 
 // ย่อรูปฝั่ง frontend ก่อนอัพโหลด กันไฟล์ใหญ่จากมือถือ
 function compressImage(file, maxSize = 1600, quality = 0.8){
-  return new Promise((resolve)=>{
+  return new Promise((resolve, reject)=>{
     const img = new Image();
     const reader = new FileReader();
+    // อ่าน/ถอดรหัสรูปไม่ได้ (เช่น ไฟล์เสีย หรือ HEIC ที่ browser เปิดไม่ได้) ต้อง reject เสมอ ไม่งั้น spinner ค้างตลอดกาล
+    const readFail = ()=> reject(new Error(t('imageReadFailToast')));
+    reader.onerror = readFail;
     reader.onload = (e)=>{
+      img.onerror = readFail;
       img.onload = ()=>{
         let { width, height } = img;
         if(width > maxSize || height > maxSize){
@@ -2614,22 +2625,61 @@ async function loadCreateFormOptions(){
   renderHeaderAuth();
 }
 
-document.getElementById('coverFile').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
+/* ---------- Logo dropzone: กดเลือกไฟล์ หรือ ลากรูปมาวางบนช่องโลโก้ (ใช้ร่วมกันทุกช่อง .cover-upload) ---------- */
+function dtHasFiles(e){
+  return !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1);
+}
+function bindImageDropzone(zone, onFile){
+  let depth = 0; // นับ dragenter/dragleave ซ้อนกัน กันกรอบกะพริบตอนลากผ่านลูก (เช่น <img>) ข้างใน
+  zone.addEventListener('dragenter', (e)=>{ if(!dtHasFiles(e)) return; e.preventDefault(); depth++; zone.classList.add('drag-over'); });
+  zone.addEventListener('dragover', (e)=>{ if(!dtHasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  zone.addEventListener('dragleave', (e)=>{ if(!dtHasFiles(e)) return; depth = Math.max(0, depth - 1); if(!depth) zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop', (e)=>{
+    if(!dtHasFiles(e)) return;
+    e.preventDefault(); depth = 0; zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0]; // รับแค่ไฟล์แรก
+    if(f) onFile(f);
+  });
+}
+// กัน browser เปิดรูปทับหน้าเว็บ (ฟอร์มที่กรอกไว้หาย) ถ้า user ลากพลาดไปวางนอกช่องโลโก้
+['dragover','drop'].forEach((evName)=>{
+  window.addEventListener(evName, (e)=>{
+    if(!dtHasFiles(e)) return;
+    if(e.target && e.target.closest && e.target.closest('.cover-upload')) return;
+    e.preventDefault();
+    if(evName === 'dragover') e.dataTransfer.dropEffect = 'none';
+  });
+});
+
+let coverUploading = false; // กันเลือก/ลากไฟล์ซ้อนระหว่างที่รูปก่อนหน้ายังอัพโหลดอยู่ (ข้อมูล/state ชนกัน)
+async function handleCoverFile(file){
+  if(!file || coverUploading) return;
+  if(!/^image\//i.test(file.type || '')){ showToast(t('imageOnlyToast')); return; }
+  coverUploading = true;
   const preview = document.getElementById('coverPreview');
+  const prevHtml = preview.innerHTML; // เก็บสภาพเดิมไว้คืนถ้าอัพโหลดไม่สำเร็จ (preview กับ ctCoverUrl จะได้ตรงกันเสมอ)
   preview.innerHTML = '<div class="upload-spinner"></div>';
   try{
     const url = await uploadImageFile(file);
-    loadImageWithRetry(url,
-      (u)=>{ ctCoverUrl = u; preview.innerHTML = `<img src="${u}">`; },
-      ()=>{ ctCoverUrl = ''; preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`; showToast(t('imageLoadFailToast')); }
-    );
+    await new Promise((resolve)=>{
+      loadImageWithRetry(url,
+        (u)=>{ ctCoverUrl = u; preview.innerHTML = `<img src="${u}">`; resolve(); },
+        ()=>{ ctCoverUrl = ''; preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`; showToast(t('imageLoadFailToast')); resolve(); }
+      );
+    });
   }catch(err){
-    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix "Image upload failed:" ซ้อนทับ (feedback ของ Pop: ซ้อนกันแล้วอ่านแล้วงง ตกใจซ้อนตกใจ)
-    preview.innerHTML = `<span data-i18n="coverUploadPrompt">${t('coverUploadPrompt')}</span>`;
+    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix ซ้อนทับ
+    preview.innerHTML = prevHtml;
+  }finally{
+    coverUploading = false;
   }
+}
+document.getElementById('coverFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  e.target.value = ''; // รีเซ็ตช่องเลือกไฟล์ เพื่อให้เลือกไฟล์เดิมซ้ำได้ (ไม่งั้น change ไม่ยิงซ้ำ)
+  handleCoverFile(file);
 });
+bindImageDropzone(document.getElementById('coverPreview'), handleCoverFile);
 
 /* ---------- Title field: auto-grow ตามเนื้อหา + ปิดการตอบสนองปุ่ม Enter ---------- */
 function autoGrowTitle(){
