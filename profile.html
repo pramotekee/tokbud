@@ -1336,10 +1336,13 @@ let STATE = {
  * RETRYABLE_POST_ACTIONS) เท่านั้นที่ retry ซ้ำได้อย่างปลอดภัย ส่วน POST ที่เปลี่ยนข้อมูลจริง ถ้าพังจะฟ้อง error
  * ทันทีโดยไม่ retry ซ้ำ กันได้ทั้งบั๊กบริษัทซ้ำ/โหวตซ้ำ/transfer ซ้ำ ฯลฯ ในคราวเดียวกัน */
 const RETRYABLE_POST_ACTIONS = ['exportCompanyVotes'];
+// uploadImage ต้องรอนานกว่า action อื่น: backend ต้องผ่าน Vercel -> Apps Script -> Google Drive แล้วคำตอบเดินทางกลับมาทางเดิม
+// (ช่วงขากลับเคยช้ากว่า 15 วิทั้งที่ไฟล์ขึ้น Drive เรียบร้อยแล้ว จึงฟ้อง timeout ทั้งที่จริงๆ สำเร็จ) ต้องให้มากกว่า timeout ของ proxy ใน tokbud.js (35 วิ) เสมอ
+const API_TIMEOUT_MS_BY_ACTION = { uploadImage: 45000 };
 
 async function api(action, params = {}, method = 'GET', _isRetry = false, _firstDiag = ''){
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS_BY_ACTION[action] || 15000);
   const startedAt = Date.now();
   let reason = '';
   try{
