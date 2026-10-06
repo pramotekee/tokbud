@@ -1202,8 +1202,12 @@ async function actionUploadImage(p) {
   if (!appsScriptUrl) return fail('เซิร์ฟเวอร์ตั้งค่าไม่ครบ (ไม่มี APPS_SCRIPT_WEB_APP_URL) / Server misconfigured');
 
   // ไฟล์รูปหนักกว่า text translate เยอะ ให้เวลานานกว่า (รอทั้ง cold-start ของ Apps Script + เวลาอัพโหลดจริงขึ้น Drive)
+  // 6 ต.ค.: หลักฐานจริง — Apps Script ทำงานเสร็จใน ~2 วิและไฟล์ขึ้น Drive ครบ แต่คำตอบกลับมาไม่ทัน 15 วิของหน้าเว็บ
+  // (ช่วงขากลับ Apps Script -> Vercel ช้า) จึงขยายเป็น 35 วิ (หน้าเว็บรอ 45 วิ, Vercel maxDuration 60 วิ ใน vercel.json)
+  // และ log เวลาจริงทุกครั้งไว้ดูใน Vercel Logs ว่าเวลาหายไปช่วงไหน
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  const timer = setTimeout(() => controller.abort(), 35000);
+  const t0 = Date.now();
   try {
     const res = await fetch(appsScriptUrl, {
       method: 'POST',
@@ -1215,10 +1219,12 @@ async function actionUploadImage(p) {
       }),
       signal: controller.signal
     });
+    const tResponse = Date.now() - t0;
     const data = await res.json();
+    console.log('[uploadImage] proxy ตอบกลับแล้ว: ได้ response จาก Apps Script ที่ ' + tResponse + 'ms, อ่าน JSON เสร็จที่ ' + (Date.now() - t0) + 'ms (http ' + res.status + ', redirected=' + res.redirected + ')');
     return data; // actionUploadImage เดิมใน Apps Script ตอบ { success, file_id, image_url } รูปแบบเดียวกับ ok()/fail() อยู่แล้ว ส่งต่อตรงๆ ได้เลย
   } catch (err) {
-    console.error('[uploadImage] proxy ไป Apps Script ล้มเหลว:', err);
+    console.error('[uploadImage] proxy ไป Apps Script ล้มเหลว หลังผ่านไป ' + (Date.now() - t0) + 'ms:', err);
     return fail('อัพโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง / The photo didn\'t upload. Please try again.');
   } finally {
     clearTimeout(timer);
