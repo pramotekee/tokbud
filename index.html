@@ -1677,6 +1677,9 @@ let EXPANDED_TOPIC_ID = null;
 // เร็วขึ้นเล็กน้อยตอน cold start แทนที่จะรอ 30 วิให้ retry ช่วย) ส่วน GET (อ่านอย่างเดียว เสมอ idempotent) และ
 // POST ที่รู้แน่ชัดว่าแค่ "อ่าน" ข้อมูล (อยู่ใน RETRYABLE_POST_ACTIONS) ยัง retry ได้ตามเดิม ปลอดภัย
 const RETRYABLE_POST_ACTIONS = ['exportCompanyVotes'];
+// uploadImage ต้องรอนานกว่า action อื่น: backend ต้องผ่าน Vercel -> Apps Script -> Google Drive แล้วคำตอบเดินทางกลับมาทางเดิม
+// (ช่วงขากลับเคยช้ากว่า 15 วิทั้งที่ไฟล์ขึ้น Drive เรียบร้อยแล้ว จึงฟ้อง timeout ทั้งที่จริงๆ สำเร็จ) ต้องให้มากกว่า timeout ของ proxy ใน tokbud.js (35 วิ) เสมอ
+const API_TIMEOUT_MS_BY_ACTION = { uploadImage: 45000 };
 
 async function api(action, params = {}, method = 'GET', _isRetry = false){
   // ลด timeout ต่อครั้งเหลือ 15 วิ (จากที่เคยขยับเป็น 30 วิ) เพราะรวมกับ retry 1 ครั้งแล้ว worst-case
@@ -1684,7 +1687,9 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
   // ถ้าปล่อยให้แต่ละอันรอนานถึง 60 วิ จะรู้สึกเหมือนหน้าเว็บค้างจริงจนคนกดรีเฟรชซ้ำๆ ระหว่างที่ของเดิมยังโหลดไม่เสร็จ
   // ซึ่งเป็นสาเหตุคลาสสิกที่ Safari มือถือขึ้น "A problem repeatedly occurred" (WebKit ล้มซ้ำจากการรีเฟรชทับกัน)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS_BY_ACTION[action] || 15000);
+  const startedAt = Date.now();
+  let reason = '';
   try{
     let res;
     if(method === 'GET'){
@@ -1697,8 +1702,16 @@ async function api(action, params = {}, method = 'GET', _isRetry = false){
         signal: controller.signal
       });
     }
-    return await res.json();
+    try{
+      return await res.json();
+    }catch(jsonErr){
+      reason = 'bad_response(http ' + res.status + ')'; // ตอบกลับมาแต่ไม่ใช่ JSON (เช่น หน้า error ของ Vercel/Google)
+      throw jsonErr;
+    }
   }catch(err){
+    // เก็บสาเหตุจริงไว้วินิจฉัยใน Console (ไม่กระทบ user): timeout = รอครบกำหนดแล้วไม่มีคำตอบ / fetch_failed = คำขอล้มทันที / bad_response = ได้คำตอบแต่ไม่ใช่ JSON
+    if(!reason) reason = (err && err.name === 'AbortError') ? 'timeout' : ('fetch_failed:' + ((err && err.message) || ''));
+    console.warn('[api]', action, reason + ' ' + (Date.now() - startedAt) + 'ms', _isRetry ? '(retry)' : '(1st attempt)');
     // retry อัตโนมัติแบบเงียบๆ 1 ครั้งก่อนฟ้อง error จริงให้ user เห็น — เฉพาะ action ที่ retry ซ้ำได้อย่างปลอดภัยเท่านั้น
     // (ดูคอมเมนต์ RETRYABLE_POST_ACTIONS ด้านบน) ช่วยลด error หลอกจาก cold start/เน็ตสะดุดชั่วครู่ โดยไม่เสี่ยงข้อมูลซ้ำ
     const canRetry = method === 'GET' || RETRYABLE_POST_ACTIONS.indexOf(action) !== -1;
