@@ -135,6 +135,11 @@
   .cover-upload img{ width:100%; height:100%; object-fit:contain; }
   .preview-3col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; align-items:stretch; }
   .preview-3col .cover-upload{ max-height:none; }
+  .cover-upload{ cursor:pointer; }
+  .cover-upload.drag-over{
+    border-style:solid; border-color:var(--card-color, var(--primary));
+    background:color-mix(in srgb, var(--card-color, var(--primary)) 25%, white);
+  }
   .preview-vote-btn{
     aspect-ratio:3/4; border-radius:12px; background:color-mix(in srgb, var(--card-color, var(--primary)) 10%, white);
     border:2px solid color-mix(in srgb, var(--card-color, var(--primary)) 30%, white);
@@ -1014,6 +1019,7 @@ const I18N = {
     ctTagLabel: 'Tag', ctTagHint: '(ใส่อย่างน้อย 1 อัน สูงสุด 5 อัน)', ctColorLabel: 'สีการ์ด',
     errCategoryRequired: 'กรุณาเลือกหมวดหมู่', errCategoryMax: 'เลือกได้สูงสุด 5 หมวด', errTagRequired: 'กรุณาใส่ tag อย่างน้อย 1 อัน',
     ctTitleHint: '(ภาษาอังกฤษเท่านั้น)', errTitleEnglishOnly: 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น',
+    imageOnlyToast: 'ไฟล์นี้ไม่ใช่รูปภาพ กรุณาเลือกไฟล์รูป เช่น JPG หรือ PNG', imageReadFailToast: 'เปิดรูปนี้ไม่ได้ ลองเลือกรูปอื่น (เช่น JPG หรือ PNG) นะ',
     uploadFailToast: 'อัพโหลดรูปไม่สำเร็จ', savingText: 'กำลังบันทึก...',
     dcTitle: 'ขอลบบริษัท', dcDesc: 'คำขอของคุณจะถูกส่งให้ทีมงานตรวจสอบก่อนดำเนินการลบจริง คอมเมนต์และข้อมูลทั้งหมดจะยังอยู่ครบจนกว่าจะได้รับการอนุมัติ',
     dcReasonLabel: 'เหตุผลในการขอลบ', dcReasonDuplicate: 'สร้างซ้ำกับบริษัทที่มีอยู่แล้ว',
@@ -1174,6 +1180,7 @@ const I18N = {
     ctTagLabel: 'Tags', ctTagHint: '(at least 1, up to 5)', ctColorLabel: 'Card Color',
     errCategoryRequired: 'Please select a category', errCategoryMax: 'Select up to 5 categories', errTagRequired: 'Please add at least 1 tag',
     ctTitleHint: '(English only)', errTitleEnglishOnly: 'Company name must be in English only',
+    imageOnlyToast: 'That file isn\'t an image. Please choose a photo, like a JPG or PNG.', imageReadFailToast: 'We couldn\'t open that image. Try a different one, like a JPG or PNG.',
     uploadFailToast: 'Upload failed', savingText: 'Saving...',
     dcTitle: 'Request Company Deletion', dcDesc: 'Your request will be sent to our team for review before the company is actually deleted. All comments and data stay intact until the request is approved.',
     dcReasonLabel: 'Reason for deletion', dcReasonDuplicate: 'Duplicate of an existing company',
@@ -1552,10 +1559,14 @@ document.querySelectorAll('.passcode-toggle').forEach(btn=>{
 
 /* ---------- Image upload (เหมือน index.html) ---------- */
 function compressImage(file, maxSize = 1600, quality = 0.8){
-  return new Promise((resolve)=>{
+  return new Promise((resolve, reject)=>{
     const img = new Image();
     const reader = new FileReader();
+    // อ่าน/ถอดรหัสรูปไม่ได้ (เช่น ไฟล์เสีย หรือ HEIC ที่ browser เปิดไม่ได้) ต้อง reject เสมอ ไม่งั้น spinner ค้างตลอดกาล
+    const readFail = ()=> reject(new Error(t18n('imageReadFailToast')));
+    reader.onerror = readFail;
     reader.onload = (e)=>{
+      img.onerror = readFail;
       img.onload = ()=>{
         let { width, height } = img;
         if(width > maxSize || height > maxSize){
@@ -2627,22 +2638,61 @@ document.getElementById('etCategoryBtn').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openModal('categoryPickerModal'); }
 });
 
-document.getElementById('etCoverFile').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
+/* ---------- Logo dropzone: กดเลือกไฟล์ หรือ ลากรูปมาวางบนช่องโลโก้ (ใช้ร่วมกันทุกช่อง .cover-upload) ---------- */
+function dtHasFiles(e){
+  return !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1);
+}
+function bindImageDropzone(zone, onFile){
+  let depth = 0; // นับ dragenter/dragleave ซ้อนกัน กันกรอบกะพริบตอนลากผ่านลูก (เช่น <img>) ข้างใน
+  zone.addEventListener('dragenter', (e)=>{ if(!dtHasFiles(e)) return; e.preventDefault(); depth++; zone.classList.add('drag-over'); });
+  zone.addEventListener('dragover', (e)=>{ if(!dtHasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+  zone.addEventListener('dragleave', (e)=>{ if(!dtHasFiles(e)) return; depth = Math.max(0, depth - 1); if(!depth) zone.classList.remove('drag-over'); });
+  zone.addEventListener('drop', (e)=>{
+    if(!dtHasFiles(e)) return;
+    e.preventDefault(); depth = 0; zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0]; // รับแค่ไฟล์แรก
+    if(f) onFile(f);
+  });
+}
+// กัน browser เปิดรูปทับหน้าเว็บ (ฟอร์มที่กรอกไว้หาย) ถ้า user ลากพลาดไปวางนอกช่องโลโก้
+['dragover','drop'].forEach((evName)=>{
+  window.addEventListener(evName, (e)=>{
+    if(!dtHasFiles(e)) return;
+    if(e.target && e.target.closest && e.target.closest('.cover-upload')) return;
+    e.preventDefault();
+    if(evName === 'dragover') e.dataTransfer.dropEffect = 'none';
+  });
+});
+
+let etUploading = false; // กันเลือก/ลากไฟล์ซ้อนระหว่างที่รูปก่อนหน้ายังอัพโหลดอยู่
+async function handleEtCoverFile(file){
+  if(!file || etUploading) return;
+  if(!/^image\//i.test(file.type || '')){ showToast(t18n('imageOnlyToast')); return; }
+  etUploading = true;
   const preview = document.getElementById('etCoverPreview');
+  const prevHtml = preview.innerHTML; // คืนโลโก้เดิมถ้าอัพโหลดไม่สำเร็จ (preview กับ etCoverUrl จะได้ตรงกัน)
   preview.innerHTML = '<div class="upload-spinner"></div>';
   try{
     const url = await uploadImageFile(file);
-    loadImageWithRetry(url,
-      (u)=>{ etCoverUrl = u; preview.innerHTML = `<img src="${u}">`; },
-      ()=>{ etCoverUrl = ''; preview.innerHTML = t18n('etLogoUploadPh'); showToast(t18n('uploadFailToast')); }
-    );
+    await new Promise((resolve)=>{
+      loadImageWithRetry(url,
+        (u)=>{ etCoverUrl = u; preview.innerHTML = `<img src="${u}">`; resolve(); },
+        ()=>{ etCoverUrl = ''; preview.innerHTML = t18n('etLogoUploadPh'); showToast(t18n('uploadFailToast')); resolve(); }
+      );
+    });
   }catch(err){
-    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix "Upload failed:" ซ้อนทับ (feedback ของ Pop)
-    preview.innerHTML = t18n('etLogoUploadPh');
+    showToast(err.message); // ข้อความจาก backend/api() เป็นประโยคที่สมบูรณ์อยู่แล้ว ไม่ต้องมี prefix ซ้อนทับ (feedback ของ Pop)
+    preview.innerHTML = prevHtml;
+  }finally{
+    etUploading = false;
   }
+}
+document.getElementById('etCoverFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  e.target.value = ''; // รีเซ็ตช่องเลือกไฟล์ เพื่อให้เลือกไฟล์เดิมซ้ำได้
+  handleEtCoverFile(file);
 });
+bindImageDropzone(document.getElementById('etCoverPreview'), handleEtCoverFile);
 
 async function openEditTopicModal(t){
   etCurrentCompanyId = t.company_id;
