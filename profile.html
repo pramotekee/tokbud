@@ -1415,6 +1415,84 @@ function isEnglishOnlyName(str){
   return true;
 }
 
+// อธิบายสาเหตุที่ชื่อบริษัทไม่ผ่านเกณฑ์ (ใช้หลัง isEnglishOnlyName() คืน false) — เงื่อนไขที่อนุญาตไม่เปลี่ยนเลย
+// แค่บอก user ให้ตรงจุดว่าอักขระตัวไหนติด (เดิมทุกกรณีขึ้นแค่ "ต้องเป็นภาษาอังกฤษเท่านั้น" ทั้งที่ user พิมพ์ EN มาจริง
+// แต่มีเครื่องหมายอย่าง "/" ปนอยู่) คืน {th, en} — ห้ามใส่ " / " (เว้นวรรคเครื่องหมายทับเว้นวรรค) ในข้อความ
+// เพราะ pickLang() ใช้ตัวนี้แยกภาษา
+function companyNameProblem(str){
+  const s = String(str || '').trim();
+  const OK = /[a-zA-Z0-9 &,.\-'()]/;
+  const MAX = 8;
+  const foreign = [], symTh = [], symEn = [], seenCh = {}, seenLabel = {};
+  let curly = false, dash = false, oddSpace = false, invisible = false, plainSymbol = false;
+  // อักษรที่ไม่ใช่ภาษาอังกฤษ (ไทย/จีน/é ฯลฯ) แสดงเป็นคำเต็มทั้งช่วง ไม่แยกทีละตัว (ไม่งั้นสระ/วรรณยุกต์ไทยลอยเดี่ยวๆ อ่านไม่ออก)
+  const runs = s.match(/(?:(?![a-zA-Z])[\p{L}\p{M}])+/gu) || [];
+  runs.forEach(w => { const q = '\u201C' + w + '\u201D'; if(foreign.indexOf(q) === -1) foreign.push(q); });
+  Array.from(s).forEach(ch => {
+    if(OK.test(ch) || seenCh[ch]) return;
+    seenCh[ch] = true;
+    if(/[\p{L}\p{M}]/u.test(ch)) return; // จัดการข้างบนแล้ว
+    let thL, enL;
+    if(/[\u200B-\u200D\uFEFF\u2060]/.test(ch)){ thL = 'อักขระล่องหน (มองไม่เห็น)'; enL = 'invisible character'; invisible = true; }
+    else if(ch === '\n' || ch === '\r'){ thL = 'การขึ้นบรรทัดใหม่'; enL = 'line break'; oddSpace = true; }
+    else if(ch === '\t'){ thL = 'แท็บ'; enL = 'tab'; oddSpace = true; }
+    else if(/\s/.test(ch)){ thL = 'ช่องว่างพิเศษ'; enL = 'special space'; oddSpace = true; }
+    else {
+      thL = enL = '\u201C' + ch + '\u201D';
+      if(/[\u2018\u2019]/.test(ch)) curly = true;
+      else if(/[\u2013\u2014\u2212]/.test(ch)) dash = true;
+      else plainSymbol = true;
+    }
+    if(seenLabel[enL]) return;
+    seenLabel[enL] = true;
+    symTh.push(thL); symEn.push(enL);
+  });
+  const cap = arr => arr.length > MAX ? arr.slice(0, MAX).concat('…') : arr;
+  const th = [], en = [];
+  if(!foreign.length && !symTh.length){
+    th.push('ชื่อบริษัทต้องมีตัวอักษรภาษาอังกฤษหรือตัวเลขอย่างน้อย 1 ตัว');
+    en.push('The company name needs at least one English letter or number.');
+  } else {
+    th.push('ชื่อบริษัทมีอักขระที่ระบบยังไม่รองรับ');
+    en.push("The company name contains characters we can't accept yet.");
+    if(foreign.length){ th.push('อักษรที่ไม่ใช่ภาษาอังกฤษ: ' + cap(foreign).join(' ')); en.push('Non-English letters: ' + cap(foreign).join(' ')); }
+    if(symTh.length){ th.push('อักขระที่ใช้ไม่ได้: ' + cap(symTh).join(' ')); en.push('Characters not allowed: ' + cap(symEn).join(' ')); }
+  }
+  th.push("ชื่อบริษัทใช้ได้เฉพาะตัวอักษร A-Z ตัวเลข 0-9 เว้นวรรค และสัญลักษณ์ & , . - ' ( ) เท่านั้น");
+  en.push("Only English letters (A-Z), numbers (0-9), spaces and these symbols are allowed: & , . - ' ( )");
+  if(foreign.length){
+    th.push('ให้พิมพ์ชื่อบริษัทเป็นตัวอักษรภาษาอังกฤษ เช่น \u201CSompo Insurance Public Company Limited\u201D');
+    en.push('Please write the company name in English letters, e.g. \u201CSompo Insurance Public Company Limited\u201D.');
+  }
+  if(plainSymbol){
+    th.push('ลองลบสัญลักษณ์นั้นออก หรือแทนด้วยเว้นวรรคหรือ - เช่น \u201CSompo Insurance - Security PCL\u201D');
+    en.push('Try removing it, or replace it with a space or a hyphen, e.g. \u201CSompo Insurance - Security PCL\u201D.');
+  }
+  if(curly){
+    th.push("เครื่องหมาย \u2019 มักถูกคีย์บอร์ดมือถือเปลี่ยนให้อัตโนมัติ ให้พิมพ์ ' แบบตรงแทน");
+    en.push("Phone keyboards often turn ' into a curly \u2019 \u2014 please type a straight ' instead.");
+  }
+  if(dash){
+    th.push('ขีดยาว (\u2013 \u2014) ให้ใช้ขีดสั้น - แทน');
+    en.push('Use a short hyphen - instead of a long dash (\u2013 \u2014).');
+  }
+  if(oddSpace){
+    th.push('ให้ใช้เว้นวรรคปกติแทน');
+    en.push('Please use a normal space instead.');
+  }
+  if(invisible){
+    th.push('มักติดมาตอนคัดลอก-วางข้อความ ลองลบชื่อแล้วพิมพ์ใหม่เอง');
+    en.push('These usually come along when copy-pasting. Try deleting the name and typing it again.');
+  }
+  return { th: th.join('\n'), en: en.join('\n') };
+}
+
+// ข้อความแจ้ง user ตามภาษาปัจจุบัน (ใช้ตอน isEnglishOnlyName() คืน false)
+function companyNameProblemMsg(str){
+  const p = companyNameProblem(str);
+  return getLang() === 'th' ? p.th : p.en;
+}
+
 function setBtnLoading(btn, loading, loadingLabel){
   if(loading){
     btn.dataset.originalHtml = btn.innerHTML;
@@ -2749,7 +2827,7 @@ document.getElementById('etSaveBtn').addEventListener('click', async ()=>{
   const tags = ['etTag1','etTag2','etTag3','etTag4','etTag5'].map(id => document.getElementById(id).value.trim());
 
   if(!companyName){ errEl.textContent = t18n('errCompanyNameRequired'); errEl.style.display = 'block'; return; }
-  if(!isEnglishOnlyName(companyName)){ errEl.textContent = t18n('errTitleEnglishOnly'); errEl.style.display = 'block'; return; }
+  if(!isEnglishOnlyName(companyName)){ errEl.style.whiteSpace = 'pre-line'; errEl.textContent = companyNameProblemMsg(companyName); errEl.style.display = 'block'; return; }
   if(!categoryOptions.length){ errEl.textContent = t18n('errCategoryRequired'); errEl.style.display = 'block'; return; }
   if(categoryOptions.length > 5){ errEl.textContent = t18n('errCategoryMax'); errEl.style.display = 'block'; return; }
   if(!tags.some(v => v)){ errEl.textContent = t18n('errTagRequired'); errEl.style.display = 'block'; return; }
@@ -2769,7 +2847,8 @@ document.getElementById('etSaveBtn').addEventListener('click', async ()=>{
   const res = await api('editCompany', payload, 'POST');
   setBtnLoading(btn, false);
   if(!res.success){
-    errEl.textContent = res.message;
+    errEl.style.whiteSpace = 'pre-line';
+    errEl.textContent = pickLang(res.message);
     errEl.style.display = 'block';
     return;
   }
