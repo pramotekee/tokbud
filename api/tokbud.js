@@ -461,7 +461,84 @@ function isEnglishOnlyName(str) {
   if (!/[a-zA-Z0-9]/.test(s)) return false;
   return true;
 }
-const ENGLISH_ONLY_NAME_ERROR = 'กรุณาตั้งชื่อบริษัทเป็นภาษาอังกฤษเท่านั้น / Company name must be in English only';
+
+// อธิบายสาเหตุที่ชื่อบริษัทไม่ผ่านเกณฑ์ (ใช้หลัง isEnglishOnlyName() คืน false) — เงื่อนไขที่อนุญาตไม่เปลี่ยนเลย
+// แค่บอก user ให้ตรงจุดว่าอักขระตัวไหนติด (เดิมทุกกรณีขึ้นแค่ "ต้องเป็นภาษาอังกฤษเท่านั้น" ทั้งที่ user พิมพ์ EN มาจริง
+// แต่มีเครื่องหมายอย่าง "/" ปนอยู่) คืน {th, en} — ห้ามใส่ " / " (เว้นวรรคเครื่องหมายทับเว้นวรรค) ในข้อความ
+// เพราะ pickLang() ใช้ตัวนี้แยกภาษา
+function companyNameProblem(str){
+  const s = String(str || '').trim();
+  const OK = /[a-zA-Z0-9 &,.\-'()]/;
+  const MAX = 8;
+  const foreign = [], symTh = [], symEn = [], seenCh = {}, seenLabel = {};
+  let curly = false, dash = false, oddSpace = false, invisible = false, plainSymbol = false;
+  // อักษรที่ไม่ใช่ภาษาอังกฤษ (ไทย/จีน/é ฯลฯ) แสดงเป็นคำเต็มทั้งช่วง ไม่แยกทีละตัว (ไม่งั้นสระ/วรรณยุกต์ไทยลอยเดี่ยวๆ อ่านไม่ออก)
+  const runs = s.match(/(?:(?![a-zA-Z])[\p{L}\p{M}])+/gu) || [];
+  runs.forEach(w => { const q = '\u201C' + w + '\u201D'; if(foreign.indexOf(q) === -1) foreign.push(q); });
+  Array.from(s).forEach(ch => {
+    if(OK.test(ch) || seenCh[ch]) return;
+    seenCh[ch] = true;
+    if(/[\p{L}\p{M}]/u.test(ch)) return; // จัดการข้างบนแล้ว
+    let thL, enL;
+    if(/[\u200B-\u200D\uFEFF\u2060]/.test(ch)){ thL = 'อักขระล่องหน (มองไม่เห็น)'; enL = 'invisible character'; invisible = true; }
+    else if(ch === '\n' || ch === '\r'){ thL = 'การขึ้นบรรทัดใหม่'; enL = 'line break'; oddSpace = true; }
+    else if(ch === '\t'){ thL = 'แท็บ'; enL = 'tab'; oddSpace = true; }
+    else if(/\s/.test(ch)){ thL = 'ช่องว่างพิเศษ'; enL = 'special space'; oddSpace = true; }
+    else {
+      thL = enL = '\u201C' + ch + '\u201D';
+      if(/[\u2018\u2019]/.test(ch)) curly = true;
+      else if(/[\u2013\u2014\u2212]/.test(ch)) dash = true;
+      else plainSymbol = true;
+    }
+    if(seenLabel[enL]) return;
+    seenLabel[enL] = true;
+    symTh.push(thL); symEn.push(enL);
+  });
+  const cap = arr => arr.length > MAX ? arr.slice(0, MAX).concat('…') : arr;
+  const th = [], en = [];
+  if(!foreign.length && !symTh.length){
+    th.push('ชื่อบริษัทต้องมีตัวอักษรภาษาอังกฤษหรือตัวเลขอย่างน้อย 1 ตัว');
+    en.push('The company name needs at least one English letter or number.');
+  } else {
+    th.push('ชื่อบริษัทมีอักขระที่ระบบยังไม่รองรับ');
+    en.push("The company name contains characters we can't accept yet.");
+    if(foreign.length){ th.push('อักษรที่ไม่ใช่ภาษาอังกฤษ: ' + cap(foreign).join(' ')); en.push('Non-English letters: ' + cap(foreign).join(' ')); }
+    if(symTh.length){ th.push('อักขระที่ใช้ไม่ได้: ' + cap(symTh).join(' ')); en.push('Characters not allowed: ' + cap(symEn).join(' ')); }
+  }
+  th.push("ชื่อบริษัทใช้ได้เฉพาะตัวอักษร A-Z ตัวเลข 0-9 เว้นวรรค และสัญลักษณ์ & , . - ' ( ) เท่านั้น");
+  en.push("Only English letters (A-Z), numbers (0-9), spaces and these symbols are allowed: & , . - ' ( )");
+  if(foreign.length){
+    th.push('ให้พิมพ์ชื่อบริษัทเป็นตัวอักษรภาษาอังกฤษ เช่น \u201CSompo Insurance Public Company Limited\u201D');
+    en.push('Please write the company name in English letters, e.g. \u201CSompo Insurance Public Company Limited\u201D.');
+  }
+  if(plainSymbol){
+    th.push('ลองลบสัญลักษณ์นั้นออก หรือแทนด้วยเว้นวรรคหรือ - เช่น \u201CSompo Insurance - Security PCL\u201D');
+    en.push('Try removing it, or replace it with a space or a hyphen, e.g. \u201CSompo Insurance - Security PCL\u201D.');
+  }
+  if(curly){
+    th.push("เครื่องหมาย \u2019 มักถูกคีย์บอร์ดมือถือเปลี่ยนให้อัตโนมัติ ให้พิมพ์ ' แบบตรงแทน");
+    en.push("Phone keyboards often turn ' into a curly \u2019 \u2014 please type a straight ' instead.");
+  }
+  if(dash){
+    th.push('ขีดยาว (\u2013 \u2014) ให้ใช้ขีดสั้น - แทน');
+    en.push('Use a short hyphen - instead of a long dash (\u2013 \u2014).');
+  }
+  if(oddSpace){
+    th.push('ให้ใช้เว้นวรรคปกติแทน');
+    en.push('Please use a normal space instead.');
+  }
+  if(invisible){
+    th.push('มักติดมาตอนคัดลอก-วางข้อความ ลองลบชื่อแล้วพิมพ์ใหม่เอง');
+    en.push('These usually come along when copy-pasting. Try deleting the name and typing it again.');
+  }
+  return { th: th.join('\n'), en: en.join('\n') };
+}
+
+// ข้อความ bilingual "ไทย / English" (pattern เดียวกับ fail() ทั่วระบบ ให้หน้าเว็บ pickLang() เลือกภาษาให้)
+function companyNameErrorMsg(str) {
+  const p = companyNameProblem(str);
+  return p.th + ' / ' + p.en;
+}
 
 // พอร์ตตรงจาก csvEscape() เดิม (appscript.txt บรรทัด 624-629) — กัน field ที่มี comma/quote/ขึ้นบรรทัดใหม่ ทำ
 // CSV เพี้ยน (มาตรฐาน RFC 4180: ครอบด้วย "" แล้ว escape "" ที่ซ้อนอยู่)
@@ -523,6 +600,21 @@ function actionGetCardColors() {
   return ok({ colors: CARD_COLORS });
 }
 
+// ทำให้ข้อความที่หน้าตาเหมือนกันมีรหัสเหมือนกันก่อนเทียบ (ใช้ฝั่งค้นหาทั้งคำค้นและข้อมูล): NFKC รวมสระอำ "ำ"
+// (U+0E33) กับ "นิคหิต+สระอา" (U+0E4D U+0E32) ที่คีย์บอร์ดบางตัวสร้างต่างกันให้เป็นแบบเดียว, ตัดอักขระล่องหน
+// (zero-width) ที่ติดมาตอนคัดลอก-วาง, จัดลำดับวรรณยุกต์/สระล่างที่พิมพ์สลับกันแต่หน้าตาเหมือนกัน, ตัวพิมพ์เล็ก
+// และยุบช่องว่างซ้อน
+function normalizeSearchText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF\u2060]/g, '')
+    .replace(/([\u0E48-\u0E4B])\u0E4D/g, '\u0E4D$1')
+    .replace(/([\u0E48-\u0E4B])([\u0E38\u0E39])/g, '$2$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // พอร์ตตรงจาก actionGetCompanies()/_getCompaniesPayload() เดิม (บรรทัด 1176-1231) — รวม logic
 // การกรองสถานะ active + hidden (จาก deleterequests) ที่เดิมอยู่ใน loadActiveCompaniesRaw() เข้ามาด้วย
 // แยกเป็น buildCompaniesPayload() คืนค่า object ธรรมดา (ไม่ห่อ ok()) เพื่อให้ actionGetHomeFeed เอาไปประกอบ
@@ -545,13 +637,16 @@ async function buildCompaniesPayload(p, preloadedData) {
   if (p.tag) {
     visible = visible.filter(t => [t.tag_1, t.tag_2, t.tag_3, t.tag_4, t.tag_5].indexOf(p.tag) !== -1);
   }
-  if (p.search) {
-    const q = String(p.search).toLowerCase();
-    visible = visible.filter(t =>
-      String(t.company_name).toLowerCase().indexOf(q) !== -1 ||
-      String(t.description).toLowerCase().indexOf(q) !== -1 ||
-      [t.tag_1, t.tag_2, t.tag_3, t.tag_4, t.tag_5].some(tag => String(tag).toLowerCase().indexOf(q) !== -1)
-    );
+  // ค้นหาระดับบริษัท: ชื่อ + คำอธิบาย + หมวดธุรกิจ + tag 1-5 (ไม่รวมคอมเมนต์ เพราะผลลัพธ์ต้องอธิบายได้จากสิ่งที่
+  // เห็นบนการ์ด) หลายคำคั่นด้วยเว้นวรรค = ต้องเจอครบทุกคำ (AND) ในบริษัทเดียวกัน ไม่จำกัดว่าอยู่ช่องไหน
+  const searchTokens = normalizeSearchText(p.search).split(' ').map(w => w.replace(/^#+/, '')).filter(Boolean);
+  if (searchTokens.length) {
+    visible = visible.filter(t => {
+      const hay = normalizeSearchText([
+        t.company_name, t.description, t.category, t.tag_1, t.tag_2, t.tag_3, t.tag_4, t.tag_5
+      ].join(' '));
+      return searchTokens.every(w => hay.indexOf(w) !== -1);
+    });
   } else {
     visible = visible.slice();
   }
@@ -1237,7 +1332,7 @@ async function actionCreateCompany(p) {
   if (!user) return fail('กรุณา login ก่อนสร้างบริษัท / Please log in before creating a company');
 
   if (!p.company_name) return fail('กรุณากรอกชื่อบริษัท / Please enter a company name');
-  if (!isEnglishOnlyName(p.company_name)) return fail(ENGLISH_ONLY_NAME_ERROR);
+  if (!isEnglishOnlyName(p.company_name)) return fail(companyNameErrorMsg(p.company_name));
   if (!p.category) return fail('กรุณาเลือกหมวดหมู่ / Please select a category');
 
   const tags = [p.tag_1, p.tag_2, p.tag_3, p.tag_4, p.tag_5].filter(t => t && String(t).trim());
@@ -1378,7 +1473,7 @@ async function actionEditCompany(p) {
   if (company.user_id !== user.user_id) return fail('คุณไม่มีสิทธิ์แก้ไขบริษัทนี้ / You don\'t have permission to edit this company');
 
   if (!p.company_name) return fail('กรุณากรอกชื่อบริษัท / Please enter a company name');
-  if (!isEnglishOnlyName(p.company_name)) return fail(ENGLISH_ONLY_NAME_ERROR);
+  if (!isEnglishOnlyName(p.company_name)) return fail(companyNameErrorMsg(p.company_name));
   if (!p.category) return fail('กรุณาเลือกหมวดหมู่ / Please select a category');
 
   const tags = [p.tag_1, p.tag_2, p.tag_3, p.tag_4, p.tag_5].filter(t => t && String(t).trim());
