@@ -49,7 +49,7 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 <section class="cta"><div class="wrap">
 <div class="cta-grid"><div><h2>รู้แล้ว นำไปปรับใช้<br>ผู้คนจะมอบสิ่งดีๆ ให้คุณ</h2><p>เริ่มต้นสร้างความสัมพันธ์ที่ดีขึ้น ทั้งในชีวิตและการทำงาน</p></div></div>
 
-<div class="round" id="roundCard"><div class="tag">รอบเรียนที่เปิดรับ</div><h3 id="rLabel">รอบที่ 1</h3>
+<div class="round" id="roundCard"><div class="tag">เปิดรับสมัคร</div>
 <div class="row"><b>วันที่</b><span id="rDate">เสาร์ที่ 14 พฤศจิกายน 2569</span></div>
 <div class="row"><b>เวลา</b><span id="rTime">10:00 - 20:00 น.</span></div>
 <div class="row"><b>สถานที่</b><span id="rLoc">[ตัวอย่าง] ชื่อสถานที่ · กรุงเทพฯ</span></div>
@@ -58,7 +58,7 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 <div class="form" id="fullMsg" hidden><h3>รอบนี้เต็มแล้ว</h3><p class="hint" style="margin:0">โปรดติดตามรอบใหม่นะครับ</p></div>
 
 <form class="form" id="applyForm" novalidate>
-<h3>ใบสมัครเข้าร่วมคอร์ส</h3><p class="hint">กรอกให้ครบทุกข้อ ทีมงานจะติดต่อกลับเพื่อยืนยันที่นั่ง</p>
+<h3>ใบสมัคร</h3><p class="hint">กรอกให้ครบทุกข้อ ทีมงานจะติดต่อกลับเพื่อยืนยันที่นั่ง</p>
 <div class="grid2">
 <div class="q" data-q="firstName"><label for="firstName">ชื่อ</label><input id="firstName" type="text" maxlength="60" autocomplete="given-name"><div class="msg">กรุณากรอกชื่อ</div></div>
 <div class="q" data-q="lastName"><label for="lastName">นามสกุล</label><input id="lastName" type="text" maxlength="60" autocomplete="family-name"><div class="msg">กรุณากรอกนามสกุล</div></div>
@@ -72,7 +72,7 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 <div class="q" data-q="role"><label for="role">บทบาทหรือสายงานปัจจุบัน</label><select id="role"></select><div class="msg">กรุณาเลือกบทบาทปัจจุบัน</div></div>
 <div class="sub" id="roleBox"><div class="q" data-q="roleOther"><label for="roleOther">โปรดระบุ</label><input id="roleOther" type="text" maxlength="100"><div class="msg">กรุณาระบุบทบาทของคุณ</div></div></div>
 <div class="q" data-q="interests"><span class="lbl">สาเหตุที่สนใจเรียน (เลือกได้หลายข้อ)</span><div class="opts col" id="interestOpts"></div><div class="msg">กรุณาเลือกอย่างน้อย 1 ข้อ</div></div>
-<div class="q" data-q="package"><span class="lbl">สมัครแบบไหน</span><div class="opts" id="pkgOpts"></div><div class="msg">กรุณาเลือกแบบที่ต้องการสมัคร</div></div>
+<div class="q" data-q="package"><span class="lbl">มาเดี่ยว หรือมาคู่</span><div class="opts" id="pkgOpts"></div><div class="msg">กรุณาเลือกแบบที่ต้องการสมัคร</div></div>
 <div class="sub" id="partnerBox"><h4>ข้อมูลผู้ร่วมเรียน (DUO)</h4>
 <div class="grid2">
 <div class="q" data-q="partnerFirstName"><label for="pFirst">ชื่อ</label><input id="pFirst" type="text" maxlength="60"><div class="msg">กรุณากรอกชื่อผู้ร่วมเรียน</div></div>
@@ -82,7 +82,7 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 <div class="q" data-q="partnerEmail"><label for="pEmail">อีเมล</label><input id="pEmail" type="email" maxlength="120"><div class="msg">กรุณากรอกอีเมลผู้ร่วมเรียนให้ถูกต้อง</div></div>
 </div>
 <div class="grid2">
-<div class="q" data-q="callbackDate"><label for="cbDate">วันที่สะดวกให้ทีมงานติดต่อกลับ</label><select id="cbDate"></select><div class="msg">กรุณาเลือกวันที่</div></div>
+<div class="q" data-q="callbackDate"><label for="cbDate">วันที่สะดวกให้ติดต่อกลับ</label><select id="cbDate"></select><div class="msg">กรุณาเลือกวัน</div></div>
 <div class="q" data-q="callbackSlot"><label for="cbSlot">ช่วงเวลา</label><select id="cbSlot"></select><div class="msg">กรุณาเลือกช่วงเวลา</div></div>
 </div>
 <div class="q" data-q="consent"><label class="opt" for="consent"><input type="checkbox" id="consent"><span>ฉันยินยอมให้ทีมงานติดต่อกลับและเก็บข้อมูลของฉัน เพื่อใช้ในการสมัครเข้าร่วมคอร์สนี้</span></label></div>
@@ -107,13 +107,12 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 var API='/api/training',OTHER='อื่นๆ';
 var $=function(id){return document.getElementById(id)};
 var GENDERS=['ชาย','หญิง','ไม่ระบุ'];
-var ROLES=['เจ้าของธุรกิจ/ผู้บริหาร','หัวหน้าทีม/ผู้จัดการ','พนักงานประจำ','ฝ่ายขาย/ธุรกิจ','ฟรีแลนซ์','นักศึกษา/เริ่มทำงาน',OTHER];
+var ROLES=['เจ้าของธุรกิจ/ผู้บริหาร','หัวหน้าทีม/ผู้จัดการ','พนักงาน','ฝ่ายขาย/พัฒนาธุรกิจ','ฟรีแลนซ์','นักศึกษา/เริ่มทำงาน',OTHER];
 var INTERESTS=['เข้ากับคนอื่นยาก สื่อสารแล้วไม่ตรงกัน','อยากโน้มน้าวและเจรจาต่อรองให้เก่งขึ้น','อยากขายหรือปิดดีลได้ดีขึ้น','อยากเป็นหัวหน้าที่ทีมเชื่อใจและอยากทำงานด้วย','อยากอ่านใจคน ภาษากาย และจับสัญญาณได้','อยากสร้างเครือข่ายและความสัมพันธ์ที่ดีกว่าเดิม','อยากเติบโตในอาชีพการงาน','อยากเรียนรู้สิ่งใหม่ให้ตัวเอง'];
 var SLOTS=['09:00-12:00','12:00-15:00','15:00-18:00','หลัง 18:00'];
-var WD=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-var MO=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+var DAYS=['วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์','วันอาทิตย์'];
 var appId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2,12));
-var dateLabel={},busy=false,fullShown=false;
+var busy=false,fullShown=false;
 
 function radios(box,name,vals,labels){$(box).innerHTML=vals.map(function(v,i){return '<label class="opt"><input type="radio" name="'+name+'" value="'+v+'"><span>'+(labels?labels[i]:v)+'</span></label>'}).join('')}
 radios('genderOpts','gender',GENDERS);radios('pGenderOpts','pgender',GENDERS);
@@ -121,12 +120,7 @@ radios('pkgOpts','package',['SOLO','DUO'],['SOLO · THB 14,900','DUO · THB 12,9
 $('interestOpts').innerHTML=INTERESTS.map(function(v){return '<label class="opt"><input type="checkbox" name="interests" value="'+v+'"><span>'+v+'</span></label>'}).join('');
 $('role').innerHTML='<option value="">เลือกบทบาทปัจจุบัน</option>'+ROLES.map(function(v){return '<option>'+v+'</option>'}).join('');
 $('cbSlot').innerHTML='<option value="">เลือกช่วงเวลา</option>'+SLOTS.map(function(v){return '<option value="'+v+'">'+v+' น.</option>'}).join('');
-var opts='<option value="">เลือกวันที่</option>';
-for(var i=1;i<=7;i++){var d=new Date();d.setDate(d.getDate()+i);
- var v=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
- dateLabel[v]='วัน'+WD[d.getDay()]+'ที่ '+d.getDate()+' '+MO[d.getMonth()];
- opts+='<option value="'+v+'">'+dateLabel[v]+'</option>'}
-$('cbDate').innerHTML=opts;
+$('cbDate').innerHTML='<option value="">เลือกวัน</option>'+DAYS.map(function(v){return '<option value="'+v+'">'+v+'</option>'}).join('');
 
 var val=function(id){return $(id).value.trim()};
 var chk=function(n){var e=document.querySelector('input[name="'+n+'"]:checked');return e?e.value:''};
@@ -134,7 +128,7 @@ var emailOk=function(s){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)};
 var phoneOk=function(s){return /^(\+66|0)\d{8,9}$/.test(s.replace(/[\s-]/g,''))};
 
 function setFull(){fullShown=true;$('rFull').hidden=false;$('applyForm').hidden=true;$('fullMsg').hidden=false}
-function showRound(r){if(!r)return;[['label','rLabel'],['date','rDate'],['time','rTime'],['location','rLoc']].forEach(function(p){if(r[p[0]])$(p[1]).textContent=r[p[0]]})}
+function showRound(r){if(!r)return;[['date','rDate'],['time','rTime'],['location','rLoc']].forEach(function(p){if(r[p[0]])$(p[1]).textContent=r[p[0]]})}
 fetch(API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok){showRound(d.round);if(d.status==='full')setFull()}}).catch(function(){});
 
 $('role').addEventListener('change',function(){$('roleBox').classList.toggle('show',this.value===OTHER)});
@@ -158,7 +152,7 @@ function collect(){
 }
 function showErr(t){var e=$('formErr');e.textContent=t;e.hidden=false}
 function done(v){
- $('dName').textContent=v.firstName;$('dPhone').textContent=v.phone;$('dDate').textContent=dateLabel[v.callbackDate]||v.callbackDate;$('dSlot').textContent=v.callbackSlot+' น.';
+ $('dName').textContent=v.firstName;$('dPhone').textContent=v.phone;$('dDate').textContent=v.callbackDate;$('dSlot').textContent=v.callbackSlot+' น.';
  $('applyForm').hidden=true;$('doneBox').hidden=false;$('doneBox').scrollIntoView({behavior:'smooth',block:'center'});
 }
 $('applyForm').addEventListener('submit',function(e){
@@ -167,13 +161,13 @@ $('applyForm').addEventListener('submit',function(e){
  if(r.first){r.first.scrollIntoView({behavior:'smooth',block:'center'});var f=r.first.querySelector('input,select');if(f)f.focus({preventScroll:true});return}
  busy=true;var btn=$('submitBtn');btn.disabled=true;btn.textContent='กำลังส่ง…';
  var payload=r.data;payload.applicationId=appId;payload.consent=true;payload.website=$('website').value;
- var ctrl=new AbortController(),t=setTimeout(function(){ctrl.abort()},20000);
+ var st=0,ctrl=new AbortController(),t=setTimeout(function(){ctrl.abort()},20000);
  fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal})
- .then(function(res){return res.json().catch(function(){return null})})
+ .then(function(res){st=res.status;return res.json().catch(function(){return null})})
  .then(function(d){
   if(d&&d.ok){done(payload);return}
   if(d&&d.error==='full'){setFull();return}
-  showErr((d&&d.message)||'ส่งใบสมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+  showErr((d&&d.message)||('ส่งใบสมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (รหัส '+st+')'));
  })
  .catch(function(x){showErr(x&&x.name==='AbortError'?'เชื่อมต่อช้าเกินไป กรุณาลองส่งอีกครั้ง':'ส่งไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่')})
  .then(function(){clearTimeout(t);busy=false;btn.textContent='ส่งใบสมัคร →';btn.disabled=!$('consent').checked});
