@@ -39,6 +39,19 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 .done .note{background:#16e4df18;border:1px solid var(--cyan);border-radius:10px;padding:14px;margin-top:16px}
 .hp{position:absolute;left:-9999px;height:0;overflow:hidden}
 @media(max-width:760px){.grid2{grid-template-columns:1fr}.round .row{flex-direction:column;gap:0}}
+/* ---- book flip card ---- */
+.book.has-info{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.book.has-info:hover,.book.has-info:focus-visible{transform:translateY(-3px);box-shadow:0 8px 18px #0004;outline:none}
+.bk-ov{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:16px;background:#000c;perspective:1400px}
+.bk-ov.show{display:flex}
+.bk-panel{position:relative;width:min(560px,100%);max-height:88vh;display:flex;flex-direction:column;background:#fff;color:#111;border:3px solid #111;transform:rotateY(90deg);transition-property:transform;transition-timing-function:ease}
+.bk-ov.open .bk-panel{transform:rotateY(0)}
+.bk-scroll{overflow:auto;padding:28px 28px 32px;-webkit-overflow-scrolling:touch}
+.bk-cover{width:150px;aspect-ratio:3/4;background:#e6e6e6}
+.bk-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.bk-scroll h3{margin:18px 0 12px;font-size:clamp(22px,3.4vw,28px);line-height:1.25}
+.bk-scroll p{margin:0;font-size:16px;line-height:1.85;white-space:pre-line}
+.bk-x{position:absolute;top:8px;right:10px;z-index:2;width:44px;height:44px;border:0;background:#fff;color:#111;font-size:34px;line-height:1;cursor:pointer}
 </style>
 </head>
 <body>
@@ -101,6 +114,17 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 <div class="contact">สอบถามเพิ่มเติม ทัก LINE: <strong>xxxxxxxxxxxx</strong></div>
 </div></section>
 <footer class="footer">YOU TALK PEOPLE LIKE · By popzilar</footer>
+
+<div class="bk-ov" id="bkOv" role="dialog" aria-modal="true" aria-labelledby="bkTitle">
+<div class="bk-panel">
+<button type="button" class="bk-x" id="bkX" aria-label="ปิด">&times;</button>
+<div class="bk-scroll" id="bkScroll">
+<div class="bk-cover" id="bkCover"><img id="bkImg" alt=""></div>
+<h3 id="bkTitle"></h3>
+<p id="bkDesc"></p>
+</div>
+</div>
+</div>
 
 <script>
 (function(){
@@ -172,6 +196,76 @@ $('applyForm').addEventListener('submit',function(e){
  .catch(function(x){showErr(x&&x.name==='AbortError'?'เชื่อมต่อช้าเกินไป กรุณาลองส่งอีกครั้ง':'ส่งไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่')})
  .then(function(){clearTimeout(t);busy=false;btn.textContent='ส่งใบสมัคร →';btn.disabled=!$('consent').checked});
 });
+})();
+</script>
+<script>
+(function(){
+var API='/api/books';
+var FLIP=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?0:450;
+var $=function(id){return document.getElementById(id)};
+var ov=$('bkOv'),panel=ov.querySelector('.bk-panel'),grid=document.querySelector('.book-grid');
+var map=null,pending=null,timer=null,lastFocus=null;
+panel.style.transitionDuration=FLIP+'ms';
+
+/* ชื่อบนกล่อง กับ book_name ใน Sheet เทียบกันผ่านฟังก์ชันนี้ที่เดียว (ไม่สนตัวพิมพ์เล็กใหญ่/ช่องว่างซ้ำ/apostrophe โค้ง) */
+function key(s){return String(s==null?'':s).toLowerCase().replace(/[\u2018\u2019\u02bc]/g,"'").replace(/[\u201c\u201d]/g,'"').replace(/\s+/g,' ').trim()}
+function cardKey(card){var c=card.cloneNode(true),s=c.querySelector('small');if(s)c.removeChild(s);return key(c.textContent)}
+
+function mark(){
+ [].forEach.call(grid.querySelectorAll('.book'),function(c){
+  if(map[cardKey(c)]){c.classList.add('has-info');c.tabIndex=0;c.setAttribute('role','button')}
+ });
+}
+function load(){
+ if(map)return Promise.resolve(map);
+ if(pending)return pending;
+ pending=fetch(API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+  if(!d||!d.ok||!Array.isArray(d.books))throw new Error('bad');
+  var m={};
+  d.books.forEach(function(b){var k=key(b.name);if(k&&b.caption&&!(k in m))m[k]=b}); /* ไม่มี caption = ถือว่ายังไม่มีข้อมูล, ชื่อซ้ำใช้แถวแรก */
+  map=m;mark();return m;
+ }).catch(function(){pending=null;return null}); /* พังรอบนี้ -> ครั้งหน้าที่กดจะลองโหลดใหม่ */
+ return pending;
+}
+
+$('bkImg').onerror=function(){this.style.visibility='hidden'}; /* รูปไม่ขึ้น = เหลือกรอบสีเทา */
+function show(b){
+ clearTimeout(timer);
+ $('bkTitle').textContent=b.name;$('bkDesc').textContent=b.caption||'';
+ var img=$('bkImg');img.style.visibility='visible';img.removeAttribute('src');
+ if(b.cover){$('bkCover').hidden=false;img.alt=b.name;img.src=b.cover}else{$('bkCover').hidden=true}
+ lastFocus=document.activeElement;
+ ov.classList.add('show');$('bkScroll').scrollTop=0;
+ void panel.offsetWidth; /* บังคับให้เบราว์เซอร์ตั้งท่าเริ่ม (หมุน 90°) ก่อน แล้วค่อยสั่งหมุนเข้า — ไม่ใช้ rAF จึงไม่มีคำสั่งค้างมาทับตอนกดปิดเร็ว */
+ ov.classList.add('open');
+ document.body.style.overflow='hidden';
+ $('bkX').focus({preventScroll:true});
+}
+function hide(){
+ if(!ov.classList.contains('show'))return;
+ ov.classList.remove('open');
+ clearTimeout(timer);
+ timer=setTimeout(function(){
+  ov.classList.remove('show');document.body.style.overflow='';
+  if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});
+ },FLIP);
+}
+function openCard(c){
+ load().then(function(m){
+  if(!m){show({name:'โหลดข้อมูลไม่สำเร็จ',caption:'กรุณาลองกดใหม่อีกครั้ง'});return}
+  var b=m[cardKey(c)];if(b)show(b);
+ });
+}
+
+grid.addEventListener('click',function(e){var c=e.target.closest('.book');if(c)openCard(c)});
+grid.addEventListener('keydown',function(e){
+ if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('has-info')){e.preventDefault();openCard(e.target)}
+});
+$('bkX').addEventListener('click',hide);
+ov.addEventListener('click',function(e){if(e.target===ov)hide()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')hide()});
+
+load();
 })();
 </script>
 </body>
