@@ -52,10 +52,39 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 .bk-scroll h3{margin:18px 0 12px;font-size:clamp(22px,3.4vw,28px);line-height:1.25}
 .bk-scroll p{margin:0;font-size:16px;line-height:1.85;white-space:pre-line}
 .bk-x{position:absolute;top:8px;right:10px;z-index:2;width:44px;height:44px;border:0;background:#fff;color:#111;font-size:34px;line-height:1;cursor:pointer}
+/* ---- survey popup + background music ---- */
+.sv-ov{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:16px;background:#000b;opacity:0;transition:opacity .3s}
+.sv-ov.show{display:flex}.sv-ov.open{opacity:1}
+.sv-card{width:100%;max-width:520px;max-height:100%;overflow:auto;background:#0d0d0d;border:2px solid var(--cyan);border-radius:18px;padding:24px 22px;transform:translateY(14px);transition:transform .3s;outline:0}
+.sv-ov.open .sv-card{transform:none}
+.sv-tag{color:var(--cyan);font-size:12px;letter-spacing:.18em;font-weight:700}
+.sv-card h2{margin:8px 0 16px;font-size:clamp(20px,4.6vw,26px);line-height:1.35}
+.sv-opts{display:grid;gap:10px}
+.sv-opt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;font:inherit;font-size:16px;line-height:1.45;color:#fff;background:#161616;border:2px solid #2c2c2c;border-radius:12px;padding:13px 14px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.sv-opt:hover,.sv-opt:focus-visible{border-color:var(--pink);background:#1d1d1d;outline:0}
+.sv-opt:active{transform:scale(.985)}
+.sv-opt i{flex:none;width:26px;height:26px;border-radius:50%;background:var(--pink);color:#fff;font:700 14px/26px Arial,sans-serif;text-align:center;font-style:normal}
+.sv-hint{margin:14px 0 0;text-align:center;color:#9a9a9a;font-size:13px}
+.snd{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:150;width:52px;height:52px;border-radius:50%;border:2px solid var(--cyan);background:#0d0d0d;color:var(--cyan);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;box-shadow:0 4px 18px #000a}
+.snd[hidden]{display:none}
+.snd:hover{border-color:var(--pink);color:var(--pink)}
+.snd:focus-visible{outline:2px solid var(--pink);outline-offset:3px}
+.snd svg{width:26px;height:26px}
+.snd .sp{fill:currentColor}
+.snd .w{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.snd.on .x{display:none}
+.snd:not(.on) .wv{display:none}
+.snd.hint::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid var(--pink);animation:sndp 2.2s ease-out 6;pointer-events:none}
+@keyframes sndp{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.sv-toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));z-index:140;width:min(560px,calc(100% - 32px));background:#0d0d0d;border:2px solid var(--cyan);border-radius:14px;padding:14px 16px;box-shadow:0 8px 28px #000c;opacity:0;pointer-events:none;transform:translate(-50%,12px);transition:opacity .35s,transform .35s}
+.sv-toast.show{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.sv-t1{font-size:16px;line-height:1.5;color:#fff}
+.sv-t2{margin-top:6px;font-size:13px;color:var(--cyan)}
+@media (prefers-reduced-motion:reduce){.sv-ov,.sv-card,.sv-toast{transition:none}.snd.hint::after{animation:none}}
 </style>
 </head>
 <body>
-<header class="hero"><div class="wrap hero-grid"><div><div class="eyebrow">A practical guide to human connection</div><h1 class="brand">You Talk<span>People Like</span></h1><div class="byline">By popzilar</div></div><div><div class="hero-copy"><strong>พูดเป็น ชีวิตเด่น ท่าดี ชีวิตโดด</strong><br>ไม่ต้องอ่านเอง <span class="pink">ย่อยมาให้แล้ว</span><br>รู้ไว้ พร้อมใช้ได้เลย!!</div><div class="subcopy">จากหนังสือดังระดับโลกกว่า 20++ เล่ม<br>กลายมาเป็น 40 แนวคิดพิชิตใจคน<br>รู้ครบจบใน 1 วัน แทนการอ่านเอง 6 เดือน</div></div></div></header>
+<header class="hero"><div class="wrap hero-grid"><div><div class="eyebrow">A practical guide to human connection</div><h1 class="brand">You Talk<span>People Like</span></h1><div class="byline">By popzilar</div></div><div><div class="hero-copy"><strong>พูดเป็น ชีวิตเด่น พูดดี ชีวิตโดด</strong><br>ไม่ต้องอ่านเอง <span class="pink">ย่อยมาให้แล้ว</span><br>รู้ไว้ พร้อมใช้ได้เลย!!</div><div class="subcopy">จากหนังสือดังระดับโลกกว่า 20++ เล่ม<br>กลายมาเป็น 40 แนวคิดพิชิตใจคน<br>รู้ครบจบใน 1 วัน แทนการอ่านเอง 6 เดือน</div></div></div></header>
 <section class="intro"><div class="wrap"><h2>ไม่ว่าคุณจะเป็น ลูกน้อง หัวหน้า ผู้บริหาร ผู้ให้บริการ นักขาย ได้ดูแลโปรเจคต่างๆ ถ้าคุณมีปัญหาเรื่องเข้ากับคนอื่นยาก เชื่อมโยงกับคนอื่นลำบาก จนกลายเป็นอุปสรรคต่อการเติบโตทั้งอาชีพการงาน และชีวิต<br><span>หากใช่…คอร์สนี้เหมาะกับคุณมากๆ</span></h2></div></section>
 <section class="offer" id="reserve"><div class="wrap offer-grid"><div><h2>มาเดี่ยวก็ได้ มาคู่ก็ดี</h2><p>ที่นั่งมีจำนวนจำกัด!</p></div><div class="prices"><div class="price">SOLO<br>THB 22,900</div><div class="price duo">DUO<br>THB 19,900</div><div class="saving">ประหยัด<br>6,000!!</div></div></div></section>
 <section class="books"><div class="wrap"><h2>เปิดคลังแสงแห่งตำราจิตวิทยาระดับโลก</h2><p class="lead">นำมารวบตึงใน 1 วัน ให้คุณได้เรียนรู้แนวคิดด้านการสื่อสาร และวิธีทะลุเข้าไปในจิตใจผู้คนอย่างน่าอัศจรรย์</p><div class="book-grid" aria-label="หนังสือที่เป็นแรงบันดาลใจ"><div class="book">ART OF SEDUCTION<small>ROBERT GREENE</small></div><div class="book">UNREASONABLE HOSPITALITY<small>WILL GUIDARA</small></div><div class="book">THIS IS STRATEGY<small>SETH GODIN</small></div><div class="book">READ YOUR MIND<small>OZ PEARLMAN</small></div><div class="book">BODY LANGUAGE<small>ALLAN&BARBARA PEASE</small></div><div class="book">HOW TO TALK TO ANYONE<small>LEIL LOWNDES</small></div><div class="book">NO ONE UNDERSTANDS YOU AND WHAT TO DO ABOUT IT<small>HEIDI GRANT HALVORSON</small></div><div class="book">THE (HONEST) TRUTH ABOUT DISHONESTY<small>DAN ARIELY</small></div><div class="book">GETTING TO YES<small>ROGER FISHER&WILLIAM URY</small></div><div class="book">HUMOUR, SERIOUSLY<small>JENNIFER AAKER</small></div><div class="book">MULTIPLIERS<small>LIZ WISEMAN</small></div><div class="book">GET ANYONE TO DO ANYTHING<small>DAVID LIEBERMAN</small></div><div class="book">PERSUASION<small>ROBERT CIALDINI</small></div><div class="book">NEVER SPLIT THE DIFFERENCE<small>CHRIS VOSS</small></div><div class="book">CUES<small>VANESSA VAN EDWARDS</small></div><div class="book">NEVER BE LIED TO AGAIN<small>DAVID LIEBERMAN</small></div><div class="book">THINKING, FAST AND SLOW<small>DANIEL KAHNEMAN</small></div><div class="book">DRIVE<small>DANIEL H. PINK</small></div><div class="book">POSSIBLE<small>WILLIAM URY</small></div><div class="book">THE BEST PLACE TO WORK<small>RON FRIEDMAN</small></div><div class="book">MAKE PEACE WITH ANYONE<small>DAVID LIEBERMAN</small></div><div class="book">EXECUTIVE POWER<small>DAVID LIEBERMAN</small></div><div class="book">SUPERCOMMUNICATORS<small>CHARLES DUHIGG</small></div><div class="book">IT'S NOT THE HOW OR THE WHAT BUT THE WHO<small>CLAUDIO FERNANDEZ-ARAOZ</small></div></div></div></section>
@@ -126,6 +155,19 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 </div>
 </div>
 
+<div class="sv-ov" id="svOv" role="dialog" aria-modal="true" aria-labelledby="svQ">
+<div class="sv-card" id="svCard" tabindex="-1">
+<div class="sv-tag">1 คำถามสั้นๆ</div>
+<h2 id="svQ">ตอนนี้ทักษะเรื่องคนของคุณเป็นแบบไหน หรือใกล้เคียงข้อใดมากที่สุด?</h2>
+<div class="sv-opts" id="svOpts"></div>
+<p class="sv-hint">แตะเลือก 1 ข้อที่ใกล้เคียงที่สุด</p>
+</div>
+</div>
+<button type="button" class="snd" id="sndBtn" hidden aria-label="เปิดเสียงเพลง" aria-pressed="false">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path class="sp" d="M3 9v6h4l5 4V5L7 9H3z"/><g class="wv"><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="w" d="M18.5 5.5a9 9 0 0 1 0 13"/></g><g class="x"><path class="w" d="M16 9.5l5 5M21 9.5l-5 5"/></g></svg>
+</button>
+<div class="sv-toast" id="svToast" role="status" aria-live="polite"><div class="sv-t1" id="svT1"></div><div class="sv-t2" id="svT2"></div></div>
+
 <script>
 (function(){
 var API='/api/training',OTHER='อื่นๆ';
@@ -140,7 +182,7 @@ var busy=false,fullShown=false;
 
 function radios(box,name,vals,labels){$(box).innerHTML=vals.map(function(v,i){return '<label class="opt"><input type="radio" name="'+name+'" value="'+v+'"><span>'+(labels?labels[i]:v)+'</span></label>'}).join('')}
 radios('genderOpts','gender',GENDERS);radios('pGenderOpts','pgender',GENDERS);
-radios('pkgOpts','package',['SOLO','DUO'],['SOLO · THB 14,900','DUO · THB 12,900']);
+radios('pkgOpts','package',['SOLO','DUO'],['SOLO · THB 22,900','DUO · THB 19,900']);
 $('interestOpts').innerHTML=INTERESTS.map(function(v){return '<label class="opt"><input type="checkbox" name="interests" value="'+v+'"><span>'+v+'</span></label>'}).join('');
 $('role').innerHTML='<option value="">เลือกบทบาทปัจจุบัน</option>'+ROLES.map(function(v){return '<option>'+v+'</option>'}).join('');
 $('cbSlot').innerHTML='<option value="">เลือกช่วงเวลา</option>'+SLOTS.map(function(v){return '<option value="'+v+'">'+v+' น.</option>'}).join('');
@@ -184,7 +226,7 @@ $('applyForm').addEventListener('submit',function(e){
  var r=collect();
  if(r.first){r.first.scrollIntoView({behavior:'smooth',block:'center'});var f=r.first.querySelector('input,select');if(f)f.focus({preventScroll:true});return}
  busy=true;var btn=$('submitBtn');btn.disabled=true;btn.textContent='กำลังส่ง…';
- var payload=r.data;payload.applicationId=appId;payload.consent=true;payload.website=$('website').value;
+ var payload=r.data;payload.applicationId=appId;payload.consent=true;payload.surveyChoice=window.ytplSurveyChoice||0;payload.website=$('website').value;
  var st=0,ctrl=new AbortController(),t=setTimeout(function(){ctrl.abort()},20000);
  fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal})
  .then(function(res){st=res.status;return res.json().catch(function(){return null})})
@@ -266,6 +308,185 @@ ov.addEventListener('click',function(e){if(e.target===ov)hide()});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')hide()});
 
 load();
+})();
+</script>
+<script>
+/* ---- survey popup + เพลงประกอบ ----
+   - popup เด้งหลังโหลด 1 วินาที ไม่มีปุ่มข้าม/ปิด: การแตะเลือกคำตอบคือ gesture ที่ทำให้เล่นเพลงได้ และบันทึกคำตอบไปที่ /api/training
+   - เปลี่ยนเพลง: อัปโหลดไฟล์ใหม่ทับ music.m4a (ชื่อเดิม) ใน GitHub */
+(function(){
+'use strict';
+var API='/api/training';
+var AUDIO_SRC='/music.m4a';
+var DELAY=1000, VOL=0.7, FADE=1500;
+var KEY_CHOICE='ytpl_survey_choice', KEY_MUTED='ytpl_music_muted';
+var OPTIONS=[
+'คุยกับคนอื่นแล้วอึดอัด เข้ากับคนยาก',
+'บางวันลื่น บางวันสะดุด เอาแน่เอานอนไม่ได้',
+'ไม่ได้มีปัญหา แต่รู้สึกว่าอยากทำได้ดีกว่านี้',
+'ค่อนข้างเก่งอยู่แล้ว และอยากเก่งขึ้นอีก'
+];
+var REPLIES=[
+'คุณเป็นคนกล้าหาญ คุณยอมรับจุดที่ยังทำได้ไม่ดีของตัวเอง ไม่ใช่ทุกคนจะกล้ามองไปที่จุดนั้นแบบคุณนะ ข่าวดีคือจุดนั้นเป็นทักษะที่ฝึกให้ดีขึ้นได้',
+'เข้าใจเลย คุณมีพื้นฐานอยู่แล้ว แค่ยังไม่นิ่งทุกครั้งซึ่งไม่ใช่เรื่องผิดแปลกครับ มุ่งมั่นฝึกฝนมากขึ้น ความนิ่งจะมากขึ้นตามไปด้วย',
+'การอยากดีขึ้นทั้งที่ไม่มีปัญหา คือจุดเริ่มต้นที่ดีมาก มาดูกันว่าต่อยอดได้ตรงไหนอีกบ้าง',
+'ยอดเยี่ยมเลย คนที่เก่งแล้วแต่ยังไม่หยุดพัฒนา หาได้น้อย และมักไปได้ไกลมากๆ'
+];
+var MUSIC_NOTE='🎵 มีเพลงประกอบ ปิดเสียงได้ที่ปุ่มมุมขวาล่าง';
+
+function $(id){return document.getElementById(id)}
+var ov=$('svOv'),card=$('svCard'),opts=$('svOpts'),btn=$('sndBtn'),toast=$('svToast'),t1=$('svT1'),t2=$('svT2');
+if(!ov||!card||!opts||!btn||!toast||!t1||!t2)return;
+
+window.ytplSurveyChoice=0;
+
+/* localStorage อาจใช้ไม่ได้ (private mode / in-app browser บางตัว) -> ถอยไปใช้หน่วยความจำ ไม่ให้หน้าพัง */
+var mem={};
+function sget(k){try{return localStorage.getItem(k)}catch(e){return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null}}
+function sset(k,v){mem[k]=v;try{localStorage.setItem(k,v)}catch(e){}}
+
+/* ---------- เพลง ---------- */
+var audio=new Audio();
+audio.loop=true;audio.preload='none';audio.src=AUDIO_SRC;
+/* iOS Safari ไม่ยอมให้ตั้ง volume ผ่านโค้ด -> ตรวจก่อน; ถ้าตั้งไม่ได้ ใช้ระดับเสียง/fade-in ที่ฝังอยู่ในไฟล์ */
+var canVol=false;
+try{audio.volume=0.5;canVol=Math.abs(audio.volume-0.5)<0.01}catch(e){}
+var on=false,dead=false,seq=0,fadeT=null;
+
+function setBtn(){
+  btn.classList.toggle('on',on);
+  btn.setAttribute('aria-pressed',on?'true':'false');
+  btn.setAttribute('aria-label',on?'ปิดเสียงเพลง':'เปิดเสียงเพลง');
+}
+function fadeTo(target,ms,done){
+  clearInterval(fadeT);fadeT=null;
+  if(!canVol){if(done)done();return}
+  var from=audio.volume,t0=Date.now();
+  fadeT=setInterval(function(){
+    var p=Math.min(1,(Date.now()-t0)/ms);
+    try{audio.volume=Math.max(0,Math.min(1,from+(target-from)*p))}catch(e){}
+    if(p>=1){clearInterval(fadeT);fadeT=null;if(done)done()}
+  },50);
+}
+/* start() ต้องถูกเรียกภายใน handler ของการแตะ/คลิกเท่านั้น (เบราว์เซอร์ถึงจะยอมให้เล่นเสียง) */
+function start(){
+  var my=++seq;
+  clearInterval(fadeT);fadeT=null;
+  if(canVol){try{audio.volume=0}catch(e){}}
+  var p;
+  try{p=audio.play()}catch(e){on=false;setBtn();return}
+  on=true;setBtn();
+  if(p&&p.then){
+    p.then(function(){if(my===seq)fadeTo(VOL,FADE)}).catch(function(){if(my===seq){on=false;setBtn()}});
+  }else{fadeTo(VOL,FADE)}
+}
+function stop(){
+  seq++;on=false;setBtn();
+  fadeTo(0,300,function(){audio.pause()});
+}
+audio.addEventListener('pause',function(){
+  if(document.hidden)return;            /* เราหยุดเองตอนสลับแท็บ */
+  if(on){on=false;setBtn()}             /* ระบบหยุดให้ (สายเข้า/แอปอื่นแย่งเสียง) */
+});
+audio.addEventListener('error',function(){
+  if(audio.error&&audio.error.code===4){dead=true;on=false;btn.hidden=true}   /* ไฟล์หาย/เล่นไม่ได้ -> ซ่อนปุ่ม ไม่ให้เหลือปุ่มที่ไม่ทำงาน */
+  else{on=false;setBtn()}
+});
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){if(on)audio.pause();return}
+  if(on&&audio.paused){
+    var my=seq,p;
+    try{p=audio.play()}catch(e){on=false;setBtn();return}
+    if(p&&p.catch)p.catch(function(){if(my===seq){on=false;setBtn()}});
+  }
+});
+
+btn.addEventListener('click',function(){
+  btn.classList.remove('hint');
+  if(on){stop();sset(KEY_MUTED,'1')}else{start();sset(KEY_MUTED,'0')}
+});
+
+/* ---------- ส่งคำตอบไปบันทึก (ลองซ้ำอีก 1 ครั้งถ้าเครือข่าย/เซิร์ฟเวอร์ล้มเหลว) ---------- */
+function send(choice){
+  if(!window.fetch)return;
+  var tries=0;
+  (function go(){
+    tries++;
+    var ctrl=window.AbortController?new AbortController():null;
+    var to=setTimeout(function(){if(ctrl)ctrl.abort()},15000);
+    var init={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'survey',surveyChoice:choice}),keepalive:true};
+    if(ctrl)init.signal=ctrl.signal;
+    fetch(API,init).then(function(r){
+      clearTimeout(to);
+      if((r.status>=500||r.status===429)&&tries<2)setTimeout(go,2000+Math.random()*2000);
+    }).catch(function(){
+      clearTimeout(to);
+      if(tries<2)setTimeout(go,2000+Math.random()*2000);
+    });
+  })();
+}
+
+/* ---------- popup ---------- */
+var answered=false,prevOverflow='',toastT=null;
+function build(){
+  OPTIONS.forEach(function(t,i){
+    var b=document.createElement('button');
+    b.type='button';b.className='sv-opt';b.setAttribute('data-i',String(i+1));
+    var n=document.createElement('i');n.textContent=String(i+1);
+    var s=document.createElement('span');s.textContent=t;
+    b.appendChild(n);b.appendChild(s);opts.appendChild(b);
+  });
+}
+function openPop(){
+  if(answered)return;
+  build();
+  prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';
+  ov.classList.add('show');
+  void ov.offsetWidth;
+  ov.classList.add('open');
+  try{card.focus({preventScroll:true})}catch(e){}
+  /* เริ่มโหลดไฟล์เพลงระหว่างที่ user อ่านคำถาม -> กดแล้วเพลงเข้าเร็ว */
+  try{audio.preload='auto';audio.load()}catch(e){}
+}
+function closePop(){
+  ov.classList.remove('open');
+  setTimeout(function(){ov.classList.remove('show');document.body.style.overflow=prevOverflow},300);
+}
+function hideToast(){toast.classList.remove('show')}
+function showToast(n){
+  t1.textContent=REPLIES[n-1]||'';
+  t2.textContent=dead?'':MUSIC_NOTE;
+  t2.style.display=dead?'none':'';
+  setTimeout(function(){toast.classList.add('show')},350);
+  clearTimeout(toastT);toastT=setTimeout(hideToast,8000);
+}
+toast.addEventListener('click',hideToast);
+
+opts.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('.sv-opt'):null;
+  if(!b||answered)return;
+  answered=true;
+  var n=parseInt(b.getAttribute('data-i'),10);
+  start();                                   /* 1) แรกสุด: ต้องอยู่ใน gesture */
+  window.ytplSurveyChoice=n;                 /* 2) ให้ฟอร์มสมัครแนบคำตอบนี้ไปด้วย */
+  sset(KEY_CHOICE,String(n));sset(KEY_MUTED,'0');
+  send(n);
+  if(!dead)btn.hidden=false;
+  setBtn();
+  closePop();
+  showToast(n);
+});
+
+/* ---------- เริ่มต้น ---------- */
+var saved=parseInt(sget(KEY_CHOICE),10);
+if(saved>=1&&saved<=OPTIONS.length){
+  /* เคยตอบแล้ว: ไม่เด้ง popup ไม่บันทึกซ้ำ (เบราว์เซอร์ไม่ยอมให้เพลงเล่นเองอยู่แล้ว) -> มีแค่ปุ่มเปิดเพลง */
+  answered=true;window.ytplSurveyChoice=saved;
+  btn.hidden=false;setBtn();
+  if(sget(KEY_MUTED)!=='1')btn.classList.add('hint');
+}else{
+  setTimeout(openPop,DELAY);
+}
 })();
 </script>
 </body>
