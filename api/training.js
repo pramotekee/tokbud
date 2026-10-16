@@ -3,6 +3,7 @@
 //   GET  /api/training  -> อ่านสถานะ/ข้อมูลรอบเรียนจาก Tab "training_settings"
 //   POST /api/training  -> บันทึกใบสมัคร 1 ใบสมัคร = 1 แถวใหม่เสมอ
 // หลักการ: map คอลัมน์จาก "ชื่อหัวคอลัมน์" (แถว 1) ไม่ใช้ลำดับคอลัมน์
+// (ผู้สมัครที่ผ่านขั้นตอน "popup survey" ใน landing page ส่ง surveyChoice = 1..4 มาด้วย -> เขียนลงคอลัมน์ SurveyAnswer)
 // ใช้ env เดิม: GOOGLE_SERVICE_ACCOUNT_JSON, TOKBUD_SHEET_ID
 
 const { google } = require('googleapis');
@@ -42,6 +43,34 @@ const str = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
 const emailOk = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s) && s.length <= 120;
 const phoneClean = (s) => String(s || '').replace(/[\s-]/g, '');
 const phoneOk = (s) => /^(\+66|0)\d{8,9}$/.test(s);
+
+// ---- Survey (popup 1 คำถามในหน้า landing) ----
+// ลำดับ/ข้อความต้องตรงกับ OPTIONS ในหน้าเว็บ (หน้าเว็บส่งมาแค่เลข 1-4, ข้อความในชีทมาจากที่นี่เสมอ)
+const SURVEY_OPTIONS = [
+  '1. คุยกับคนอื่นแล้วอึดอัด เข้ากับคนยาก',
+  '2. บางวันลื่น บางวันสะดุด เอาแน่เอานอนไม่ได้',
+  '3. ไม่ได้มีปัญหา แต่รู้สึกว่าอยากทำได้ดีกว่านี้',
+  '4. ค่อนข้างเก่งอยู่แล้ว และอยากเก่งขึ้นอีก'
+];
+function surveyLabel(v) {
+  let n = NaN;
+  if (typeof v === 'number') n = v;
+  else if (typeof v === 'string' && /^\d{1,2}$/.test(v.trim())) n = +v.trim();
+  return Number.isInteger(n) && n >= 1 && n <= SURVEY_OPTIONS.length ? SURVEY_OPTIONS[n - 1] : '';
+}
+
+// แคชสั้นๆ ในหน่วยความจำของ instance: คนเข้าพร้อมกันหลายคนแชร์ผลการอ่าน header/settings ครั้งเดียว
+// (กันชน quota ของ Google Sheets API ตอนมี traffic พุ่ง) — ใช้เฉพาะเส้นทาง survey; เส้นทางสมัครอ่านสดทุกครั้งเหมือนเดิม
+const memo = {};
+function cached(key, ttlMs, loader) {
+  const e = memo[key];
+  if (e && Date.now() - e.t < ttlMs) return e.p;
+  const p = loader();
+  memo[key] = { t: Date.now(), p };
+  p.catch(() => { if (memo[key] && memo[key].p === p) delete memo[key]; });
+  return p;
+}
+const SURVEY_CACHE_MS = 60 * 1000;
 
 function bangkokNow() {
   return new Date(Date.now() + 7 * 3600 * 1000);
@@ -120,7 +149,8 @@ function validate(b) {
     pGender: str(b.partnerGender, 20),
     pEmail: str(b.partnerEmail, 120),
     cbDate: str(b.callbackDate, 20),
-    cbSlot: str(b.callbackSlot, 20)
+    cbSlot: str(b.callbackSlot, 20),
+    surveyAnswer: '' // filled below from surveyChoice if valid
   };
 
   const bad = [];
@@ -147,8 +177,59 @@ function validate(b) {
   if (DAYS.indexOf(d.cbDate) < 0) bad.push('callbackDate');
   if (SLOTS.indexOf(d.cbSlot) < 0) bad.push('callbackSlot');
   if (b.consent !== true) bad.push('consent');
+  d.surveyAnswer = surveyLabel(b.surveyChoice); // ไม่ถูกต้อง/ไม่มี = ปล่อยว่าง ไม่ทำให้ใบสมัครตก
 
   return bad.length ? { error: bad } : { data: d };
+}
+
+// ---------- POST (survey): popup 1 คำถามหน้า landing -> 1 คำตอบ = 1 แถว ไม่มี ApplicationID ----------
+// ต้องมีคอลัมน์ Timestamp + SurveyAnswer เท่านั้น (Round ถ้ามีจะเติมให้) ไม่บังคับคอลัมน์ของใบสมัคร
+// อ่าน header/settings ผ่านแคชสั้นๆ -> ตอนมีคนเข้าพร้อมกันมากๆ ใช้ Sheets API แค่ครั้งเดียวต่อคำตอบ (append)
+async function handleSurvey(sheets, body, res) {
+  const label = surveyLabel(body.surveyChoice);
+  if (!label) {
+    return res.status(400).json({ ok: false, error: 'invalid', message: 'ข้อมูลไม่ถูกต้อง' });
+  }
+
+  const headers = await cached('headers', SURVEY_CACHE_MS, async () => {
+    const r = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.TOKBUD_SHEET_ID,
+      range: TAB_APPLY + '!1:1'
+    });
+    return (r.data.values && r.data.values[0]) || [];
+  });
+  const idx = {};
+  headers.forEach((h, i) => { const k = norm(h); if (k && !(k in idx)) idx[k] = i; });
+
+  if (!('timestamp' in idx) || !('surveyanswer' in idx)) {
+    console.error('[training] survey: Tab "' + TAB_APPLY + '" ขาดคอลัมน์ Timestamp หรือ SurveyAnswer');
+    return res.status(500).json({ ok: false, error: 'server', message: 'ระบบขัดข้อง' });
+  }
+
+  // Round เป็นข้อมูลเสริม: อ่านไม่ได้ก็ยังบันทึกคำตอบต่อ
+  let roundLabel = '';
+  if ('round' in idx) {
+    try {
+      const st = await cached('settings', SURVEY_CACHE_MS, () => readSettings(sheets));
+      roundLabel = (st && st.round && st.round.label) || '';
+    } catch (e) {
+      console.warn('[training] survey: อ่านข้อมูลรอบไม่ได้ จะบันทึกโดยไม่ใส่ Round:', e && e.message ? e.message : e);
+    }
+  }
+
+  const row = new Array(headers.length).fill('');
+  row[idx.timestamp] = bangkokTimestamp();
+  row[idx.surveyanswer] = label;
+  if ('round' in idx) row[idx.round] = roundLabel;
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: TAB_APPLY + '!A1',
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [row] }
+  });
+  return res.status(200).json({ ok: true });
 }
 
 module.exports = async function trainingHandler(req, res) {
@@ -181,6 +262,11 @@ module.exports = async function trainingHandler(req, res) {
     // honeypot: บอทกรอกช่องที่ซ่อนไว้ -> ตอบสำเร็จหลอกๆ โดยไม่บันทึก
     if (str(body.website, 200)) {
       return res.status(200).json({ ok: true });
+    }
+
+    // popup survey (1 คำถามบนหน้า landing): 1 คำตอบ = 1 แถว ไม่มี ApplicationID
+    if (body.action === 'survey') {
+      return await handleSurvey(sheets, body, res);
     }
 
     const v = validate(body);
@@ -252,6 +338,10 @@ module.exports = async function trainingHandler(req, res) {
     };
     const row = new Array(headers.length).fill('');
     Object.keys(values).forEach((k) => { row[idx[norm(k)]] = values[k]; });
+    // คำตอบ survey (ถ้ามี): คอลัมน์ SurveyAnswer ไม่บังคับ — ถ้าชีทไม่มีคอลัมน์นี้ ใบสมัครก็ยังบันทึกตามปกติ
+    const surveyCol = idx[norm('SurveyAnswer')];
+    if (surveyCol !== undefined) row[surveyCol] = d.surveyAnswer;
+    else if (d.surveyAnswer) console.warn('[training] ไม่มีคอลัมน์ SurveyAnswer ใน Tab "' + TAB_APPLY + '" -> ไม่ได้บันทึกคำตอบ survey ของใบสมัครนี้');
 
     // RAW = เก็บเป็นข้อความตามที่ส่ง (เบอร์โทรขึ้นต้น 0 ไม่หาย, ไม่ตีความเป็นสูตร)
     await sheets.spreadsheets.values.append({
