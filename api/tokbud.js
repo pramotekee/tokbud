@@ -578,13 +578,49 @@ function formatExportTimestamp(v) {
 // plan==='pro' และ (subscription_status==='active' หรือ (===canceled และ pro_until ยังไม่หมดอายุ))
 // มอบ/ถอด PRO ด้วยมือได้โดยตรงในชีท users (คอลัมน์ plan/subscription_status/pro_until) เหมือนเดิมทุกประการ —
 // ยังไม่มี Stripe billing เชื่อมจริงตอนนี้ (อยู่ท้ายลำดับ migration ตามที่ตกลงกัน)
+// แปลงค่าวันที่จากชีทเป็น ms โดยตีความเป็น "เวลาไทย" เสมอ (ชีทเก็บเวลาไทยแบบ wall-clock ไม่มี timezone)
+// รองรับ: "M/D/YYYY H:mm[:ss]" (ที่ formatDateForSheet เขียน), "YYYY-MM-DD[ HH:mm]" และ ISO ที่มี timezone
+// ค่าที่เป็นวันที่ล้วน (ไม่มีเวลา เช่น แอดมินพิมพ์ 2027-10-17) = ใช้ได้จนจบวันนั้น (23:59:59 เวลาไทย)
+// ถ้าตัวแรกของ M/D/YYYY > 12 และตัวที่สอง <= 12 จะสลับเป็น D/M ให้ (กันแอดมินพิมพ์ 17/10/2027 ผิดช่อง)
+// อ่านค่าไม่ได้ -> NaN (ผู้เรียกต้องจัดการเอง)
+function parseSheetDateMs(v) {
+  if (!v) return NaN;
+  const s = String(v).trim();
+  let Y, M, D, hh, mi, ss, hasTime = false, m;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/))) {
+    M = +m[1]; D = +m[2]; Y = +m[3];
+    if (M > 12 && D <= 12) { const t = M; M = D; D = t; }
+  } else if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/))) {
+    Y = +m[1]; M = +m[2]; D = +m[3];
+  } else {
+    return new Date(s).getTime();
+  }
+  if (M < 1 || M > 12 || D < 1 || D > 31) return NaN;
+  hasTime = m[4] !== undefined;
+  hh = hasTime ? +m[4] : 23; mi = hasTime ? +m[5] : 59; ss = hasTime ? +(m[6] || 0) : 59;
+  return Date.UTC(Y, M - 1, D, hh, mi, ss) - 7 * 60 * 60 * 1000;
+}
+
+// ช่วงผ่อนผัน: ผู้ใช้ที่จ่ายผ่าน Stripe (active) ที่ pro_until เลยมาแล้วไม่เกินนี้ ยังใช้ PRO ได้ เผื่อ cron รายวัน
+// อัปเดตชีทช้า (cron รันวันละครั้ง + Hobby มีหน้าต่างเวลายืดหยุ่น 1 ชม.) ไม่ใช้กับ gifted (หมดตรงวันที่กำหนด)
+const PRO_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+
+// แหล่งความจริงเดียวว่า user คนนี้มีสิทธิ์ PRO ไหม ใช้จุดเดียวกับทุกฟีเจอร์ที่ gate ด้วย PRO ต้องตรงกับ
+// hasProAccess() ฝั่งหน้าเว็บ (profile.txt) เสมอ plan==='pro' และ subscription_status เป็นอย่างใดอย่างหนึ่ง:
+//   - active   = จ่ายผ่าน Stripe: ใช้ได้ตราบที่ pro_until ยังไม่เลยเกิน PRO_GRACE_MS (ถ้า pro_until ว่าง/อ่านไม่ได้
+//                = แถวที่ตั้งด้วยมือแบบเดิม คงพฤติกรรมเดิมคือใช้ได้)
+//   - canceled = ยกเลิกแล้ว: ใช้ได้จนถึง pro_until
+//   - gifted   = แอดมินมอบฟรี: ใช้ได้จนถึง pro_until เป๊ะ (ถ้า pro_until ว่าง/อ่านไม่ได้ = ไม่ได้สิทธิ์)
 function hasProAccess(user) {
   if (!user || user.plan !== 'pro') return false;
-  if (user.subscription_status === 'active') return true;
-  if (user.subscription_status === 'canceled' && user.pro_until) {
-    const until = new Date(user.pro_until).getTime();
-    return !isNaN(until) && until > Date.now();
+  const untilMs = parseSheetDateMs(user.pro_until);
+  const now = Date.now();
+  if (user.subscription_status === 'active') {
+    if (isNaN(untilMs)) return true;
+    return untilMs + PRO_GRACE_MS > now;
   }
+  if (user.subscription_status === 'canceled') return !isNaN(untilMs) && untilMs > now;
+  if (user.subscription_status === 'gifted') return !isNaN(untilMs) && untilMs > now;
   return false;
 }
 
@@ -2486,10 +2522,21 @@ async function sweepSubscriptionsCore() {
   const billingRows = await getSheetRows(SHEETS.BILLING);
   const { headers: billingHeaders, objects: billingObjects } = parseRowsWithHeaders(billingRows);
 
-  let renewed = 0, stillRetrying = 0, downgraded = 0, skippedNoSub = 0;
+  let renewed = 0, stillRetrying = 0, downgraded = 0, skippedNoSub = 0, giftExpired = 0, giftActive = 0, giftInvalid = 0;
   const sheets = getSheetsClient();
 
   for (const u of users.filter(u => u.plan === 'pro')) {
+    // สิทธิ์ที่แอดมินมอบฟรี (gifted) ไม่เกี่ยวกับ Stripe: หมดอายุแล้วปรับเป็น free ถ้าวันที่อ่านไม่ได้ (พิมพ์ผิดรูปแบบ)
+    // จะไม่แตะข้อมูล แค่ log เตือน (hasProAccess จะไม่ให้สิทธิ์อยู่แล้วจนกว่าแอดมินจะแก้วันที่)
+    if (u.subscription_status === 'gifted') {
+      const giftUntil = parseSheetDateMs(u.pro_until);
+      if (isNaN(giftUntil)) { console.error('sweepSubscriptions: user ' + u.user_id + ' เป็น gifted แต่ pro_until อ่านไม่ได้: "' + u.pro_until + '"'); giftInvalid++; }
+      else if (giftUntil <= Date.now()) {
+        await updateRowFields(SHEETS.USERS, userHeaders, u._row, { plan: 'free', subscription_status: 'none' });
+        giftExpired++;
+      } else giftActive++;
+      continue;
+    }
     if (!u.stripe_subscription_id) { skippedNoSub++; continue; }
 
     const subRes = await getSubscription(u.stripe_subscription_id);
@@ -2498,8 +2545,8 @@ async function sweepSubscriptionsCore() {
     const periodEnd = new Date(sub.items.data[0].current_period_end * 1000);
 
     if (sub.status === 'active' || sub.status === 'trialing') {
-      const currentProUntil = u.pro_until ? new Date(u.pro_until) : null;
-      if (!currentProUntil || periodEnd.getTime() > currentProUntil.getTime()) {
+      const currentProUntilMs = parseSheetDateMs(u.pro_until);
+      if (isNaN(currentProUntilMs) || periodEnd.getTime() > currentProUntilMs) {
         const periodEndStr = formatDateForSheet(periodEnd);
         await updateRowFields(SHEETS.USERS, userHeaders, u._row, { pro_until: periodEndStr, next_billing_date: periodEndStr, last_charge_status: 'success' });
 
@@ -2532,8 +2579,8 @@ async function sweepSubscriptionsCore() {
     downgraded++;
   }
 
-  console.log(`sweepSubscriptions: renew สำเร็จ ${renewed} ราย, Stripe กำลัง retry อยู่ ${stillRetrying} ราย, ปรับเป็น free ${downgraded} ราย, ข้าม (ไม่มี subscription id) ${skippedNoSub} ราย`);
-  return { renewed, stillRetrying, downgraded, skippedNoSub };
+  console.log(`sweepSubscriptions: renew สำเร็จ ${renewed} ราย, Stripe กำลัง retry อยู่ ${stillRetrying} ราย, ปรับเป็น free ${downgraded} ราย, ข้าม (ไม่มี subscription id) ${skippedNoSub} ราย, gifted หมดอายุ ${giftExpired} ราย, gifted ยังใช้ได้ ${giftActive} ราย, gifted วันที่ผิดรูปแบบ ${giftInvalid} ราย`);
+  return { renewed, stillRetrying, downgraded, skippedNoSub, giftExpired, giftActive, giftInvalid };
 }
 
 // ===== Router =====
