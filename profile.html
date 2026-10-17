@@ -996,6 +996,7 @@ const I18N = {
     proActiveLabel: 'PRO', freeLabel: 'FREE',
     proUntilActiveText: 'ต่ออายุอัตโนมัติรอบถัดไปวันที่ {date}',
     proUntilCanceledText: 'ยกเลิกแล้ว ใช้สิทธิ์ PRO ต่อได้ถึงวันที่ {date}',
+    proUntilGiftedText: 'โปรฟรีจากทีมงาน ใช้ได้ถึงวันที่ {date}',
     cancelProBtn: 'ยกเลิกการสมัครสมาชิก',
     cancelProConfirmTitle: 'ยืนยันการยกเลิก',
     cancelProConfirmMsg: 'แน่ใจนะว่าจะยกเลิก? คุณจะยังใช้ PRO ได้ถึงวันที่ {date} หลังจากนั้นจะกลับเป็น FREE plan อัตโนมัติ',
@@ -1157,6 +1158,7 @@ const I18N = {
     proActiveLabel: 'PRO', freeLabel: 'FREE',
     proUntilActiveText: 'Auto-renews on {date}',
     proUntilCanceledText: 'Canceled — you can keep using PRO until {date}',
+    proUntilGiftedText: 'Free PRO from our team — valid until {date}',
     cancelProBtn: 'Cancel Subscription',
     cancelProConfirmTitle: 'Confirm Cancellation',
     cancelProConfirmMsg: 'Are you sure you want to cancel? You can keep using PRO until {date}, after which your account will automatically switch to the FREE plan.',
@@ -3096,14 +3098,37 @@ const PRO_BENEFITS = [
   'Export comments people shared about any company to CSV — unlimited companies, unlimited exports',
   'Unlock TOKBUD Conversation Cards — 100+ prompts that help you and your team really get to know each other, build trust, and work better together. Great for 1-on-1s and team bonding.'
 ];
-// สิทธิ์ PRO ฝั่งหน้าเว็บ (ใช้แสดงผลเท่านั้น) ต้องตรงกับ hasProAccess() ใน appscript.txt เสมอ — ฝั่ง backend คือผู้ตัดสินจริง
-// plan='pro' + (active หรือ canceled ที่ pro_until ยังไม่หมด)
+// สิทธิ์ PRO ฝั่งหน้าเว็บ (ใช้แสดงผลเท่านั้น) ต้องตรงกับ hasProAccess() ใน api/tokbud.js เสมอ — ฝั่ง backend คือผู้ตัดสินจริง
+// active = ใช้ได้ถึง pro_until + ผ่อนผัน 3 วัน (ว่าง/อ่านไม่ได้ = ใช้ได้), canceled/gifted = ใช้ได้ถึง pro_until เป๊ะ
+const PRO_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+// ชีทเก็บเวลาไทยแบบ wall-clock ไม่มี timezone: ตีความเป็นเวลาไทยเสมอ (ตรงกับ parseSheetDateMs ใน tokbud.js)
+function parseSheetDateMs(v){
+  if(!v) return NaN;
+  const s = String(v).trim();
+  let Y, M, D, m;
+  if((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/))){
+    M = +m[1]; D = +m[2]; Y = +m[3];
+    if(M > 12 && D <= 12){ const t = M; M = D; D = t; }
+  } else if((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/))){
+    Y = +m[1]; M = +m[2]; D = +m[3];
+  } else {
+    return new Date(s).getTime();
+  }
+  if(M < 1 || M > 12 || D < 1 || D > 31) return NaN;
+  const hasTime = m[4] !== undefined;
+  const hh = hasTime ? +m[4] : 23, mi = hasTime ? +m[5] : 59, ss = hasTime ? +(m[6] || 0) : 59;
+  return Date.UTC(Y, M - 1, D, hh, mi, ss) - 7 * 60 * 60 * 1000;
+}
 function hasProAccess(pf){
   if(!pf || pf.plan !== 'pro') return false;
-  if(pf.subscription_status === 'active') return true;
-  if(pf.subscription_status === 'canceled' && pf.pro_until){
-    const until = new Date(pf.pro_until);
-    return !isNaN(until) && until.getTime() > Date.now();
+  const untilMs = parseSheetDateMs(pf.pro_until);
+  const now = Date.now();
+  if(pf.subscription_status === 'active'){
+    if(isNaN(untilMs)) return true;
+    return untilMs + PRO_GRACE_MS > now;
+  }
+  if(pf.subscription_status === 'canceled' || pf.subscription_status === 'gifted'){
+    return !isNaN(untilMs) && untilMs > now;
   }
   return false;
 }
@@ -3115,9 +3140,9 @@ function proBenefitsHtml(){
 
 function formatDateShort(dateStr){
   if(!dateStr) return '';
-  const d = new Date(dateStr);
-  if(isNaN(d)) return '';
-  return d.toLocaleDateString(getLang()==='en' ? 'en-US' : 'th-TH', { year:'numeric', month:'short', day:'numeric' });
+  const ms = parseSheetDateMs(dateStr);
+  if(isNaN(ms)) return '';
+  return new Date(ms).toLocaleDateString(getLang()==='en' ? 'en-US' : 'th-TH', { year:'numeric', month:'short', day:'numeric', timeZone:'Asia/Bangkok' });
 }
 
 async function loadPlanBilling(){
@@ -3153,7 +3178,7 @@ function renderPlanStatusCard(){
   let untilHtml = '';
   if(isPro && pf.pro_until){
     const dateStr = formatDateShort(pf.pro_until);
-    const key = pf.subscription_status === 'canceled' ? 'proUntilCanceledText' : 'proUntilActiveText';
+    const key = pf.subscription_status === 'canceled' ? 'proUntilCanceledText' : (pf.subscription_status === 'gifted' ? 'proUntilGiftedText' : 'proUntilActiveText');
     untilHtml = `<p class="plan-until-text">${t(key).replace('{date}', dateStr)}</p>${proBenefitsHtml()}`;
   }
 
