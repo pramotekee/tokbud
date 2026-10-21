@@ -138,6 +138,25 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 @media(max-width:760px){.faq-a-in .chk{padding:14px 12px 4px}.faq-a-in .chk .chk-no{margin-left:0}}
 @media(max-width:760px){.faq-head{padding:4px 2px 10px}.faq-q{padding:16px 2px}.faq-a-in p{padding:14px 12px 16px}.faq-a-in ul{padding-right:12px;padding-left:32px}.faq-a-in ul:first-child{padding-top:14px}.faq-ar{width:26px;height:26px}}
 @media (prefers-reduced-motion:reduce){.faq-body,.faq-a,.faq-main.open>.faq-body,.faq-item.open>.faq-a,.faq-ar{transition:none}}
+/* ---- waitlist ---- */
+.q textarea{width:100%;padding:12px 14px;font:inherit;color:#fff;background:#181818;border:1px solid #3a3a3a;border-radius:8px;resize:vertical;min-height:96px}
+.q textarea:focus{outline:2px solid var(--cyan);border-color:var(--cyan)}
+.req{color:var(--pink);margin-left:3px;font-weight:900}
+.q .sm{display:block;color:#aaa;font-size:14px;font-weight:400;line-height:1.5;margin:-2px 0 8px}
+.wl-ov{position:fixed;inset:0;z-index:210;display:none;align-items:center;justify-content:center;padding:16px;background:#000b;opacity:0;transition:opacity .3s}
+.wl-ov.show{display:flex}.wl-ov.open{opacity:1}
+.wl-card{width:100%;max-width:520px;max-height:100%;overflow:auto;background:#0d0d0d;border:2px solid var(--cyan);border-radius:18px;padding:26px 22px;transform:translateY(14px);transition:transform .3s;outline:0}
+.wl-ov.open .wl-card{transform:none}
+.wl-load{text-align:center;padding:18px 0}
+.wl-load p{margin:18px 0 0;font-size:18px;color:#e8e8e8}
+.wl-spin{width:48px;height:48px;margin:0 auto;border:5px solid #2c2c2c;border-top-color:var(--cyan);border-radius:50%;animation:wlspin .8s linear infinite}
+@keyframes wlspin{to{transform:rotate(360deg)}}
+.wl-card h3{margin:0 0 8px;font-size:clamp(21px,4.6vw,27px);line-height:1.4}
+.wl-sub{margin:0;color:#ddd;font-size:17px}
+.wl-sum{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;background:#161616;border:1px solid #2c2c2c;border-radius:12px;padding:14px 16px;margin:18px 0 6px}
+.wl-sum dt{color:var(--cyan);font-weight:700;white-space:nowrap}
+.wl-sum dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
+@media (prefers-reduced-motion:reduce){.wl-ov,.wl-card{transition:none}.wl-spin{animation-duration:2.4s}}
 </style>
 </head>
 <body>
@@ -181,7 +200,7 @@ var SM=reduce?'auto':'smooth',D=reduce?30:380;
 /* ปุ่ม "สมัครเลย" -> เลื่อนไปที่ฟอร์มสมัคร (ถ้ารอบเต็ม ฟอร์มถูกซ่อน -> ไปกล่อง "รอบนี้เต็มแล้ว" / ถ้าสมัครเสร็จแล้ว -> กล่อง "ได้รับใบสมัครแล้ว") */
 var ab=$('applyBtn');
 if(ab)ab.addEventListener('click',function(e){
-  var t=['fullMsg','applyForm','doneBox'].map($).filter(function(el){return el&&!el.hidden})[0];
+  var t=['fullMsg','applyForm','doneBox','waitlistForm'].map($).filter(function(el){return el&&!el.hidden})[0];
   if(!t)return;                         /* หาเป้าหมายไม่เจอ -> ปล่อยให้ลิงก์ #applyForm ทำงานตามปกติ */
   e.preventDefault();
   t.scrollIntoView({behavior:SM,block:'start'});
@@ -230,6 +249,22 @@ qs.forEach(function(b){
 <div class="badge-full" id="rFull" hidden>เต็มแล้ว</div></div>
 
 <div class="form" id="fullMsg" hidden><h3>รอบนี้เต็มแล้ว</h3><p class="hint" style="margin:0">โปรดกลับมาดูรอบใหม่ที่หน้านี้ เปิดรอบเมื่อไหร่ สมัครที่นี่ได้ทันที</p></div>
+
+<form class="form" id="waitlistForm" novalidate hidden>
+<h3>Waitlist เพื่อไม่พลาดโอกาสของคุณ</h3>
+<div class="q" data-q="wlPackage"><span class="lbl">Solo / Duo<span class="req">*</span></span><span class="sm">สนใจเรียนคนเดียว หรือกับเพื่อน</span><div class="opts" id="wlPkgOpts"></div><div class="msg">กรุณาเลือก Solo หรือ Duo</div></div>
+<div class="q" data-q="wlEmail"><label for="wlEmail">Email<span class="req">*</span></label><span class="sm">สำหรับใช้เป็นช่องทางติดต่อแจ้งให้คุณรู้ทันทีเมื่อเปิดรอบใหม่</span><input id="wlEmail" type="email" maxlength="120" autocomplete="email"><div class="msg">กรุณากรอกอีเมลให้ถูกต้อง</div></div>
+<div class="grid2">
+<div class="q" data-q="wlFirst"><label for="wlFirst">First Name<span class="req">*</span></label><input id="wlFirst" type="text" maxlength="60" autocomplete="given-name"><div class="msg">กรุณากรอกชื่อ</div></div>
+<div class="q" data-q="wlLast"><label for="wlLast">Last Name<span class="req">*</span></label><input id="wlLast" type="text" maxlength="60" autocomplete="family-name"><div class="msg">กรุณากรอกนามสกุล</div></div>
+</div>
+<div class="q"><label for="wlPhone">Telephone</label><input id="wlPhone" type="tel" inputmode="tel" maxlength="40" autocomplete="tel"></div>
+<div class="q"><label for="wlNote">Note</label><textarea id="wlNote" maxlength="500"></textarea></div>
+<div class="q"><label class="opt" for="wlConsent"><input type="checkbox" id="wlConsent"><span>ฉันยินยอมให้ติดต่อแจ้งเมื่อเปิดรอบใหม่ และเก็บข้อมูลของฉันเพื่อวัตถุประสงค์นี้<span class="req">*</span></span></label></div>
+<input class="hp" type="text" id="wlWebsite" tabindex="-1" autocomplete="off" aria-hidden="true">
+<div class="formerr" id="wlErr" hidden></div>
+<button class="button" type="submit" id="wlSubmit" disabled>ลงชื่อเลย</button>
+</form>
 
 <form class="form" id="applyForm" novalidate>
 <h3>ใบสมัคร</h3><p class="hint">กรอกให้ครบทุกข้อ ทีมงานจะติดต่อกลับเพื่อยืนยันที่นั่ง</p>
@@ -287,6 +322,17 @@ qs.forEach(function(b){
 </div>
 </div>
 
+<div class="wl-ov" id="wlOv" role="dialog" aria-modal="true" aria-label="Waitlist">
+<div class="wl-card" id="wlCard" tabindex="-1">
+<div class="wl-load" id="wlLoad" role="status"><div class="wl-spin" aria-hidden="true"></div><p>กำลังบันทึกข้อมูล กรุณารอสักครู่…</p></div>
+<div id="wlDone" hidden>
+<h3>ขอบคุณที่สนใจ คุณอยู่ในรายชื่อ Waitlist ของเราเรียบร้อยแล้ว 🎉</h3>
+<p class="wl-sub">เมื่อเปิดรอบใหม่ เราจะแจ้งให้คุณทราบตามข้อมูลนี้</p>
+<dl class="wl-sum" id="wlSum"></dl>
+<button class="button" type="button" id="wlBack">รับทราบ</button>
+</div>
+</div>
+</div>
 <div class="sv-ov" id="svOv" role="dialog" aria-modal="true" aria-labelledby="svQ">
 <div class="sv-card" id="svCard" tabindex="-1">
 <div class="sv-tag">1 คำถามสั้นๆ</div>
@@ -325,9 +371,12 @@ var chk=function(n){var e=document.querySelector('input[name="'+n+'"]:checked');
 var emailOk=function(s){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)};
 var phoneOk=function(s){return /^(\+66|0)\d{8,9}$/.test(s.replace(/[\s-]/g,''))};
 
-function setFull(){fullShown=true;$('rFull').hidden=false;$('applyForm').hidden=true;$('fullMsg').hidden=false}
+function setFull(){fullShown=true;$('rFull').hidden=false;$('applyForm').hidden=true;$('fullMsg').hidden=false;$('waitlistForm').hidden=false}
+/* closed = ยังไม่เปิดรอบ/จบไปแล้ว: ซ่อนข้อมูลรอบ + ฟอร์มสมัคร + กล่อง "เต็มแล้ว" เหลือแต่ Waitlist */
+function setClosed(){fullShown=true;$('roundCard').hidden=true;$('applyForm').hidden=true;$('fullMsg').hidden=true;$('waitlistForm').hidden=false}
+function applyStatus(s){if(s==='full')setFull();else if(s==='closed')setClosed()}
 function showRound(r){if(!r)return;[['date','rDate'],['time','rTime'],['location','rLoc']].forEach(function(p){if(r[p[0]])$(p[1]).textContent=r[p[0]]})}
-fetch(API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok){showRound(d.round);if(d.status==='full')setFull()}}).catch(function(){});
+fetch(API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(d&&d.ok){showRound(d.round);applyStatus(d.status)}}).catch(function(){});
 
 $('role').addEventListener('change',function(){$('roleBox').classList.toggle('show',this.value===OTHER)});
 $('applyForm').addEventListener('change',function(e){if(e.target.name==='package')$('partnerBox').classList.toggle('show',e.target.value==='DUO')});
@@ -364,11 +413,82 @@ $('applyForm').addEventListener('submit',function(e){
  .then(function(res){st=res.status;return res.json().catch(function(){return null})})
  .then(function(d){
   if(d&&d.ok){done(payload);return}
-  if(d&&d.error==='full'){setFull();return}
+  if(d&&(d.error==='full'||d.error==='closed')){applyStatus(d.error);return}
   showErr((d&&d.message)||('ส่งใบสมัครไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (รหัส '+st+')'));
  })
  .catch(function(x){showErr(x&&x.name==='AbortError'?'เชื่อมต่อช้าเกินไป กรุณาลองส่งอีกครั้ง':'ส่งไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่')})
  .then(function(){clearTimeout(t);busy=false;btn.textContent='ส่งใบสมัคร →';btn.disabled=!$('consent').checked});
+});
+})();
+</script>
+<script>
+/* ---- Waitlist: ลงชื่อรอเมื่อรอบเต็ม/ยังไม่เปิด -> POST /api/training {action:'waitlist'} ---- */
+(function(){
+var API='/api/training';
+var $=function(id){return document.getElementById(id)};
+var f=$('waitlistForm'),ov=$('wlOv');if(!f||!ov)return;
+var PK={SOLO:'SOLO (เรียนคนเดียว)',DUO:'DUO (เรียนกับเพื่อน)'};
+$('wlPkgOpts').innerHTML=['SOLO','DUO'].map(function(v){return '<label class="opt"><input type="radio" name="wlpkg" value="'+v+'"><span>'+v+'</span></label>'}).join('');
+var busy=false,state='',prevOv='',lastFocus=null;
+var val=function(id){return $(id).value.trim()};
+var emailOk=function(s){return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)};
+function pkg(){var e=f.querySelector('input[name="wlpkg"]:checked');return e?e.value:''}
+function clearErr(e){var q=e.target.closest&&e.target.closest('.q');if(q)q.classList.remove('err')}
+f.addEventListener('input',clearErr);f.addEventListener('change',clearErr);
+$('wlConsent').addEventListener('change',function(){$('wlSubmit').disabled=!this.checked||busy});
+
+function collect(){
+ var v={package:pkg(),email:val('wlEmail'),firstName:val('wlFirst'),lastName:val('wlLast'),phone:val('wlPhone'),note:val('wlNote')};
+ var ok={wlPackage:!!v.package,wlEmail:emailOk(v.email),wlFirst:!!v.firstName,wlLast:!!v.lastName};
+ var first=null;
+ f.querySelectorAll('.q[data-q]').forEach(function(q){var k=q.getAttribute('data-q');
+  if(k in ok&&!ok[k]){q.classList.add('err');if(!first)first=q}else q.classList.remove('err')});
+ return {data:v,first:first};
+}
+function showErr(t){var e=$('wlErr');e.textContent=t;e.hidden=false}
+
+function openPop(){
+ lastFocus=document.activeElement;prevOv=document.body.style.overflow;document.body.style.overflow='hidden';
+ $('wlLoad').hidden=false;$('wlDone').hidden=true;state='load';
+ ov.classList.add('show');void ov.offsetWidth;ov.classList.add('open');
+ try{$('wlCard').focus({preventScroll:true})}catch(e){}
+}
+function closePop(){
+ state='';ov.classList.remove('open');
+ setTimeout(function(){ov.classList.remove('show');document.body.style.overflow=prevOv;
+  if(lastFocus&&lastFocus.focus){try{lastFocus.focus({preventScroll:true})}catch(e){}}},300);
+}
+function row(dl,k,v){var dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.appendChild(dt);dl.appendChild(dd)}
+function showDone(v){
+ var dl=$('wlSum');dl.innerHTML='';
+ row(dl,'ชื่อ-นามสกุล',v.firstName+' '+v.lastName);
+ row(dl,'ประเภท',PK[v.package]||v.package);
+ row(dl,'อีเมล',v.email);
+ if(v.phone)row(dl,'โทรศัพท์',v.phone);
+ if(v.note)row(dl,'หมายเหตุ',v.note);
+ $('wlLoad').hidden=true;$('wlDone').hidden=false;state='done';
+ try{$('wlBack').focus({preventScroll:true})}catch(e){}
+}
+$('wlBack').addEventListener('click',closePop);
+ov.addEventListener('click',function(e){if(e.target===ov&&state==='done')closePop()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&state==='done')closePop()});
+
+f.addEventListener('submit',function(e){
+ e.preventDefault();if(busy)return;$('wlErr').hidden=true;
+ var r=collect();
+ if(r.first){r.first.scrollIntoView({behavior:'smooth',block:'center'});var x=r.first.querySelector('input');if(x)x.focus({preventScroll:true});return}
+ busy=true;var btn=$('wlSubmit');btn.disabled=true;
+ var p=r.data;p.action='waitlist';p.consent=true;p.surveyChoice=window.ytplSurveyChoice||0;p.website=$('wlWebsite').value;
+ openPop();
+ var st=0,ctrl=new AbortController(),t=setTimeout(function(){ctrl.abort()},20000);
+ fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),signal:ctrl.signal})
+ .then(function(res){st=res.status;return res.json().catch(function(){return null})})
+ .then(function(d){
+  if(d&&d.ok){f.reset();showDone(p);return}
+  closePop();showErr((d&&d.message)||('ลงชื่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (รหัส '+st+')'));
+ })
+ .catch(function(x){closePop();showErr(x&&x.name==='AbortError'?'เชื่อมต่อช้าเกินไป กรุณากดลงชื่ออีกครั้ง':'ลงชื่อไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่')})
+ .then(function(){clearTimeout(t);busy=false;btn.disabled=!$('wlConsent').checked});
 });
 })();
 </script>
