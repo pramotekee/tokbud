@@ -465,7 +465,7 @@ function showDone(v){
  row(dl,'ประเภท',PK[v.package]||v.package);
  row(dl,'อีเมล',v.email);
  if(v.phone)row(dl,'โทรศัพท์',v.phone);
- if(v.note)row(dl,'หมายเหตุ',v.note);
+ if(v.note)row(dl,'ข้อความ',v.note);
  $('wlLoad').hidden=true;$('wlDone').hidden=false;state='done';
  try{$('wlBack').focus({preventScroll:true})}catch(e){}
 }
