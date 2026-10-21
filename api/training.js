@@ -2,6 +2,7 @@
 // รับใบสมัครคอร์ส YOU TALK PEOPLE LIKE -> เขียนลง Tab "training" ใน Google Sheet เดียวกับ TOKBUD
 //   GET  /api/training  -> อ่านสถานะ/ข้อมูลรอบเรียนจาก Tab "training_settings"
 //   POST /api/training  -> บันทึกใบสมัคร 1 ใบสมัคร = 1 แถวใหม่เสมอ
+//   POST /api/training {action:'waitlist'} -> ลงชื่อ Waitlist ลง Tab "waitlist" (รับเสมอ ไม่ดูสถานะรอบ ไม่กันซ้ำ ทุกครั้ง = แถวใหม่)
 // หลักการ: map คอลัมน์จาก "ชื่อหัวคอลัมน์" (แถว 1) ไม่ใช้ลำดับคอลัมน์
 // (ผู้สมัครที่ผ่านขั้นตอน "popup survey" ใน landing page ส่ง surveyChoice = 1..4 มาด้วย -> เขียนลงคอลัมน์ SurveyAnswer)
 // ใช้ env เดิม: GOOGLE_SERVICE_ACCOUNT_JSON, TOKBUD_SHEET_ID
@@ -10,6 +11,12 @@ const { google } = require('googleapis');
 
 const TAB_APPLY = 'training';
 const TAB_SETTINGS = 'training_settings';
+const TAB_WAIT = 'waitlist';
+
+// คอลัมน์ที่ต้องมีในแถว 1 ของ Tab waitlist (SurveyAnswer ไม่บังคับ)
+const WAIT_REQUIRED_COLS = [
+  'Timestamp', 'Package', 'FirstName', 'LastName', 'Email', 'Phone', 'Note', 'PDPAConsent', 'Status'
+];
 
 // คอลัมน์ที่ต้องมีในแถว 1 ของ Tab training (TeamNote ไม่บังคับ)
 const REQUIRED_COLS = [
@@ -98,7 +105,8 @@ async function readSettings(sheets) {
   if (kI >= 0 && vI >= 0) {
     for (let i = 1; i < rows.length; i++) {
       if (norm(rows[i][kI]) === 'roundstatus') {
-        status = norm(rows[i][vI]) === 'full' ? 'full' : 'open'; // มีแค่ "full" เท่านั้นที่ปิดรับ
+        const sv = norm(rows[i][vI]);
+        status = sv === 'full' ? 'full' : sv === 'closed' ? 'closed' : 'open'; // open | full | closed (อย่างอื่น = open)
         break;
       }
     }
@@ -232,6 +240,81 @@ async function handleSurvey(sheets, body, res) {
   return res.status(200).json({ ok: true });
 }
 
+// ---------- POST (waitlist): ลงชื่อรอรับแจ้งเมื่อเปิดรอบใหม่ -> 1 ครั้ง = 1 แถวใหม่เสมอ ----------
+// ตั้งใจไม่กันอะไรทั้งนั้น: ไม่ดูสถานะรอบ, ไม่เช็คอีเมล/เบอร์ซ้ำ, เบอร์โทรไม่ตรวจรูปแบบ (เป็น Lead ต้องรับให้หมด)
+// บังคับแค่: Package, Email (รูปแบบพื้นฐาน), FirstName, LastName, PDPA consent
+function validateWaitlist(b) {
+  const d = {
+    pkg: str(b.package, 10),
+    email: str(b.email, 120),
+    firstName: str(b.firstName, 60),
+    lastName: str(b.lastName, 60),
+    phone: str(b.phone, 40),
+    note: str(b.note, 500),
+    surveyAnswer: surveyLabel(b.surveyChoice) // ไม่ถูกต้อง/ไม่มี = ปล่อยว่าง ไม่ทำให้รายการตก
+  };
+  const bad = [];
+  if (PACKAGES.indexOf(d.pkg) < 0) bad.push('package');
+  if (!emailOk(d.email)) bad.push('email');
+  if (!d.firstName) bad.push('firstName');
+  if (!d.lastName) bad.push('lastName');
+  if (b.consent !== true) bad.push('consent');
+  return bad.length ? { error: bad } : { data: d };
+}
+
+async function handleWaitlist(sheets, body, res) {
+  const v = validateWaitlist(body);
+  if (v.error) {
+    console.warn('[training] waitlist validation failed:', v.error.join(','));
+    return res.status(400).json({
+      ok: false, error: 'invalid', fields: v.error,
+      message: 'ข้อมูลบางส่วนไม่ถูกต้อง กรุณาตรวจสอบแล้วลองใหม่อีกครั้ง'
+    });
+  }
+  const d = v.data;
+
+  // อ่านหัวคอลัมน์สดทุกครั้ง (map ตามชื่อ ไม่ใช้ลำดับ)
+  const headRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: TAB_WAIT + '!1:1'
+  });
+  const headers = (headRes.data.values && headRes.data.values[0]) || [];
+  const idx = {};
+  headers.forEach((h, i) => { const k = norm(h); if (k && !(k in idx)) idx[k] = i; });
+
+  const missing = WAIT_REQUIRED_COLS.filter((c) => !(norm(c) in idx));
+  if (missing.length) {
+    console.error('[training] Tab "' + TAB_WAIT + '" ขาดคอลัมน์:', missing.join(', '));
+    return res.status(500).json({ ok: false, error: 'server', message: 'ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง' });
+  }
+
+  const values = {
+    Timestamp: bangkokTimestamp(),
+    Package: d.pkg,
+    FirstName: d.firstName,
+    LastName: d.lastName,
+    Email: d.email,
+    Phone: d.phone,
+    Note: d.note,
+    PDPAConsent: 'yes',
+    Status: 'new'
+  };
+  const row = new Array(headers.length).fill('');
+  Object.keys(values).forEach((k) => { row[idx[norm(k)]] = values[k]; });
+  const surveyCol = idx[norm('SurveyAnswer')];
+  if (surveyCol !== undefined) row[surveyCol] = d.surveyAnswer;
+
+  // RAW = เก็บเป็นข้อความตามที่ส่ง (เบอร์ขึ้นต้น 0 ไม่หาย, Note ที่ขึ้นต้นด้วย = ไม่ถูกตีเป็นสูตร)
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: TAB_WAIT + '!A1',
+    valueInputOption: 'RAW',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: [row] }
+  });
+  return res.status(200).json({ ok: true });
+}
+
 module.exports = async function trainingHandler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
@@ -269,6 +352,11 @@ module.exports = async function trainingHandler(req, res) {
       return await handleSurvey(sheets, body, res);
     }
 
+    // waitlist: ลงชื่อรอเมื่อรอบเต็ม/ยังไม่เปิด -> รับเสมอ ไม่ผ่านการเช็คสถานะรอบด้านล่าง
+    if (body.action === 'waitlist') {
+      return await handleWaitlist(sheets, body, res);
+    }
+
     const v = validate(body);
     if (v.error) {
       console.warn('[training] validation failed:', v.error.join(','));
@@ -283,6 +371,9 @@ module.exports = async function trainingHandler(req, res) {
     const settings = await readSettings(sheets);
     if (settings.status === 'full') {
       return res.status(409).json({ ok: false, error: 'full', message: 'รอบนี้เต็มแล้ว' });
+    }
+    if (settings.status === 'closed') {
+      return res.status(409).json({ ok: false, error: 'closed', message: 'ยังไม่เปิดรับสมัคร' });
     }
 
     // อ่านหัวคอลัมน์ของ Tab training (แถว 1) เพื่อ map ตามชื่อ
