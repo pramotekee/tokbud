@@ -376,7 +376,7 @@ var busy=false,fullShown=false;
 
 function radios(box,name,vals,labels){$(box).innerHTML=vals.map(function(v,i){return '<label class="opt"><input type="radio" name="'+name+'" value="'+v+'"><span>'+(labels?labels[i]:v)+'</span></label>'}).join('')}
 radios('genderOpts','gender',GENDERS);radios('pGenderOpts','pgender',GENDERS);
-radios('pkgOpts','package',['SOLO','DUO'],['SOLO · THB 99,900','DUO · THB 89,900']);
+radios('pkgOpts','package',['SOLO','DUO'],['SOLO · THB 99,900','DUO · THB 89,900/คน<small style="display:block;font-size:.85em;color:#bbb">สมัคร 2 คน โอนรวม THB 179,800 (รับส่วนลดรวม 20,000 บาทแล้ว)</small>']);
 $('interestOpts').innerHTML=INTERESTS.map(function(v){return '<label class="opt"><input type="checkbox" name="interests" value="'+v+'"><span>'+v+'</span></label>'}).join('');
 $('role').innerHTML='<option value="">เลือกบทบาทปัจจุบัน</option>'+ROLES.map(function(v){return '<option>'+v+'</option>'}).join('');
 $('cbSlot').innerHTML='<option value="">เลือกช่วงเวลา</option>'+SLOTS.map(function(v){return '<option value="'+v+'">'+v+' น.</option>'}).join('');
