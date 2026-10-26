@@ -6,8 +6,12 @@
 // หลักการ: map คอลัมน์จาก "ชื่อหัวคอลัมน์" (แถว 1) ไม่ใช้ลำดับคอลัมน์
 // (ผู้สมัครที่ผ่านขั้นตอน "popup survey" ใน landing page ส่ง surveyChoice = 1..4 มาด้วย -> เขียนลงคอลัมน์ SurveyAnswer)
 // ใช้ env เดิม: GOOGLE_SERVICE_ACCOUNT_JSON, TOKBUD_SHEET_ID
+// RefCode: ทุกแถวผู้เรียนมี referral code 6 ตัวประจำตัว (สร้างที่เซิร์ฟเวอร์ ไม่ซ้ำกัน)
+// DUO: 1 ใบสมัคร = 2 แถว (ผู้สมัครหลัก + คู่) เขียนใน append คำขอเดียว -> ได้ทั้งสองแถวหรือไม่ได้เลย
+//   แถวคู่ใช้ ApplicationID = <ApplicationID หลัก>-P และมี RefCode ของตัวเอง
 
 const { google } = require('googleapis');
+const crypto = require('crypto');
 
 const TAB_APPLY = 'training';
 const TAB_SETTINGS = 'training_settings';
@@ -23,7 +27,7 @@ const REQUIRED_COLS = [
   'Timestamp', 'ApplicationID', 'Round', 'FirstName', 'LastName', 'Gender', 'Age',
   'Email', 'Phone', 'Role', 'RoleOther', 'Interests', 'Package',
   'PartnerFirstName', 'PartnerLastName', 'PartnerGender', 'PartnerEmail',
-  'CallbackDate', 'CallbackSlot', 'PDPAConsent', 'Status'
+  'CallbackDate', 'CallbackSlot', 'PDPAConsent', 'Status', 'RefCode'
 ];
 
 const GENDERS = ['ชาย', 'หญิง', 'ไม่ระบุ'];
@@ -78,6 +82,18 @@ function cached(key, ttlMs, loader) {
   return p;
 }
 const SURVEY_CACHE_MS = 60 * 1000;
+
+// ---- Referral code: 6 ตัว ตัดตัวที่อ่านสับสน (0/O, 1/I) ออก -> 32 ตัวอักษร ~1 พันล้านรูปแบบ ----
+const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 ตัวพอดี -> random byte % 32 ไม่เอนเอียง
+function makeRefCode(taken) {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const b = crypto.randomBytes(6);
+    let c = '';
+    for (let i = 0; i < 6; i++) c += REF_ALPHABET[b[i] % 32];
+    if (!taken.has(c)) { taken.add(c); return c; }
+  }
+  throw new Error('สร้าง RefCode ไม่ซ้ำไม่สำเร็จ');
+}
 
 function bangkokNow() {
   return new Date(Date.now() + 7 * 3600 * 1000);
@@ -392,21 +408,34 @@ module.exports = async function trainingHandler(req, res) {
     }
 
     // กันบันทึกซ้ำจากการกดรัว/ลองส่งใหม่: ApplicationID เดิม = ใบสมัครเดิม
+    // อ่านคอลัมน์ ApplicationID + RefCode ในคำขอเดียว (RefCode ใช้กันรหัสซ้ำ)
     const idCol = idx[norm('ApplicationID')];
+    const refCol = idx[norm('RefCode')];
     const colLetter = (n) => { let s = ''; n++; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
-    const idRes = await sheets.spreadsheets.values.get({
+    const rangeOf = (c) => TAB_APPLY + '!' + colLetter(c) + ':' + colLetter(c);
+    const colRes = await sheets.spreadsheets.values.batchGet({
       spreadsheetId: process.env.TOKBUD_SHEET_ID,
-      range: TAB_APPLY + '!' + colLetter(idCol) + ':' + colLetter(idCol)
+      ranges: [rangeOf(idCol), rangeOf(refCol)]
     });
-    const existing = (idRes.data.values || []).map((r) => String(r[0] || ''));
-    if (existing.indexOf(d.applicationId) >= 0) {
+    const vr = colRes.data.valueRanges || [];
+    const colVals = (i) => ((vr[i] && vr[i].values) || []).map((r) => String(r[0] || '').trim());
+    if (colVals(0).indexOf(d.applicationId) >= 0) {
       return res.status(200).json({ ok: true, duplicate: true });
     }
+    const takenCodes = new Set(colVals(1).map((c) => c.toUpperCase()).filter(Boolean));
 
     // ประกอบแถวตามชื่อคอลัมน์ (คอลัมน์ที่ไม่รู้จักปล่อยว่าง)
-    const values = {
-      Timestamp: bangkokTimestamp(),
+    const buildRow = (values) => {
+      const row = new Array(headers.length).fill('');
+      Object.keys(values).forEach((k) => { row[idx[norm(k)]] = values[k]; });
+      return row;
+    };
+    const ts = bangkokTimestamp();
+
+    const mainRow = buildRow({
+      Timestamp: ts,
       ApplicationID: d.applicationId,
+      RefCode: makeRefCode(takenCodes),
       Round: settings.round.label,
       FirstName: d.firstName,
       LastName: d.lastName,
@@ -426,21 +455,44 @@ module.exports = async function trainingHandler(req, res) {
       CallbackSlot: d.cbSlot,
       PDPAConsent: 'yes',
       Status: 'new'
-    };
-    const row = new Array(headers.length).fill('');
-    Object.keys(values).forEach((k) => { row[idx[norm(k)]] = values[k]; });
+    });
     // คำตอบ survey (ถ้ามี): คอลัมน์ SurveyAnswer ไม่บังคับ — ถ้าชีทไม่มีคอลัมน์นี้ ใบสมัครก็ยังบันทึกตามปกติ
     const surveyCol = idx[norm('SurveyAnswer')];
-    if (surveyCol !== undefined) row[surveyCol] = d.surveyAnswer;
+    if (surveyCol !== undefined) mainRow[surveyCol] = d.surveyAnswer;
     else if (d.surveyAnswer) console.warn('[training] ไม่มีคอลัมน์ SurveyAnswer ใน Tab "' + TAB_APPLY + '" -> ไม่ได้บันทึกคำตอบ survey ของใบสมัครนี้');
 
+    const rows = [mainRow];
+
+    // DUO: เพิ่มแถวของ "คู่" (1 คนที่มาเรียน = 1 แถว) มี ApplicationID/RefCode/Status ของตัวเอง
+    // ช่อง Partner* ในแถวคู่ = ข้อมูลผู้สมัครหลัก (ชี้กลับหากัน) ; อายุ/เบอร์/อาชีพ/นัดโทร ปล่อยว่าง (กรอกเฉพาะผู้สมัครหลัก)
+    if (d.pkg === 'DUO') {
+      rows.push(buildRow({
+        Timestamp: ts,
+        ApplicationID: d.applicationId + '-P',
+        RefCode: makeRefCode(takenCodes),
+        Round: settings.round.label,
+        FirstName: d.pFirst,
+        LastName: d.pLast,
+        Gender: d.pGender,
+        Email: d.pEmail,
+        Package: d.pkg,
+        PartnerFirstName: d.firstName,
+        PartnerLastName: d.lastName,
+        PartnerGender: d.gender,
+        PartnerEmail: d.email,
+        PDPAConsent: 'yes',
+        Status: 'new'
+      }));
+    }
+
     // RAW = เก็บเป็นข้อความตามที่ส่ง (เบอร์โทรขึ้นต้น 0 ไม่หาย, ไม่ตีความเป็นสูตร)
+    // append ทุกแถวในคำขอเดียว -> DUO ได้ครบ 2 แถวหรือไม่ได้เลย
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.TOKBUD_SHEET_ID,
       range: TAB_APPLY + '!A1',
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [row] }
+      requestBody: { values: rows }
     });
 
     return res.status(200).json({ ok: true });
