@@ -1,201 +1,208 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
-<title>ตรวจ Referral Code</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700;800&display=swap" rel="stylesheet">
-<style>
-:root{--pink:#ff0875;--cyan:#16e4df;--ink:#050505;--paper:#f3f3f1;--blue:#102a85}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{background:var(--paper);color:var(--ink);font-family:"Sarabun","Noto Sans Thai",Tahoma,sans-serif;font-size:18px;line-height:1.6;display:flex;justify-content:center;padding:48px 16px}
-main{width:100%;max-width:520px}
-h1{margin:0 0 6px;font-size:28px;font-weight:800;color:var(--blue);text-align:center}
-.sub{margin:0 0 26px;text-align:center;color:#555;font-size:16px}
-label{display:block;margin:0 0 6px;font-weight:700;font-size:16px}
-input{width:100%;padding:14px 16px;border:3px solid var(--blue);border-radius:12px;background:#fff;font:inherit;font-size:20px;color:var(--ink)}
-input:focus{outline:3px solid var(--pink);outline-offset:2px}
-#code{text-align:center;font-weight:800;letter-spacing:.2em;text-transform:uppercase;font-size:28px}
-button{display:block;width:100%;margin-top:14px;padding:14px 16px;border:0;border-radius:12px;background:var(--blue);color:#fff;font:inherit;font-weight:800;font-size:20px;cursor:pointer}
-button:hover{background:#0c2066}
-button:disabled{opacity:.5;cursor:not-allowed}
-button.redeem{background:var(--pink)}
-button.redeem:hover{background:#e0066a}
-button.ghost{background:none;color:var(--blue);border:2px solid var(--blue)}
-.box{margin-top:20px;padding:16px 18px;border-radius:12px;border-left:6px solid}
-.box.err{background:#ffe9f2;border-color:var(--pink)}
-.box.ok{background:#e4fbfa;border-color:var(--blue)}
-.owner{margin-top:20px;padding:18px;background:#fff;border:3px solid var(--blue);border-radius:14px}
-.owner small{display:block;color:#555;font-size:14px;font-weight:700}
-.owner .nm{font-size:26px;font-weight:800;color:var(--blue);line-height:1.3;margin-bottom:6px}
-.owner .rd{font-size:18px;margin-bottom:16px}
-.hidden{display:none}
-.pw{position:relative}
-.pw input{padding-right:56px}
-.pw .eye{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:44px;height:44px;margin:0;padding:0;border:0;border-radius:10px;background:none;color:var(--blue);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.pw .eye:hover{background:#e8ecf8}
-.pw .eye:focus-visible{outline:3px solid var(--pink);outline-offset:1px}
-.pw .eye svg{width:26px;height:26px}
-.pw .eye .off{display:none}
-.pw .eye.on .on{display:none}
-.pw .eye.on .off{display:block}
-.out{margin-top:26px;text-align:center}
-.out a{color:#777;font-size:14px;cursor:pointer;text-decoration:underline}
-</style>
-</head>
-<body>
-<main>
+// api/referral.js  (วางในโฟลเดอร์ api/ ข้าง training.js)
+// หน้า admin ตรวจ/ใช้ referral code ของศิษย์เก่า
+//   POST /api/referral {action:'login',  adminKey}
+//   POST /api/referral {action:'check',  adminKey, code}                    -> เจ้าของโค้ดคือใคร เรียนรอบไหน
+//   POST /api/referral {action:'redeem', adminKey, code, studentName}       -> +1 (เพิ่ม 1 แถวใน Tab "referral_log")
+// ข้อมูลโค้ดอ่านจาก Tab "training" (คอลัมน์ RefCode / FirstName / LastName / Round — map ตามชื่อหัวคอลัมน์)
+// ไม่ดูคอลัมน์ Status: โค้ดมีในชีท = ใช้ได้ (โค้ดแจกให้เฉพาะคนที่เรียนจบอยู่แล้ว)
+// Tab "referral_log" หัวคอลัมน์แถว 1: Timestamp | RefCode | ReferrerName | NewStudentName  (1 กด Redeem = 1 แถว)
+// env: GOOGLE_SERVICE_ACCOUNT_JSON, TOKBUD_SHEET_ID (เดิม) + REFERRAL_ADMIN_KEY (ใหม่ = รหัสผ่าน admin)
 
-<section id="gate">
-  <h1>ตรวจ Referral Code</h1>
-  <p class="sub">สำหรับทีมงานเท่านั้น</p>
-  <label for="key">รหัสผ่าน admin</label>
-  <div class="pw"><input id="key" type="password" autocomplete="current-password">
-    <button type="button" id="eye" class="eye" aria-label="แสดงรหัสผ่าน" aria-pressed="false" title="แสดง/ซ่อนรหัสผ่าน">
-      <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-      <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.6 10.6 0 0 1 12 5c7 0 11 7 11 7a19.9 19.9 0 0 1-3.17 4.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
-    </button></div>
-  <button type="button" id="login">เข้าสู่ระบบ</button>
-  <div id="gateMsg" class="box err hidden" role="alert"></div>
-</section>
+const { google } = require('googleapis');
+const crypto = require('crypto');
 
-<section id="app" class="hidden">
-  <h1>ตรวจ Referral Code</h1>
-  <p class="sub">กรอกโค้ดที่ผู้สมัครแจ้ง แล้วกด Check</p>
-  <label for="code">Referral code</label>
-  <input id="code" type="text" maxlength="14" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="เช่น K7M4QX">
-  <button type="button" id="check">Check</button>
+const TAB_TRAINING = 'training';
+const TAB_LOG = 'referral_log';
+const LOG_COLS = ['Timestamp', 'RefCode', 'ReferrerName', 'NewStudentName'];
+const TRAINING_COLS = ['RefCode', 'FirstName', 'LastName', 'Round'];
+const NOT_FOUND_MSG = 'ไม่พบ referral code นี้ในระบบ โปรดลองใหม่';
+const SHEETS_TIMEOUT_MS = 20000;
 
-  <div id="msg" class="box err hidden" role="alert"></div>
-
-  <div id="found" class="hidden">
-    <div class="owner">
-      <small>เจ้าของโค้ด (ศิษย์เก่า)</small>
-      <div class="nm" id="ownerName"></div>
-      <div class="rd" id="ownerRound"></div>
-      <label for="student">ชื่อผู้สมัครใหม่ (คนที่ใช้โค้ดนี้)</label>
-      <input id="student" type="text" maxlength="120" autocomplete="off" placeholder="ชื่อ นามสกุล">
-      <button type="button" id="redeem" class="redeem">Redeem</button>
-    </div>
-  </div>
-
-  <div id="done" class="hidden">
-    <div class="box ok" id="doneMsg"></div>
-    <button type="button" id="again" class="ghost">ตรวจโค้ดถัดไป</button>
-  </div>
-
-  <div class="out"><a id="logout">ออกจากระบบ</a></div>
-</section>
-
-</main>
-<script>
-(function(){
-var API='/api/referral',TIMEOUT=25000,KEY_ID='ytpl_ref_key';
-var $=function(id){return document.getElementById(id)};
-var adminKey='',busy=false,currentCode='';
-
-function getSaved(){try{return sessionStorage.getItem(KEY_ID)||''}catch(e){return ''}}
-function setSaved(v){try{if(v)sessionStorage.setItem(KEY_ID,v);else sessionStorage.removeItem(KEY_ID)}catch(e){}}
-
-function show(el,on){el.classList.toggle('hidden',!on)}
-function say(el,text){el.textContent=text;show(el,!!text)}
-function setBusy(b){busy=b;['login','check','redeem','again'].forEach(function(i){$(i).disabled=b})}
-
-function post(payload){
-  payload.adminKey=adminKey;
-  var ctl=window.AbortController?new AbortController():null;
-  var t=setTimeout(function(){if(ctl)ctl.abort()},TIMEOUT);
-  return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',signal:ctl?ctl.signal:undefined})
-    .then(function(r){return r.json().catch(function(){return {ok:false,error:'server'}}).then(function(j){j.status=r.status;return j})})
-    .catch(function(){return {ok:false,error:'network',message:'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง'}})
-    .then(function(j){clearTimeout(t);return j});
+let authSingleton = null;
+function getSheets() {
+  if (!authSingleton) {
+    const creds = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+    authSingleton = new google.auth.JWT({
+      email: creds.client_email,
+      key: creds.private_key,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    });
+  }
+  return google.sheets({ version: 'v4', auth: authSingleton });
 }
 
-function setEye(on){$('key').type=on?'text':'password';$('eye').classList.toggle('on',on);$('eye').setAttribute('aria-pressed',on?'true':'false');$('eye').setAttribute('aria-label',on?'ซ่อนรหัสผ่าน':'แสดงรหัสผ่าน')}
-function toGate(msg){
-  adminKey='';setSaved('');setEye(false);
-  show($('app'),false);show($('gate'),true);
-  $('key').value='';say($('gateMsg'),msg||'');
-  $('key').focus();
-}
-function toApp(){
-  show($('gate'),false);show($('app'),true);resetApp();
-}
-function resetApp(){
-  currentCode='';$('code').value='';$('student').value='';
-  say($('msg'),'');show($('found'),false);show($('done'),false);
-  $('check').disabled=false;
-  $('code').focus();
+// กัน Google Sheets ค้าง: ถ้าเกินเวลา -> error (ผู้ใช้เห็นข้อความให้ลองใหม่) ไม่ปล่อยให้หน้าเว็บหมุนค้าง
+function withTimeout(p, ms) {
+  let t;
+  const timer = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('sheets timeout')), ms); });
+  return Promise.race([p, timer]).finally(() => clearTimeout(t));
 }
 
-function login(){
-  if(busy)return;
-  var k=$('key').value;
-  if(!k){say($('gateMsg'),'กรุณากรอกรหัสผ่าน');return}
-  adminKey=k;setBusy(true);say($('gateMsg'),'');
-  post({action:'login'}).then(function(j){
-    setBusy(false);
-    if(j.ok){setSaved(k);toApp()}
-    else{adminKey='';say($('gateMsg'),j.status===401?'รหัสผ่านไม่ถูกต้อง':(j.message||'ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง'))}
-  });
+const norm = (s) => String(s == null ? '' : s).trim().toLowerCase();
+const str = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
+const nameKey = (s) => norm(s).replace(/\s+/g, ''); // เทียบชื่อ: ไม่สนช่องว่าง/ตัวพิมพ์
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function bangkokTimestamp() {
+  return new Date(Date.now() + 7 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 19);
 }
 
-function check(){
-  if(busy)return;
-  var c=$('code').value.trim();
-  if(!c)return;
-  setBusy(true);say($('msg'),'');show($('found'),false);show($('done'),false);
-  post({action:'check',code:c}).then(function(j){
-    setBusy(false);
-    if(j.status===401){toGate('รหัสผ่านหมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่');return}
-    if(j.ok&&j.found){
-      currentCode=c;
-      $('ownerName').textContent=j.owner.name||'(ไม่มีชื่อ)';
-      $('ownerRound').textContent=j.owner.round?('เรียนรอบ: '+j.owner.round):'';
-      $('student').value='';show($('found'),true);$('student').focus();
-    }else if(j.ok&&!j.found){say($('msg'),j.message||'ไม่พบ referral code นี้ในระบบ โปรดลองใหม่')}
-    else{say($('msg'),j.message||'ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง')}
-  });
+function parseBody(req) {
+  let b = req.body;
+  if (typeof b === 'string') {
+    try { b = JSON.parse(b); } catch (e) { b = null; }
+  }
+  return b && typeof b === 'object' ? b : null;
 }
 
-function redeem(){
-  if(busy||!currentCode)return;
-  var n=$('student').value.trim();
-  if(n.length<2){say($('msg'),'กรุณากรอกชื่อผู้สมัครใหม่');$('student').focus();return}
-  setBusy(true);say($('msg'),'');
-  post({action:'redeem',code:currentCode,studentName:n}).then(function(j){
-    setBusy(false);
-    if(j.status===401){toGate('รหัสผ่านหมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบใหม่');return}
-    if(j.ok&&j.redeemed){
-      show($('found'),false);$('check').disabled=true;
-      say($('doneMsg'),'บันทึกแล้ว: '+j.studentName+' ใช้โค้ดของ '+j.owner.name+' (ศิษย์เก่าคนนี้ชวนมาแล้วรวม '+j.count+' คน)');
-      show($('done'),true);
-    }else if(j.ok&&j.found===false){show($('found'),false);currentCode='';say($('msg'),j.message||'ไม่พบ referral code นี้ในระบบ โปรดลองใหม่')}
-    else{say($('msg'),j.message||'ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง')}
-  });
+// เทียบรหัสผ่านแบบ constant-time (hash ก่อนเพื่อให้ความยาวเท่ากัน)
+function keyOk(given) {
+  const a = crypto.createHash('sha256').update(String(given || '')).digest();
+  const b = crypto.createHash('sha256').update(String(process.env.REFERRAL_ADMIN_KEY)).digest();
+  return crypto.timingSafeEqual(a, b);
 }
 
-$('login').onclick=login;
-$('eye').onclick=function(){setEye($('key').type==='password');$('key').focus()};
-$('key').onkeydown=function(e){if(e.key==='Enter')login()};
-$('check').onclick=check;
-$('code').onkeydown=function(e){if(e.key==='Enter')check()};
-$('code').oninput=function(){ /* แก้โค้ดหลัง Check แล้ว -> ซ่อนการ์ดเดิม กันกด Redeem ผิดโค้ด */
-  if(currentCode){currentCode='';show($('found'),false)}
-  say($('msg'),'');show($('done'),false);$('check').disabled=false;
+// code ที่ admin พิมพ์: ตัดช่องว่าง/ขีด ตัวพิมพ์ใหญ่ ; รูปแบบไม่ตรง = ถือว่าไม่พบ (ข้อความเดียวกัน)
+function cleanCode(v) {
+  const c = String(v == null ? '' : v).toUpperCase().replace(/[\s-]/g, '');
+  return /^[A-Z0-9]{4,12}$/.test(c) ? c : '';
+}
+
+function headerIndex(headers) {
+  const idx = {};
+  headers.forEach((h, i) => { const k = norm(h); if (k && !(k in idx)) idx[k] = i; });
+  return idx;
+}
+
+// หาเจ้าของโค้ดใน Tab training -> { name, round } | null ; throw ถ้าชีทขาดคอลัมน์
+async function findOwner(sheets, code) {
+  const res = await withTimeout(sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: TAB_TRAINING
+  }), SHEETS_TIMEOUT_MS);
+  const rows = res.data.values || [];
+  const idx = headerIndex(rows[0] || []);
+  const missing = TRAINING_COLS.filter((c) => !(norm(c) in idx));
+  if (missing.length) throw new Error('Tab "' + TAB_TRAINING + '" ขาดคอลัมน์: ' + missing.join(', '));
+  const cRef = idx[norm('RefCode')], cF = idx[norm('FirstName')], cL = idx[norm('LastName')], cR = idx[norm('Round')];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    if (String(r[cRef] || '').trim().toUpperCase() === code) {
+      const name = (String(r[cF] || '').trim() + ' ' + String(r[cL] || '').trim()).trim();
+      return { name, round: String(r[cR] || '').trim() };
+    }
+  }
+  return null;
+}
+
+// อ่าน referral_log ทั้งหมด -> { headers, idx, rows }
+async function readLog(sheets) {
+  const res = await withTimeout(sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.TOKBUD_SHEET_ID,
+    range: TAB_LOG
+  }), SHEETS_TIMEOUT_MS);
+  const rows = res.data.values || [];
+  const headers = rows[0] || [];
+  const idx = headerIndex(headers);
+  const missing = LOG_COLS.filter((c) => !(norm(c) in idx));
+  if (missing.length) throw new Error('Tab "' + TAB_LOG + '" ขาดคอลัมน์: ' + missing.join(', '));
+  return { headers, idx, rows };
+}
+
+module.exports = async function referralHandler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ ok: false, error: 'method', message: 'Method not allowed' });
+  }
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON || !process.env.TOKBUD_SHEET_ID || !process.env.REFERRAL_ADMIN_KEY) {
+    console.error('[referral] env vars ไม่ครบ: GOOGLE_SERVICE_ACCOUNT_JSON / TOKBUD_SHEET_ID / REFERRAL_ADMIN_KEY');
+    return res.status(500).json({ ok: false, error: 'server', message: 'ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง' });
+  }
+
+  const body = parseBody(req);
+  if (!body) {
+    return res.status(400).json({ ok: false, error: 'invalid', message: 'ข้อมูลไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' });
+  }
+
+  // ทุก action ต้องผ่านรหัสผ่าน admin ; ผิด = หน่วง 1 วินาที (ชะลอการเดารหัส)
+  if (!keyOk(body.adminKey)) {
+    await sleep(1000);
+    return res.status(401).json({ ok: false, error: 'auth', message: 'รหัสผ่านไม่ถูกต้อง' });
+  }
+
+  try {
+    if (body.action === 'login') {
+      return res.status(200).json({ ok: true });
+    }
+
+    const code = cleanCode(body.code);
+
+    if (body.action === 'check') {
+      if (!code) return res.status(200).json({ ok: true, found: false, message: NOT_FOUND_MSG });
+      const owner = await findOwner(getSheets(), code);
+      if (!owner) return res.status(200).json({ ok: true, found: false, message: NOT_FOUND_MSG });
+      return res.status(200).json({ ok: true, found: true, owner });
+    }
+
+    if (body.action === 'redeem') {
+      const studentName = str(body.studentName, 120);
+      if (studentName.length < 2) {
+        return res.status(400).json({ ok: false, error: 'invalid', message: 'กรุณากรอกชื่อผู้สมัครใหม่' });
+      }
+      if (!code) return res.status(200).json({ ok: true, found: false, message: NOT_FOUND_MSG });
+
+      const sheets = getSheets();
+      // ตรวจโค้ดซ้ำที่เซิร์ฟเวอร์ (ไม่เชื่อว่าหน้าเว็บ check มาแล้ว)
+      const owner = await findOwner(sheets, code);
+      if (!owner) return res.status(200).json({ ok: true, found: false, message: NOT_FOUND_MSG });
+
+      // กันใช้โค้ดตัวเอง
+      if (nameKey(studentName) === nameKey(owner.name)) {
+        return res.status(200).json({ ok: false, error: 'self', message: 'ชื่อผู้สมัครใหม่เป็นชื่อเดียวกับเจ้าของโค้ด ใช้โค้ดของตัวเองไม่ได้' });
+      }
+
+      // กันนับซ้ำ: โค้ดเดียวกัน + ชื่อเดียวกัน ที่อยู่ใน log แล้ว
+      const log = await readLog(sheets);
+      const cCode = log.idx[norm('RefCode')], cStu = log.idx[norm('NewStudentName')];
+      let countBefore = 0;
+      for (let i = 1; i < log.rows.length; i++) {
+        const r = log.rows[i] || [];
+        if (String(r[cCode] || '').trim().toUpperCase() !== code) continue;
+        countBefore++;
+        if (nameKey(r[cStu]) === nameKey(studentName)) {
+          return res.status(200).json({
+            ok: false, error: 'duplicate',
+            message: 'ชื่อนี้ใช้ referral code นี้ไปแล้ว ไม่นับซ้ำ',
+            count: countBefore
+          });
+        }
+      }
+
+      const values = {
+        Timestamp: bangkokTimestamp(),
+        RefCode: code,
+        ReferrerName: owner.name,
+        NewStudentName: studentName
+      };
+      const row = new Array(log.headers.length).fill('');
+      Object.keys(values).forEach((k) => { row[log.idx[norm(k)]] = values[k]; });
+
+      // RAW = เก็บเป็นข้อความตามที่ส่ง (ชื่อที่ขึ้นต้นด้วย = ไม่ถูกตีเป็นสูตร) ; append แถวเดียว = ไม่มี read-modify-write ของตัวนับ
+      await withTimeout(sheets.spreadsheets.values.append({
+        spreadsheetId: process.env.TOKBUD_SHEET_ID,
+        range: TAB_LOG + '!A1',
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: [row] }
+      }), SHEETS_TIMEOUT_MS);
+
+      return res.status(200).json({ ok: true, redeemed: true, owner, studentName, count: countBefore + 1 });
+    }
+
+    return res.status(400).json({ ok: false, error: 'invalid', message: 'ข้อมูลไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง' });
+  } catch (err) {
+    console.error('[referral] error:', err && err.message ? err.message : err);
+    return res.status(500).json({ ok: false, error: 'server', message: 'ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง' });
+  }
 };
-$('student').onkeydown=function(e){if(e.key==='Enter')redeem()};
-$('redeem').onclick=redeem;
-$('again').onclick=resetApp;
-$('logout').onclick=function(){toGate('')};
-
-var saved=getSaved();
-if(saved){adminKey=saved;toApp()}else{$('key').focus()}
-})();
-</script>
-</body>
-</html>
