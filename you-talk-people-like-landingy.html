@@ -172,6 +172,17 @@ button.button{border:0;font-family:inherit;cursor:pointer;width:100%;margin-top:
 .wl-sum dt{color:var(--cyan);font-weight:700;white-space:nowrap}
 .wl-sum dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
 @media (prefers-reduced-motion:reduce){.wl-ov,.wl-card{transition:none}.wl-spin{animation-duration:2.4s}}
+/* ---- bonus for you ---- */
+.bonus{margin-top:36px}
+.bonus h2{margin:0;font-size:clamp(34px,5.2vw,52px);line-height:1.15;font-weight:800;color:#fff}
+.bonus h2 span{color:var(--pink)}
+.bn-sub{margin:6px 0 0;font-family:"Sarabun","Noto Sans Thai",Tahoma,sans-serif;font-size:clamp(17px,2vw,20px);line-height:1.55;color:#e8e8e8}
+.bn-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px;margin-top:22px}
+.bn-card{position:relative;background:#fff;color:#111;border-radius:26px;padding:22px 24px 24px 24px;box-shadow:7px 7px 0 var(--pink);min-width:0}
+.bn-ic{position:absolute;top:24px;left:22px;width:34px;height:34px;color:var(--pink)}
+.bn-card h3{margin:0 0 8px;padding-left:48px;min-height:34px;display:flex;align-items:center;font-size:clamp(20px,2.4vw,26px);line-height:1.25;font-weight:800;color:#111;overflow-wrap:anywhere}
+.bn-card p{margin:0;font-family:"Sarabun","Noto Sans Thai",Tahoma,sans-serif;font-size:clamp(17px,1.7vw,19px);line-height:1.6;color:#222}
+@media(max-width:760px){.bn-grid{grid-template-columns:1fr;gap:22px}.bn-card{padding:18px 18px 20px;border-radius:22px}.bn-ic{top:20px;left:18px}}
 </style>
 </head>
 <body>
@@ -281,6 +292,17 @@ qs.forEach(function(b){
 <div class="formerr" id="wlErr" hidden></div>
 <button class="button" type="submit" id="wlSubmit" disabled>ลงชื่อเลย</button>
 </form>
+
+<section class="bonus" id="bonusZone" aria-labelledby="bonusTitle">
+<h2 id="bonusTitle"><span>Bonus</span> for you</h2>
+<p class="bn-sub">มาเรียนแล้วไม่ได้แค่ความรู้ แต่ได้มากกว่านั้น</p>
+<div class="bn-grid">
+<div class="bn-card"><svg class="bn-ic" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="currentColor"/><path d="M9 16.5l5 5 9-10.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Digital conversation card</h3><p>รับสิทธิ์เข้าใช้ Digital conversation card เพื่อใช้สำหรับทำ Team building, 1-on-1, party time ฯลฯ ระยะเวลา 1 ปี ฟรี!!</p></div>
+<div class="bn-card"><svg class="bn-ic" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="currentColor"/><path d="M9 16.5l5 5 9-10.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Photo shooting</h3><p>รับสิทธิ์ถ่ายรูปจากทีมงานมืออาชีพ ใช้สมัครงาน ใช้เป็นรูปโปรไฟล์ ใส่พอร์ตโฟลิโอ และอื่นๆ ตามที่คุณต้องการ</p></div>
+<div class="bn-card"><svg class="bn-ic" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="currentColor"/><path d="M9 16.5l5 5 9-10.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Networking</h3><p>ไม่ใช่แค่ได้เพิ่มความรู้ แต่ได้เติมกลุ่มเพื่อนใหม่ เปิดโอกาสดีๆ ให้ตัวเอง ร่วมทานอาหารมื้อเที่ยง และ Dinner long table ด้วยกัน</p></div>
+<div class="bn-card"><svg class="bn-ic" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="currentColor"/><path d="M9 16.5l5 5 9-10.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Cash back</h3><p>หลังเรียนจบ คุณจะได้รับ Referral code ประจำตัว หากมีผู้สมัครเรียนรอบถัดไปที่สมัครแล้วใช้ Referral code ของคุณ รับ 10,000 บาท/ที่นั่ง</p></div>
+</div>
+</section>
 
 <form class="form" id="applyForm" novalidate>
 <h3>ใบสมัคร</h3><p class="hint">กรอกให้ครบทุกข้อ ทีมงานจะติดต่อกลับเพื่อยืนยันที่นั่ง</p>
@@ -755,6 +777,16 @@ if(saved>=1&&saved<=OPTIONS.length){
 }else{
   setTimeout(openPop,DELAY);
 }
+})();
+</script>
+<script>
+/* โซน Bonus เป็นคู่แฝดกับฟอร์มสมัคร: ฟอร์มซ่อน (รอบเต็ม/ปิดรับ/สมัครเสร็จแล้ว) -> Bonus ซ่อนตาม */
+(function(){
+  var f=document.getElementById('applyForm'),b=document.getElementById('bonusZone');
+  if(!f||!b)return;
+  function sync(){b.hidden=!!f.hidden}
+  sync();
+  if(window.MutationObserver)new MutationObserver(sync).observe(f,{attributes:true,attributeFilter:['hidden']});
 })();
 </script>
 </body>
