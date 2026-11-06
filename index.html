@@ -566,6 +566,9 @@
      z-index เฉพาะ carouselCardModal ให้ต่ำกว่า modal อื่นทั้งหมดเสมอ ไม่ว่าจะมี modal ใหม่เพิ่มเข้ามาที่ไหนใน
      HTML ในอนาคตก็ยังถูกต้องอัตโนมัติ ไม่ต้องพึ่งการเรียงลำดับโค้ดที่ลืมง่าย */
   #carouselCardModal{ z-index:90; }
+  /* flow โหวตแบบ guest-first: user กรอกฟอร์มโหวต (voteConfirmModal) ก่อน แล้วค่อยโดนเรียก login/signup ตอนกด Save
+     modal ทั้ง 3 ตัวนี้อยู่ก่อน voteConfirmModal ใน HTML จึงถูกวาดทับด้วย z-index เท่ากัน -> ยกให้สูงกว่าเพื่อให้ขึ้นมาอยู่บนสุด */
+  #loginModal, #forgotPasscodeModal, #signupModal{ z-index:110; }
   .modal-box{
     background:var(--surface); width:100%; max-width:420px; border-radius:20px 20px 0 0;
     padding:24px 22px 28px; max-height:88vh; overflow-y:auto;
@@ -1201,6 +1204,8 @@
       <div id="voteCommentCounter" style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px;">0/5000</div>
       <span id="voteCommentMissingHint" class="ynu-missing-hint" style="display:none;" data-i18n="errMainReasonRequired"></span>
     </div>
+    <!-- ข้อความ error ตอนส่งโหวตไม่สำเร็จ (เน็ตสะดุด/backend ปฏิเสธ) — โชว์ในฟอร์มโดยไม่ล้างข้อมูลที่กรอกไว้ -->
+    <div id="voteSubmitError" style="display:none;text-align:left;font-size:12.5px;color:#C62828;line-height:1.6;margin:0 0 12px;"></div>
     <div style="display:flex;gap:10px;" id="voteConfirmActions">
       <button class="btn btn-ghost full-btn" id="voteCancelBtn">ยกเลิก</button>
       <button class="btn btn-primary full-btn" id="voteConfirmBtn">ยืนยันเลือก</button>
@@ -1646,7 +1651,7 @@ let STATE = {
   pageSize: 20,
   totalCount: 0,
   totalPages: 1,
-  pendingVote: null, // {topicId, side} ถ้าโหวตตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ
+  voteAwaitingAuth: false, // true = user กด Save ฟอร์มโหวตตอนยังไม่ login -> login/signup สำเร็จแล้วให้ส่งโหวตต่อเองอัตโนมัติ (ดู resumeVoteAfterAuth)
   pendingTransferId: null, // id จากลิงก์ ?transfer= ที่ผู้ใช้กำลังจะรับช่วงดูแล (ล้างเมื่อรับสำเร็จ/กดปิด)
   transferAwaitingLogin: false, // true = ผู้ใช้กดปุ่ม login จากหน้ารับช่วง -> login/signup เสร็จให้เปิดหน้ารับช่วงกลับมา
   pendingExport: null, // {companyId} ถ้ากด Export ตอนยังไม่ login จะเก็บไว้แล้ว resume หลัง login สำเร็จ (ดู handleExportClick)
@@ -1908,6 +1913,14 @@ document.querySelectorAll('[data-close]').forEach(btn=>{
 const STRICT_CLOSE_MODALS = ['createModal', 'transferClaimModal'];
 document.querySelectorAll('.modal-overlay').forEach(ov=>{
   if(STRICT_CLOSE_MODALS.includes(ov.id)) return;
+  // ฟอร์มโหวต (กรอกยาว + อาจรอ login/signup คั่นกลาง) ห้ามปิดด้วยการแตะนอกกรอบ กันข้อมูลที่กรอกหายโดยไม่ได้ตั้งใจ
+  // เช็คตามสถานะจริง (ช่อง comment แสดงอยู่ = กำลังเป็นฟอร์มโหวต) เพราะ modal ตัวนี้ถูกยืมไปโชว์ popup ข้อความทั่วไปด้วย ซึ่งยังแตะนอกกรอบปิดได้เหมือนเดิม
+  if(ov.id === 'voteConfirmModal'){
+    ov.addEventListener('click', (e)=>{
+      if(e.target === ov && document.getElementById('voteCommentWrap').style.display !== 'block') ov.classList.remove('open');
+    });
+    return;
+  }
   ov.addEventListener('click', (e)=>{ if(e.target === ov) ov.classList.remove('open'); });
 });
 
@@ -2104,13 +2117,8 @@ document.getElementById('loginSubmitBtn').addEventListener('click', async ()=>{
   closeModal('loginModal');
   showToast(`Hello, ${res.username}`);
   resumeTransferClaimAfterAuth(); // ถ้า login มาจากหน้ารับช่วงดูแล -> เปิดหน้านั้นกลับมา (ต่อจากจุดเดิม) // ข้อความสากล ใช้เหมือนกันทุกภาษา (ไม่ผูกกับ TH/EN)
-  // เดิม flow นี้เคย auto-vote ให้เงียบๆ เหมือนกับฝั่ง signup (บั๊กเดียวกัน) — แก้ตามหลักการเดียวกัน:
-  // ไม่โหวตให้ แค่พา user กลับไปที่การ์ดหัวข้อที่ตั้งใจโหวตไว้ก่อน login ให้เขากดโหวตเองอีกครั้ง
-  if(STATE.pendingVote){
-    const { topicId } = STATE.pendingVote;
-    STATE.pendingVote = null;
-    scrollToTopicCard(topicId);
-  }
+  // flow โหวตแบบ guest-first: ถ้า login มาจากการกด Save ฟอร์มโหวตที่กรอกค้างไว้ -> ส่งโหวตให้เลยอัตโนมัติ (user กรอกครบแล้ว ไม่ต้องกดซ้ำ)
+  resumeVoteAfterAuth();
   // เหมือนกับ pendingVote เป๊ะๆ — ไม่ export ให้เงียบๆ หลัง login สำเร็จ แค่พา user กลับไปที่การ์ดนั้น ให้กด
   // Export เองอีกครั้ง (ไม่มี action ใดๆ เกิดขึ้นแบบเงียบๆ โดยเฉพาะ action ที่เกี่ยวกับเงิน/plan ยิ่งต้องชัดเจน)
   if(STATE.pendingExport){
@@ -2290,7 +2298,6 @@ document.getElementById('tcBody').addEventListener('click', (e)=>{
    progress bar ขยับ 0/20/40/60/80% ตาม step ที่ "ผ่านแล้ว" และเต็ม 100% ตอนสมัครสำเร็จ (แสดงผลต่อใน welcomeModal) */
 const SU_TOTAL_STEPS = 5;
 let suCurrentStep = 1;
-let lastVotedTopicId = null; // เก็บ topicId ที่ user ตั้งใจโหวตไว้ก่อน signup เพื่อใช้พา user กลับไปที่การ์ดนั้นตอนกด "กลับไปโหวต"
 
 // ใช้ร่วมกันทั้ง flow signup และ login resume: พาผู้ใช้กลับไปที่การ์ดหัวข้อที่ตั้งใจโหวตไว้ตอนแรก
 // (ไม่ได้โหวตให้ — user ต้องกดโหวตเองอีกครั้งที่การ์ดนั้น เพื่อความชัดเจน ไม่มี action ใดๆ เกิดขึ้นแบบเงียบๆ)
@@ -2424,25 +2431,17 @@ document.getElementById('suNextBtn').addEventListener('click', async ()=>{
   closeModal('signupModal');
   document.getElementById('welcomeUsername').textContent = res.username;
 
-  // ไม่ auto-vote ให้ user แล้ว (เดิมเคยแอบโหวตให้เงียบๆ ตอนสมัครเสร็จ — พบว่า user งง เพราะไม่รู้ว่าระบบ
-  // โหวตไปให้แล้วหรือยัง ไม่มี feedback อะไรเลยระหว่าง journey สมัครสมาชิก) เปลี่ยนเป็นแค่ "จำ" topicId ที่ตั้งใจโหวตไว้
-  // ให้ user กดโหวตเองอีกครั้งตอนกด "กลับไปโหวต" — ชัดเจน ตรงไปตรงมา ไม่มีอะไรเกิดขึ้นโดยที่ user ไม่รู้ตัว
+  // flow โหวต: user กรอกฟอร์มก่อนแล้วค่อยสมัคร (ดู confirmVote/resumeVoteAfterAuth) — ต่างจาก flow เก่าที่เคยแอบโหวตให้เงียบๆ
+  // ตรงที่ตอนนี้ user เห็นฟอร์มที่ตัวเองกรอกเอง กดยืนยัน Save เอง แล้วจบด้วย popup ขอบคุณ ไม่มีอะไรเกิดขึ้นโดยที่ไม่รู้ตัว
   // สมัครมาจากลิงก์รับช่วงดูแล -> ข้าม welcome modal กลับไปที่หน้ารับช่วงต่อทันที (ไม่ให้ modal ซ้อนกัน)
   if(resumeTransferClaimAfterAuth()) return;
-  const hadPendingVote = !!STATE.pendingVote;
-  if(hadPendingVote){
-    lastVotedTopicId = STATE.pendingVote.topicId;
-    STATE.pendingVote = null;
-  }
-  document.getElementById('welcomeActionsVote').style.display = hadPendingVote ? 'flex' : 'none';
-  document.getElementById('welcomeCreateFirstBtn').style.display = hadPendingVote ? 'none' : 'block';
+  // สมัครมาจากการกด Save ฟอร์มโหวตที่กรอกค้างไว้ -> ส่งโหวตเลย + โชว์ popup ขอบคุณเดิม ข้าม welcome modal (จบในที่เดียว)
+  if(resumeVoteAfterAuth()) return;
+  document.getElementById('welcomeActionsVote').style.display = 'none';
+  document.getElementById('welcomeCreateFirstBtn').style.display = 'block';
   openModal('welcomeModal');
 });
 
-document.getElementById('welcomeVoteBtn').addEventListener('click', ()=>{
-  closeModal('welcomeModal');
-  scrollToTopicCard(lastVotedTopicId); // แค่พาไปที่การ์ด ไม่ได้โหวตให้ — user ต้องกดโหวตเองที่การ์ดนั้นอีกที
-});
 document.getElementById('welcomeCreateBtn').addEventListener('click', ()=>{
   closeModal('welcomeModal');
   tryOpenCreateModal();
@@ -3801,6 +3800,7 @@ document.getElementById('translateRetryBtn').addEventListener('click', ()=>{
 
 /* ---------- Voting ---------- */
 let pendingVoteConfirm = null; // {topicId, side, btnEl} รอ user กดยืนยันใน voteConfirmModal
+let voteSubmitting = false; // กันส่งโหวตซ้ำ (กด Save รัว / กด Save ซ้อนกับ auto-submit หลัง login)
 
 // backend ส่งข้อความบางจุดมาเป็น "ไทย / English" คู่กัน (ตาม pattern เดิมของ fail message ส่วนใหญ่ในระบบ)
 // ฟังก์ชันนี้เลือกฝั่งที่ตรงกับภาษาปัจจุบันของ user ให้ ถ้าไม่มี " / " ก็ส่งข้อความเดิมกลับไปเฉยๆ (กันเคส message เก่าที่ยังไม่ bilingual)
@@ -3823,6 +3823,7 @@ function showInfoPopup(message, btnLabel, title){
   document.getElementById('voteConfirmText').textContent = message;
   document.getElementById('voteAnonymityNotice').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์กล่อง anonymity
   document.getElementById('voteCommentWrap').style.display = 'none'; // popup ข้อความทั่วไป ไม่ใช่ตอนยืนยันโหวตจริง ไม่ต้องโชว์ช่องคอมเมนต์
+  document.getElementById('voteSubmitError').style.display = 'none';
   document.getElementById('voteQuestionsWrap').innerHTML = ''; // ล้างคำถาม 8 ข้อทิ้ง กันข้อความ popup หลุดจอเวลา modal ถูก scroll ลงไปก่อนหน้า
   document.getElementById('voteConfirmActions').innerHTML =
     `<button class="btn btn-primary full-btn" id="voteOkBtn">${btnLabel || t('okBtn')}</button>`;
@@ -3838,6 +3839,7 @@ function showVoteSuccessPopup(){
   document.getElementById('voteConfirmText').textContent = tv('voteThankYouMsg');
   document.getElementById('voteAnonymityNotice').style.display = 'none';
   document.getElementById('voteCommentWrap').style.display = 'none';
+  document.getElementById('voteSubmitError').style.display = 'none';
   document.getElementById('voteQuestionsWrap').innerHTML = '';
   document.getElementById('voteConfirmActions').innerHTML =
     `<button class="btn btn-primary full-btn" id="voteOkBtn">${tv('okBtn')}</button>`;
@@ -3868,11 +3870,9 @@ function applyFormDir(rtl){
 }
 
 async function handleVoteClick(topicId, side, btnEl){
-  if(!isLoggedIn()){
-    STATE.pendingVote = { topicId, side };
-    openLoginModal('redirect');
-    return;
-  }
+  // flow ใหม่: ทุกคน (login หรือไม่) กดแล้วกรอกฟอร์มได้ทันที — ค่อยเช็ค login ตอนกด Save ใน confirmVote()
+  STATE.voteAwaitingAuth = false;
+  voteSubmitting = false;
   const t = STATE.topics.find(x=> x.company_id === topicId);
 
   pendingVoteConfirm = { topicId, side, btnEl };
@@ -3904,6 +3904,7 @@ async function handleVoteClick(topicId, side, btnEl){
   commentInput.placeholder = tv(side === 'A' ? 'applyCommentPh' : 'workCommentPh');
   document.getElementById('voteCommentMissingHint').textContent = tv('errMainReasonRequired');
   document.getElementById('voteCommentCounter').textContent = '0/5000';
+  document.getElementById('voteSubmitError').style.display = 'none';
   document.getElementById('voteCommentWrap').style.display = 'block';
 
   document.getElementById('voteQuestionsWrap').innerHTML = buildVoteQuestionsHTML(side);
@@ -4161,18 +4162,63 @@ function validateVoteFormComplete(){
 }
 
 async function confirmVote(){
-  if(!pendingVoteConfirm) return;
-  const { topicId, side } = pendingVoteConfirm;
+  if(!pendingVoteConfirm || voteSubmitting) return;
 
   if(!validateVoteFormComplete()){
     return; // มีข้อไหนยังไม่ตอบ (รวม comment) -> ไม่ยิง API เลย ไม่ปิด modal ไม่ลบข้อมูลที่กรอกไว้แล้วสักตัว
   }
 
+  // flow โหวตแบบ guest-first: กรอกครบแล้วแต่ยังไม่ login -> เปิด login/signup ทับฟอร์ม (ฟอร์มอยู่ข้างหลังครบทุกช่อง)
+  // login หรือ signup สำเร็จแล้ว resumeVoteAfterAuth() จะเรียก submitVoteNow() ส่งให้อัตโนมัติ
+  if(!isLoggedIn()){
+    STATE.voteAwaitingAuth = true;
+    openLoginModal('redirect');
+    return;
+  }
+  await submitVoteNow();
+}
+
+// เรียกหลัง login/signup สำเร็จ: ถ้ามีฟอร์มโหวตที่กรอกค้างไว้และยังเปิดอยู่ -> ส่งให้เลย คืน true ถ้าเข้า flow นี้
+// (ตรวจว่าฟอร์มยังเปิดจริง กัน login ที่ไม่เกี่ยวกับการโหวต เช่น กดปุ่ม Log In ที่ header มาโหวตโดยไม่ตั้งใจ)
+function resumeVoteAfterAuth(){
+  const formOpen = document.getElementById('voteConfirmModal').classList.contains('open')
+    && document.getElementById('voteCommentWrap').style.display === 'block';
+  if(!STATE.voteAwaitingAuth || !pendingVoteConfirm || !formOpen || !isLoggedIn()){
+    STATE.voteAwaitingAuth = false;
+    return false;
+  }
+  STATE.voteAwaitingAuth = false;
+  submitVoteNow();
+  return true;
+}
+
+// token ที่ค้างในเครื่องใช้ไม่ได้แล้ว (เช่นถูกเตะจากอุปกรณ์อื่น) -> ล้าง session เงียบๆ (ไม่ toast ไม่ทับฟอร์ม) แล้วเปิด login ต่อ
+function expireSessionForVote(){
+  STATE.session = null;
+  localStorage.removeItem('wz_session');
+  renderHeaderAuth();
+  STATE.voteAwaitingAuth = true;
+  openLoginModal('redirect');
+}
+
+function showVoteSubmitError(msg){
+  const el = document.getElementById('voteSubmitError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+async function submitVoteNow(){
+  if(!pendingVoteConfirm || voteSubmitting || !isLoggedIn()) return;
+  voteSubmitting = true;
+  const { topicId, side } = pendingVoteConfirm;
+
   const mainReason = document.getElementById('voteCommentInput').value.trim();
   const confirmBtn = document.getElementById('voteConfirmBtn');
   const cancelBtn = document.getElementById('voteCancelBtn');
-  confirmBtn.disabled = true; if(cancelBtn) cancelBtn.disabled = true;
-  confirmBtn.textContent = tv('savingText');
+  document.getElementById('voteSubmitError').style.display = 'none';
+  if(confirmBtn){ confirmBtn.disabled = true; confirmBtn.textContent = tv('savingText'); }
+  if(cancelBtn) cancelBtn.disabled = true;
 
   const payload = Object.assign({
     session_token: STATE.session.session_token,
@@ -4181,22 +4227,31 @@ async function confirmVote(){
     comment: mainReason
   }, collectVoteQuestionAnswers(side));
 
-  const res = await api('vote', payload, 'POST');
-
-  pendingVoteConfirm = null;
+  let res;
+  try{
+    res = await api('vote', payload, 'POST');
+  }finally{
+    voteSubmitting = false;
+  }
 
   if(!res.success){
-    // เออเรอร์ก็ต้องเป็น pop up เหมือนกัน ไม่ใช่ toast
-    showInfoPopup(pickLang(res.message), tv('understandBtn'), tv('voteConfirmTitle'));
-    applyFormDir(!!(FORM_LANG && RTL_LANGS.indexOf(FORM_LANG) !== -1)); // popup นี้ยังอยู่ใน flow โหวต ใช้ภาษา/ทิศทางเดียวกับฟอร์ม
+    // ไม่ล้างฟอร์มเด็ดขาด: คืนปุ่มให้กดใหม่ได้ + โชว์ error ในฟอร์ม (ไม่ใช้ showInfoPopup เพราะมันล้างคำตอบทิ้ง)
+    if(confirmBtn){ confirmBtn.disabled = false; confirmBtn.textContent = tv('voteConfirmBtnLabel'); }
+    if(cancelBtn) cancelBtn.disabled = false;
+    const msg = pickLang(res.message) || t18n('apiErrorMsg');
+    // backend ตอบว่ายังไม่ login (token ใช้ไม่ได้แล้ว) -> เปิด login ต่อโดยเก็บฟอร์มไว้ แล้วส่งให้อัตโนมัติหลัง login
+    if(!res._networkError && /please log in/i.test(String(res.message || ''))){
+      expireSessionForVote();
+      return;
+    }
+    showVoteSubmitError(msg);
     return;
   }
 
+  pendingVoteConfirm = null;
   showVoteSuccessPopup();
 
-  // แก้บั๊ก: เดิมเป็น loadTopics().then(loadDashboards) แต่ loadDashboards() ถูกถอดออกไปแล้วตอนทำ
-  // P0-fix lazy-load dashboard (ดูคอมเมนต์ใกล้ _buildVotesByTopic/loadDashboardFor) จุดเรียกนี้ตกหล่นไม่ได้ลบตาม
-  // ทำให้เกิด ReferenceError เงียบๆ (unhandled promise rejection) ทุกครั้งที่โหวตสำเร็จ — loadTopics() อย่างเดียวพอแล้ว
+  // แก้บั๊กเดิม: loadTopics() อย่างเดียวพอ (loadDashboards() ถูกถอดไปแล้ว)
   loadTopics();
 }
 
