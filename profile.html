@@ -1374,7 +1374,24 @@ async function api(action, params = {}, method = 'GET', _isRetry = false, _first
       });
     }
     try{
-      return await res.json();
+      const data = await res.json();
+      // FIX (ดีดออกจากระบบเอง): backend ที่ล้มกลางทาง (exception เช่น Sheets โควตาเต็ม) ตอบ HTTP 5xx พร้อม
+      // {success:false, message:"มีบางอย่างสะดุดฝั่งเรา..."} ซึ่งเดิมหน้าเว็บอ่านเป็น JSON ปกติ แยกไม่ออกจากกรณี
+      // "session ไม่ถูกต้อง" จริง (ซึ่ง backend ตอบ HTTP 200 + success:false) จึงเข้า logout() ทั้งที่ session ยังดีอยู่
+      // ตอนนี้: 5xx = ฝั่งเซิร์ฟเวอร์สะดุด ไม่ใช่ความผิดของ session -> ติดธง _networkError (ความหมายเดียวกับเคสเน็ตหลุด
+      // ให้โค้ดที่เช็คธงนี้ไม่แตะ session) และ retry เงียบๆ 1 ครั้งหลังรอสั้นๆ เฉพาะ action ที่ retry ได้อย่างปลอดภัย
+      if(res.status >= 500 && data && data.success === false){
+        const diag5xx = 'http ' + res.status + ' ' + (Date.now() - startedAt) + 'ms';
+        const canRetry5xx = method === 'GET' || RETRYABLE_POST_ACTIONS.indexOf(action) !== -1;
+        if(canRetry5xx && !_isRetry){
+          console.warn('[api]', action, diag5xx, '(1st attempt, retrying)');
+          await new Promise(r => setTimeout(r, 1500));
+          return api(action, params, method, true, diag5xx);
+        }
+        data._networkError = true;
+        data._diag = action + ' | try1: ' + (_firstDiag || diag5xx) + ' | try2: ' + (_isRetry ? diag5xx : '');
+      }
+      return data;
     }catch(jsonErr){
       reason = 'bad_response(http ' + res.status + ')'; // ตอบกลับมาแต่ไม่ใช่ JSON (เช่น หน้า error ของ Google)
       throw jsonErr;
