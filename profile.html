@@ -295,6 +295,9 @@
   .view-toggle{ display:flex; background:var(--surface); border:1.5px solid var(--line); border-radius:100px; padding:3px; }
   .view-toggle button{ padding:6px 14px; border-radius:100px; font-size:12.5px; color:var(--text-muted); }
   .view-toggle button.active{ background:var(--primary); color:#fff; }
+  .mt-search-row{ margin-bottom:14px; }
+  .mt-search-input{ width:100%; padding:10px 14px; border:1.5px solid var(--line); border-radius:100px; background:var(--surface); font-size:14px; outline:none; box-sizing:border-box; }
+  .mt-search-input:focus{ border-color:var(--primary); }
 
   .my-topic-card{
     display:block; background:var(--surface); border-radius:14px; box-shadow:var(--shadow);
@@ -596,7 +599,11 @@
         <div class="view-toggle" id="sortToggle">
           <button data-sort="latest" class="active" data-i18n="sortLatest">ล่าสุด</button>
           <button data-sort="popular" data-i18n="sortPopular">ยอดนิยม</button>
+          <button data-sort="az" id="sortAzBtn">A-Z</button>
         </div>
+      </div>
+      <div class="mt-search-row">
+        <input type="search" id="mtSearch" class="mt-search-input" data-i18n-ph="mtSearchPh" placeholder="ค้นหาชื่อบริษัท..." autocomplete="off">
       </div>
       <div id="myTopicsList"><div class="area-loading"><div class="area-spinner"></div><span data-i18n="loadingText">กำลังโหลด...</span></div></div>
       <div id="myTransferredList"></div>
@@ -1034,7 +1041,7 @@ const I18N = {
     dcAlreadyPendingMsg: 'คุณเคยส่งคำร้องขอลบบริษัทนี้ไปแล้ว โปรดรอทีมงานพิจารณา เมื่ออนุมัติแล้วชื่อบริษัทนี้จะไม่ปรากฏให้เห็นอีกต่อไป แต่หากคุณเปลี่ยนใจ ไม่ต้องการลบแล้ว โปรดเลือก "Cancel request"',
     dcCancelRequestBtn: 'Cancel request',
     applyBtnLabel: 'ประสบการณ์การสมัครงาน', workBtnLabel: 'ชีวิตการทำงานจริง',
-    mtEmptyState: 'ยังไม่มีบริษัทที่คุณสร้าง', mcEmptyState: 'ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้',
+    mtEmptyState: 'ยังไม่มีบริษัทที่คุณสร้าง', mtSearchPh: 'ค้นหาชื่อบริษัท...', mtNoResult: 'ไม่พบบริษัทที่ตรงกับคำค้นหา', mcEmptyState: 'ยังไม่มีคอมเมนต์ที่คุณเคยเขียนไว้',
     ecModalTitle: 'แก้ไขคอมเมนต์',
     applyCommentLabel: 'แสดงความคิดเห็น',
     workCommentLabel: 'แสดงความคิดเห็น',
@@ -1195,7 +1202,7 @@ const I18N = {
     dcAlreadyPendingMsg: 'You already submitted a delete request for this company. Please wait for review — it\'ll be removed from the feed once approved. If you\'ve changed your mind, choose "Cancel request".',
     dcCancelRequestBtn: 'Cancel request',
     applyBtnLabel: 'Recruitment Reality', workBtnLabel: 'Life at Work',
-    mtEmptyState: "You haven't created any companies yet", mcEmptyState: "You haven't written any comments yet",
+    mtEmptyState: "You haven't created any companies yet", mtSearchPh: "Search company name...", mtNoResult: "No companies match your search", mcEmptyState: "You haven't written any comments yet",
     ecModalTitle: 'Edit Comment',
     applyCommentLabel: 'Share your thoughts',
     workCommentLabel: 'Share your thoughts',
@@ -1325,7 +1332,9 @@ let STATE = {
   myTopics: [],
   myComments: [],
   billingHistory: [],
-  sortMode: 'latest',
+  // จำโหมด sort ล่าสุดที่เลือกไว้ (latest | popular | az) กับทิศทางของ A-Z (asc | desc) ข้ามการรีเฟรช — ครอบด้วย try/catch กัน localStorage ถูกบล็อก
+  sortMode: (()=>{ try{ const v = localStorage.getItem('tb_mt_sort'); return ['latest','popular','az'].includes(v) ? v : 'latest'; }catch(e){ return 'latest'; } })(),
+  azDir: (()=>{ try{ return localStorage.getItem('tb_mt_az_dir') === 'desc' ? 'desc' : 'asc'; }catch(e){ return 'asc'; } })(),
   editAvatarUrl: ''
 };
 
@@ -1925,11 +1934,37 @@ document.getElementById('mtCreateBtn').addEventListener('click', ()=>{
 document.getElementById('sortToggle').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-sort]');
   if(!btn) return;
-  document.querySelectorAll('#sortToggle button').forEach(b=> b.classList.remove('active'));
-  btn.classList.add('active');
-  STATE.sortMode = btn.dataset.sort;
+  const mode = btn.dataset.sort;
+  // กด A-Z ซ้ำตอนที่เลือกอยู่แล้ว = สลับทิศ A-Z <-> Z-A ; กดครั้งแรก (มาจากโหมดอื่น) = เริ่มที่ A-Z เสมอ
+  if(mode === 'az' && STATE.sortMode === 'az'){
+    STATE.azDir = STATE.azDir === 'asc' ? 'desc' : 'asc';
+  } else if(mode === 'az'){
+    STATE.azDir = 'asc';
+  }
+  STATE.sortMode = mode;
+  try{ localStorage.setItem('tb_mt_sort', STATE.sortMode); localStorage.setItem('tb_mt_az_dir', STATE.azDir); }catch(e){}
+  syncSortToggleUI();
   renderMyTopics();
 });
+
+// ซิงก์หน้าตาปุ่ม sort กับ STATE (ใช้ตอนโหลดหน้า และหลังกดปุ่ม) — ปุ่ม A-Z โชว์ลูกศรบอกทิศ ไม่ผูกกับภาษา
+function syncSortToggleUI(){
+  document.querySelectorAll('#sortToggle button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.sort === STATE.sortMode);
+  });
+  const az = document.getElementById('sortAzBtn');
+  if(az) az.textContent = STATE.azDir === 'desc' ? 'Z-A ↓' : 'A-Z ↑';
+}
+syncSortToggleUI();
+
+// ช่องค้นหา: กรองจาก STATE.myTopics ที่โหลดมาแล้ว ไม่ยิง API เพิ่ม ; ไม่ได้เก็บค่าค้นหาใน STATE
+// เพราะ renderMyTopics() อ่านจากช่อง input โดยตรง ทำให้ค่าค้นหายังอยู่แม้ลิสต์ถูก reload (เช่นหลัง Hide/Edit/Delete)
+document.getElementById('mtSearch').addEventListener('input', ()=>{
+  if(STATE.myTopics && STATE.myTopics.length) renderMyTopics();
+});
+
+// ตัวเทียบชื่อสำหรับ A-Z : ไม่สนตัวพิมพ์ใหญ่เล็ก และเรียงเลขตามค่าจริง (Co 2 มาก่อน Co 10)
+const MT_NAME_COLLATOR = new Intl.Collator(['en','th'], { sensitivity: 'base', numeric: true });
 
 // TOKBUD: บริษัทมีแค่ 2 สถานะ (active/inactive) ไม่มี pending/scheduled/expired เหมือน WEZIDE เดิม
 // เพราะสร้างบริษัทแล้วเผยแพร่ทันที ไม่มีขั้นตอนตรวจสอบ/กำหนดวันเริ่ม-สิ้นสุดเผยแพร่
@@ -1945,7 +1980,21 @@ function renderMyTopics(){
     el.innerHTML = `<div class="empty-state"><div class="emoji">📭</div>${t18n('mtEmptyState')}</div>`;
     return;
   }
-  const sorted = [...STATE.myTopics].sort((a,b)=>{
+  const q = (document.getElementById('mtSearch')?.value || '').trim().toLowerCase();
+  const filtered = q
+    ? STATE.myTopics.filter(x => (`${x.company_name || ''} ${x.category || ''}`).toLowerCase().includes(q))
+    : STATE.myTopics;
+  if(filtered.length === 0){
+    el.innerHTML = `<div class="empty-state"><div class="emoji">🔍</div>${t18n('mtNoResult')}</div>`;
+    return;
+  }
+  const sorted = [...filtered].sort((a,b)=>{
+    // A-Z / Z-A: เทียบชื่อเต็มตรงๆ ; ชื่อซ้ำกันให้ตัวที่สร้างก่อนขึ้นก่อนเสมอ (tie-break เดียวกับ popular)
+    if(STATE.sortMode === 'az'){
+      const nameDiff = MT_NAME_COLLATOR.compare(a.company_name || '', b.company_name || '');
+      if(nameDiff !== 0) return STATE.azDir === 'desc' ? -nameDiff : nameDiff;
+      return new Date(a.created_at) - new Date(b.created_at);
+    }
     // Popular: โหวตมาก -> น้อย, เท่ากันให้เก่าสุดขึ้นก่อน (sync กับ _popularCompare ฝั่ง appscript.txt —
     // แพทเทิร์นเดียวกันทั้งระบบ: tie-break ด้วย created_at น้อยสุดเสมอ)
     if(STATE.sortMode === 'popular'){
